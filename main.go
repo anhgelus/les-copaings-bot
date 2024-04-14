@@ -55,4 +55,5 @@ func main() {
 
 func afterInit(dg *discordgo.Session) {
 	dg.AddHandler(xp.OnMessage)
+	dg.AddHandler(xp.OnVoiceUpdate)
 }

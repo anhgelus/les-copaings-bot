@@ -2,6 +2,7 @@ package xp
 
 import (
 	"github.com/anhgelus/gokord"
+	"github.com/bwmarrin/discordgo"
 	"gorm.io/gorm"
 )
 
@@ -19,4 +20,15 @@ func (c *Copaing) Load() *Copaing {
 
 func (c *Copaing) Save() {
 	gokord.DB.Save(c)
+}
+
+func (c *Copaing) AddXP(s *discordgo.Session, xp uint, fn func(uint, uint)) {
+	pastLevel := Level(c.XP)
+	c.XP += xp
+	c.Save()
+	newLevel := Level(c.XP)
+	if newLevel > pastLevel {
+		fn(c.XP, newLevel)
+		onNewLevel(s, newLevel)
+	}
 }
