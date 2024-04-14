@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"github.com/anhgelus/gokord"
+	"github.com/anhgelus/les-copaings-bot/xp"
+	"github.com/bwmarrin/discordgo"
 )
 
 var token string
@@ -18,6 +20,21 @@ func main() {
 		panic(err)
 	}
 
+	err = gokord.DB.AutoMigrate(&xp.Copaing{})
+	if err != nil {
+		panic(err)
+	}
+
+	//rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'une personne").
+	//	HasOption().
+	//	AddOption(gokord.NewOption(
+	//		discordgo.ApplicationCommandOptionUser,
+	//		"copaing",
+	//		"Le niveau du Copaing que vous souhaitez obtenir",
+	//	)).
+	//	SetHandler(commands.Rank).
+	//	ToCmd()
+
 	bot := gokord.Bot{
 		Token: token,
 		Status: []*gokord.Status{
@@ -27,8 +44,14 @@ func main() {
 				Url:     "",
 			},
 		},
-		Commands: nil,
-		Handlers: nil,
+		Commands: []*gokord.Cmd{
+			//rankCmd,
+		},
+		AfterInit: afterInit,
 	}
 	bot.Start()
+}
+
+func afterInit(dg *discordgo.Session) {
+	dg.AddHandler(xp.OnMessage)
 }
