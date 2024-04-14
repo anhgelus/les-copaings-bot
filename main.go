@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/anhgelus/gokord"
-	"github.com/anhgelus/gokord/utils"
 )
 
 var token string
@@ -16,7 +15,7 @@ func init() {
 func main() {
 	err := gokord.SetupConfigs([]*gokord.ConfigInfo{})
 	if err != nil {
-		utils.SendError(err)
+		panic(err)
 	}
 
 	bot := gokord.Bot{

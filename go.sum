@@ -2,6 +2,8 @@ github.com/anhgelus/gokord v0.1.0 h1:FTaCc6mpInsJw5LZQMSc0CQk3rhMiTMiLYrkz31liMI
 github.com/anhgelus/gokord v0.1.0/go.mod h1:X13jrV37XBOIKfOOt3wwKWeA32u9yyJYsCwsgEXc78U=
 github.com/anhgelus/gokord v0.1.1 h1:ZSNHA2DocqfadvFlrur7MDV+Newe5rXbqMlgPAXyDs8=
 github.com/anhgelus/gokord v0.1.1/go.mod h1:X13jrV37XBOIKfOOt3wwKWeA32u9yyJYsCwsgEXc78U=
+github.com/anhgelus/gokord v0.1.2 h1:+DMUXweXTQoKZblkP/IgYQsst1dCv4gwzHUb7LXtQ1k=
+github.com/anhgelus/gokord v0.1.2/go.mod h1:X13jrV37XBOIKfOOt3wwKWeA32u9yyJYsCwsgEXc78U=
 github.com/bsm/ginkgo/v2 v2.12.0 h1:Ny8MWAHyOepLGlLKYmXG4IEkioBysk6GpaRTLC8zwWs=
 github.com/bsm/ginkgo/v2 v2.12.0/go.mod h1:SwYbGRRDovPVboqFv0tPTcG1sN61LM1Z4ARdbAV9g4c=
 github.com/bsm/gomega v1.27.10 h1:yeMWxP2pV2fG3FgAODIY8EiRE3dy0aeFYt4l7wh6yKA=
