@@ -14,7 +14,7 @@ func init() {
 }
 
 func main() {
-	err := gokord.SetupConfigs([]gokord.ConfigInfo{})
+	err := gokord.SetupConfigs([]*gokord.ConfigInfo{})
 	if err != nil {
 		utils.SendError(err)
 	}
