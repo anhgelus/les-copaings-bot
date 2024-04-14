@@ -1,0 +1,16 @@
+services:
+  bot:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./tmp:/app/config
+    depends_on:
+      - redis
+      - postgres
+  redis:
+    image: redis:alpine
+  postgres:
+    image: postgres:alpine
+    env_file:
+      - .env
