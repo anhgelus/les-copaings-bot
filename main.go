@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/anhgelus/gokord"
+	"github.com/anhgelus/les-copaings-bot/commands"
 	"github.com/anhgelus/les-copaings-bot/xp"
 	"github.com/bwmarrin/discordgo"
 )
@@ -25,15 +26,15 @@ func main() {
 		panic(err)
 	}
 
-	//rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'une personne").
-	//	HasOption().
-	//	AddOption(gokord.NewOption(
-	//		discordgo.ApplicationCommandOptionUser,
-	//		"copaing",
-	//		"Le niveau du Copaing que vous souhaitez obtenir",
-	//	)).
-	//	SetHandler(commands.Rank).
-	//	ToCmd()
+	rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'une personne").
+		HasOption().
+		AddOption(gokord.NewOption(
+			discordgo.ApplicationCommandOptionUser,
+			"copaing",
+			"Le niveau du Copaing que vous souhaitez obtenir",
+		)).
+		SetHandler(commands.Rank).
+		ToCmd()
 
 	bot := gokord.Bot{
 		Token: token,
@@ -45,7 +46,7 @@ func main() {
 			},
 		},
 		Commands: []*gokord.Cmd{
-			//rankCmd,
+			rankCmd,
 		},
 		AfterInit: afterInit,
 	}
