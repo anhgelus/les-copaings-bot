@@ -9,6 +9,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+	"math"
 	"strconv"
 	"time"
 )
@@ -97,6 +98,9 @@ func (c *Copaing) HourSinceLastEvent() uint {
 			res.Val(),
 		)
 		return 0
+	}
+	if gokord.Debug {
+		return uint(math.Floor(float64(t-int64(last)) / 60)) // not hours of unix, is minutes of unix
 	}
 	return utils.HoursOfUnix(t - int64(last))
 }
