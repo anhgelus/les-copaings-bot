@@ -51,7 +51,7 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		msg,
 		lvl,
 		c.XP,
-		nxtLvlXP-xp.XPForLevel(lvl),
+		nxtLvlXP-c.XP,
 	)).Send()
 	if err != nil {
 		utils.SendAlert("rank.go - Sending rank", err.Error())
