@@ -56,3 +56,18 @@ func onLastEventUpdate(c *Copaing) {
 	c.Save()
 	c.SetLastEvent()
 }
+
+func onXPUpdate(c *Copaing) {
+	h := c.HourSinceLastEvent()
+	l := Lose(h, c.XP)
+	xp := c.XPAlreadyRemoved()
+	if l-xp < 0 {
+		utils.SendWarn("lose - xp already removed is negative", "lose", l, "xp", xp)
+		c.XP = 0
+		c.AddXPAlreadyRemoved(0)
+	} else {
+		c.XP -= l - c.XPAlreadyRemoved()
+		c.AddXPAlreadyRemoved(l - xp)
+	}
+	c.Save()
+}
