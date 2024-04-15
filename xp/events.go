@@ -153,3 +153,9 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 		}
 	})
 }
+
+func OnLeave(_ *discordgo.Session, e *discordgo.GuildMemberRemove) {
+	utils.SendDebug("Leave event", "user_id", e.User.ID)
+	c := GetCopaing(e.User.ID, e.GuildID)
+	gokord.DB.Delete(c)
+}
