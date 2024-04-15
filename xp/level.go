@@ -45,7 +45,14 @@ func onNewLevel(s *discordgo.Session, m *discordgo.Member, level uint) {
 
 func onLastEventUpdate(c *Copaing) {
 	h := c.HourSinceLastEvent()
-	c.XP -= Lose(h, c.XP)
+	l := Lose(h, c.XP)
+	xp := c.XPAlreadyRemoved()
+	if l-xp < 0 {
+		utils.SendWarn("lose - xp already removed is negative", "lose", l, "xp", xp)
+		c.XP = 0
+	} else {
+		c.XP -= l - c.XPAlreadyRemoved()
+	}
 	c.Save()
 	c.SetLastEvent()
 }

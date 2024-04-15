@@ -23,7 +23,8 @@ type Copaing struct {
 var redisClient *redis.Client
 
 const (
-	LastEvent = "last_event"
+	LastEvent      = "last_event"
+	AlreadyRemoved = "already_removed"
 )
 
 func GetCopaing(discordID string, guildID string) *Copaing {
@@ -88,8 +89,8 @@ func (c *Copaing) HourSinceLastEvent() uint {
 	last, err := strconv.Atoi(res.Val())
 	if err != nil {
 		utils.SendAlert(
-			"xp/member.go - Converting time fetched into int",
-			res.Err().Error(),
+			"xp/member.go - Converting time fetched into int (last event)",
+			err.Error(),
 			"base_key",
 			u.GenKey(),
 			"val",
@@ -98,6 +99,73 @@ func (c *Copaing) HourSinceLastEvent() uint {
 		return 0
 	}
 	return utils.HoursOfUnix(t - int64(last))
+}
+
+func (c *Copaing) AddXPAlreadyRemoved(xp uint) uint {
+	client, err := getRedisClient()
+	if err != nil {
+		utils.SendAlert("xp/member.go - Getting redis client (set)", err.Error())
+		return 0
+	}
+	u := c.GetUserBase()
+	exp := xp + c.XPAlreadyRemoved()
+	err = client.Set(context.Background(), fmt.Sprintf(
+		"%s:%s",
+		u.GenKey(),
+		AlreadyRemoved,
+	), exp, 0).Err()
+	if err != nil {
+		utils.SendAlert(
+			"xp/member.go - Setting last event",
+			err.Error(),
+			"xp already removed",
+			exp,
+			"base_key",
+			u.GenKey(),
+		)
+		return 0
+	}
+	return exp
+}
+
+func (c *Copaing) XPAlreadyRemoved() uint {
+	client, err := getRedisClient()
+	if err != nil {
+		utils.SendAlert("xp/member.go - Getting redis client (xp)", err.Error())
+		return 0
+	}
+	u := c.GetUserBase()
+	res := client.Get(context.Background(), fmt.Sprintf("%s:%s", u.GenKey(), AlreadyRemoved))
+	if errors.Is(res.Err(), redis.Nil) {
+		return 0
+	} else if res.Err() != nil {
+		utils.SendAlert("xp/member.go - Getting already removed", res.Err().Error(), "base_key", u.GenKey())
+		return 0
+	}
+	xp, err := strconv.Atoi(res.Val())
+	if err != nil {
+		utils.SendAlert(
+			"xp/member.go - Converting time fetched into int (already removed)",
+			err.Error(),
+			"base_key",
+			u.GenKey(),
+			"val",
+			res.Val(),
+		)
+		return 0
+	}
+	if xp < 0 {
+		utils.SendAlert(
+			"xp/member.go - Assertion xp >= 0",
+			"xp is negative",
+			"base_key",
+			u.GenKey(),
+			"xp",
+			xp,
+		)
+		return 0
+	}
+	return uint(xp)
 }
 
 func (c *Copaing) GetUserBase() *gokord.UserBase {
