@@ -9,7 +9,8 @@ import (
 
 func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	optMap := utils.GenerateOptionMap(i)
-	c := xp.Copaing{DiscordID: i.Member.User.ID, GuildID: i.GuildID}
+	c := xp.GetCopaing(i.User.ID, i.GuildID) // current copaing = member who used /rank
+	xp.LastEventUpdate(c)                    // update xp and reset last event
 	msg := "Votre niveau"
 	m := i.Member
 	var err error
@@ -24,17 +25,25 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		m, err = s.GuildMember(i.GuildID, u.ID)
 		if err != nil {
-			utils.SendAlert("rank.go - Fetching guild member", err.Error())
+			utils.SendAlert(
+				"rank.go - Fetching guild member",
+				err.Error(),
+				"discord_id",
+				u.ID,
+				"guild_id",
+				i.GuildID,
+			)
 			err = resp.Message("Erreur : impossible de récupérer le membre").IsEphemeral().Send()
 			if err != nil {
 				utils.SendAlert("rank.go - Reply error fetching guild member", err.Error())
 			}
 			return
 		}
-		c.DiscordID = u.ID
+		c.DiscordID = u.ID // current copaing = member targeted by member who wrote /rank
+		c.Load()           // reload copaing (change line before)
+		xp.XPUpdate(c)     // update xp without resetting event
 		msg = fmt.Sprintf("Le niveau de %s", m.DisplayName())
 	}
-	c.Load()
 	lvl := xp.Level(c.XP)
 	nxtLvl := xp.XPForLevel(lvl + 1)
 	err = resp.Message(fmt.Sprintf(
