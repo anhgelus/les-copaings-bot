@@ -51,6 +51,8 @@ func main() {
 		AfterInit: afterInit,
 	}
 	bot.Start()
+
+	xp.CloseRedisClient()
 }
 
 func afterInit(dg *discordgo.Session) {

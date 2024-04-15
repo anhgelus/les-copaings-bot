@@ -46,25 +46,21 @@ func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	if e.Member.User.Bot {
 		return
 	}
-	r, err := gokord.BaseCfg.Redis.Get()
+	client, err := getRedisClient()
 	if err != nil {
 		utils.SendAlert("xp/events.go - Getting redis client", err.Error())
 		return
 	}
 	if e.BeforeUpdate == nil {
-		onConnection(s, e, r)
+		onConnection(s, e, client)
 	} else {
-		onDisconnect(s, e, r)
-	}
-	err = r.Close()
-	if err != nil {
-		utils.SendAlert("xp/events.go - Closing redis client", err.Error())
+		onDisconnect(s, e, client)
 	}
 }
 
-func onConnection(_ *discordgo.Session, e *discordgo.VoiceStateUpdate, r *redis.Client) {
+func onConnection(_ *discordgo.Session, e *discordgo.VoiceStateUpdate, client *redis.Client) {
 	u := gokord.UserBase{DiscordID: e.UserID, GuildID: e.GuildID}
-	err := r.Set(
+	err := client.Set(
 		context.Background(),
 		fmt.Sprintf("%s:%s", u.GenKey(), ConnectedSince),
 		strconv.FormatInt(time.Now().Unix(), 10),
@@ -75,11 +71,12 @@ func onConnection(_ *discordgo.Session, e *discordgo.VoiceStateUpdate, r *redis.
 	}
 }
 
-func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, r *redis.Client) {
+func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *redis.Client) {
+	now := time.Now().Unix()
 	u := gokord.UserBase{DiscordID: e.UserID, GuildID: e.GuildID}
 	key := fmt.Sprintf("%s:%s", u.GenKey(), ConnectedSince)
-	res := r.Get(context.Background(), key)
-	now := time.Now().Unix()
+	res := client.Get(context.Background(), key)
+	// check validity of user (1)
 	if errors.Is(res.Err(), redis.Nil) {
 		utils.SendWarn(fmt.Sprintf(
 			"User %s diconnect from a vocal but does not have a connected_since",
@@ -89,7 +86,7 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, r *redis.
 	}
 	if res.Err() != nil {
 		utils.SendAlert("xp/events.go - Getting connected_since", res.Err().Error())
-		err := r.Set(context.Background(), key, strconv.Itoa(NotConnected), 0).Err()
+		err := client.Set(context.Background(), key, strconv.Itoa(NotConnected), 0).Err()
 		if err != nil {
 			utils.SendAlert("xp/events.go - Set connected_since to not connected after get err", err.Error())
 		}
@@ -100,6 +97,7 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, r *redis.
 		utils.SendAlert("xp/events.go - Converting result to int64", err.Error())
 		return
 	}
+	// check validity of user (2)
 	if con == NotConnected {
 		utils.SendWarn(fmt.Sprintf(
 			"User %s diconnect from a vocal but was registered as not connected",
@@ -107,10 +105,11 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, r *redis.
 		))
 		return
 	}
-	err = r.Set(context.Background(), key, strconv.Itoa(NotConnected), 0).Err()
+	err = client.Set(context.Background(), key, strconv.Itoa(NotConnected), 0).Err()
 	if err != nil {
 		utils.SendAlert("xp/events.go - Set connected_since to not connected", err.Error())
 	}
+	// add xp
 	timeInVocal := now - con
 	if timeInVocal < 0 {
 		utils.SendAlert("xp/events.go - Calculating time spent in vocal", "the time is negative")
