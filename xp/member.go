@@ -31,14 +31,14 @@ func (c *Copaing) Save() {
 	gokord.DB.Save(c)
 }
 
-func (c *Copaing) AddXP(s *discordgo.Session, xp uint, fn func(uint, uint)) {
+func (c *Copaing) AddXP(s *discordgo.Session, m *discordgo.Member, xp uint, fn func(uint, uint)) {
 	pastLevel := Level(c.XP)
 	c.XP += xp
 	c.Save()
 	newLevel := Level(c.XP)
 	if newLevel > pastLevel {
 		fn(c.XP, newLevel)
-		onNewLevel(s, newLevel)
+		onNewLevel(s, m, newLevel)
 	}
 }
 

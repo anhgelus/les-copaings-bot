@@ -28,6 +28,6 @@ func XPForLevel(level uint) uint {
 
 func Lose(time uint, xp uint) uint {
 	return uint(math.Floor(
-		math.Pow(float64(time), 2) * math.Pow(10, -2+math.Log(float64(time/85))) * math.Floor(float64(time/500)),
+		math.Pow(float64(time), 2) * math.Pow(10, -2+math.Log(float64(time/85))) * math.Floor(float64(xp/500)),
 	))
 }

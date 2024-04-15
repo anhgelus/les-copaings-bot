@@ -64,8 +64,7 @@ func main() {
 					"Rôle",
 				).IsRequired()).
 				SetHandler(commands.ConfigXP),
-		).
-		SetHandler(commands.Config)
+		)
 
 	bot := gokord.Bot{
 		Token: token,

@@ -21,12 +21,24 @@ const (
 )
 
 func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.Author.Bot {
+		return
+	}
 	c := GetCopaing(m.Author.ID, m.GuildID)
 	// add xp
 	trimmed := utils.TrimMessage(strings.ToLower(m.Content))
-	c.AddXP(s, XPMessage(uint(len(trimmed)), calcDiversity(trimmed)), func(_ uint, _ uint) {
+	m.Member.User = m.Author
+	m.Member.GuildID = m.GuildID
+	c.AddXP(s, m.Member, XPMessage(uint(len(trimmed)), calcDiversity(trimmed)), func(_ uint, _ uint) {
 		if err := s.MessageReactionAdd(m.ChannelID, m.Message.ID, "⬆"); err != nil {
-			utils.SendAlert("xp/events.go - reaction add new level", "cannot add the reaction: "+err.Error())
+			utils.SendAlert(
+				"xp/events.go - add reaction for new level",
+				err.Error(),
+				"channel id",
+				m.ChannelID,
+				"message id",
+				m.Message.ID,
+			)
 		}
 	})
 }
@@ -119,7 +131,8 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 		timeInVocal = MaxTimeInVocal
 	}
 	c := GetCopaing(u.DiscordID, u.GuildID)
-	c.AddXP(s, XPVocal(uint(timeInVocal)), func(_ uint, _ uint) {
+	e.Member.GuildID = e.GuildID
+	c.AddXP(s, e.Member, XPVocal(uint(timeInVocal)), func(_ uint, _ uint) {
 		//TODO: handle new level in vocal
 	})
 }
