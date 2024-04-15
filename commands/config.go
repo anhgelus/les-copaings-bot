@@ -99,6 +99,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			XP:     exp,
 			RoleID: role.ID,
 		})
+		cfg.Save()
 	case "del":
 		_, r := cfg.FindXpRole(role.ID)
 		if r == nil {
@@ -110,7 +111,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		gokord.DB.Delete(r)
 	case "edit":
-		pos, r := cfg.FindXpRole(role.ID)
+		_, r := cfg.FindXpRole(role.ID)
 		if r == nil {
 			err := resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
 			if err != nil {
@@ -118,8 +119,8 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 			return
 		}
-		r.RoleID = role.ID
-		cfg.XpRoles[pos] = *r
+		r.XP = exp
+		gokord.DB.Save(r)
 	default:
 		err := resp.Message("Le type d'action n'est pas valide.").Send()
 		if err != nil {
@@ -127,8 +128,6 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		return
 	}
-	// save
-	cfg.Save()
 	err := resp.Message("La configuration a bien été mise à jour.").Send()
 	if err != nil {
 		utils.SendAlert("commands/config.go - Config updated", err.Error())
