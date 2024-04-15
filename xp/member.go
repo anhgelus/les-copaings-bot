@@ -2,6 +2,7 @@ package xp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
@@ -77,7 +78,9 @@ func (c *Copaing) HourSinceLastEvent() uint {
 	}
 	u := c.GetUserBase()
 	res := client.Get(context.Background(), fmt.Sprintf("%s:%s", u.GenKey(), LastEvent))
-	if res.Err() != nil {
+	if errors.Is(res.Err(), redis.Nil) {
+		return 0
+	} else if res.Err() != nil {
 		utils.SendAlert("xp/member.go - Getting last event", res.Err().Error(), "base_key", u.GenKey())
 		return 0
 	}

@@ -30,6 +30,7 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	c := GetCopaing(m.Author.ID, m.GuildID)
+	onLastEventUpdate(c)
 	// add xp
 	trimmed := utils.TrimMessage(strings.ToLower(m.Content))
 	m.Member.User = m.Author
@@ -62,6 +63,7 @@ func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	if e.Member.User.Bot {
 		return
 	}
+	onLastEventUpdate(GetCopaing(e.UserID, e.GuildID))
 	cfg := config.GetGuildConfig(e.GuildID)
 	if cfg.IsDisabled(e.ChannelID) {
 		return

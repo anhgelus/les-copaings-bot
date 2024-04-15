@@ -42,3 +42,10 @@ func onNewLevel(s *discordgo.Session, m *discordgo.Member, level uint) {
 		}
 	}
 }
+
+func onLastEventUpdate(c *Copaing) {
+	h := c.HourSinceLastEvent()
+	c.XP -= Lose(h, c.XP)
+	c.Save()
+	c.SetLastEvent()
+}
