@@ -51,7 +51,7 @@ func LastEventUpdate(c *Copaing) {
 		utils.SendWarn("lose - xp already removed is negative", "lose", l, "xp", xp)
 		c.XP = 0
 	} else {
-		c.XP -= l - c.XPAlreadyRemoved()
+		c.XP = c.XP - l + c.XPAlreadyRemoved()
 	}
 	c.Save()
 	c.SetLastEvent()
@@ -63,10 +63,9 @@ func XPUpdate(c *Copaing) {
 	xp := c.XPAlreadyRemoved()
 	if l-xp < 0 {
 		utils.SendWarn("lose - xp already removed is negative", "lose", l, "xp", xp)
-		c.XP = 0
 		c.AddXPAlreadyRemoved(0)
 	} else {
-		c.XP -= l - c.XPAlreadyRemoved()
+		c.XP = c.XP - l + xp
 		c.AddXPAlreadyRemoved(l - xp)
 	}
 	c.Save()
