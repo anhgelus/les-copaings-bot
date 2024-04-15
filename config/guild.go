@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/anhgelus/gokord"
 	"gorm.io/gorm"
+	"strings"
 )
 
 type GuildConfig struct {
@@ -31,6 +32,10 @@ func (cfg *GuildConfig) Load() *GuildConfig {
 
 func (cfg *GuildConfig) Save() {
 	gokord.DB.Save(cfg)
+}
+
+func (cfg *GuildConfig) IsDisabled(channelID string) bool {
+	return strings.Contains(cfg.DisabledChannels, channelID)
 }
 
 func (cfg *GuildConfig) FindXpRole(roleID string) (int, *XpRole) {

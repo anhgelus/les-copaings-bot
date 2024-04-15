@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
+	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/bwmarrin/discordgo"
 	"github.com/redis/go-redis/v9"
 	"slices"
@@ -22,6 +23,10 @@ const (
 
 func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.Bot {
+		return
+	}
+	cfg := config.GetGuildConfig(m.GuildID)
+	if cfg.IsDisabled(m.ChannelID) {
 		return
 	}
 	c := GetCopaing(m.Author.ID, m.GuildID)
