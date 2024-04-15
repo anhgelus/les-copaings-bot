@@ -62,6 +62,10 @@ func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	if e.Member.User.Bot {
 		return
 	}
+	cfg := config.GetGuildConfig(e.GuildID)
+	if cfg.IsDisabled(e.ChannelID) {
+		return
+	}
 	client, err := getRedisClient()
 	if err != nil {
 		utils.SendAlert("xp/events.go - Getting redis client", err.Error())
