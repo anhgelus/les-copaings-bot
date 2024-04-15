@@ -7,8 +7,9 @@ import (
 
 type GuildConfig struct {
 	gorm.Model
-	GuildID string `gorm:"not null"`
-	XpRoles []XpRole
+	GuildID          string `gorm:"not null"`
+	XpRoles          []XpRole
+	DisabledChannels string
 }
 
 type XpRole struct {

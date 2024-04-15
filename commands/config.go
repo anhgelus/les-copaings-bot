@@ -7,6 +7,7 @@ import (
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/xp"
 	"github.com/bwmarrin/discordgo"
+	"strings"
 )
 
 func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -21,6 +22,20 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			roles += fmt.Sprintf("> Niveau %d - <@&%s>\n", xp.Level(r.XP), r.RoleID)
 		}
 	}
+	if len(roles) == 0 {
+		roles = "Aucun rôle configuré :("
+	}
+	disChans := strings.Split(cfg.DisabledChannels, ";")
+	l = len(disChans) - 1
+	chans := ""
+	for i, c := range disChans {
+		if i != l {
+			chans += fmt.Sprintf("> <#%s>", c)
+		}
+	}
+	if len(chans) == 0 {
+		chans = "Aucun salon désactivé :)"
+	}
 	err := resp.Embeds([]*discordgo.MessageEmbed{
 		{
 			Type:        discordgo.EmbedTypeRich,
@@ -31,6 +46,11 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				{
 					Name:   "Rôles liés aux niveaux",
 					Value:  roles,
+					Inline: false,
+				},
+				{
+					Name:   "Salons désactivés",
+					Value:  chans,
 					Inline: false,
 				},
 			},
@@ -131,5 +151,63 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	err := resp.Message("La configuration a bien été mise à jour.").Send()
 	if err != nil {
 		utils.SendAlert("commands/config.go - Config updated", err.Error())
+	}
+}
+
+func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	optMap := utils.GenerateOptionMapForSubcommand(i)
+	resp := utils.ResponseBuilder{C: s, I: i}
+	resp.IsEphemeral()
+	// verify every args
+	t, ok := optMap["type"]
+	if !ok {
+		err := resp.Message("Le type d'action n'a pas été renseigné.").Send()
+		if err != nil {
+			utils.SendAlert("commands/config.go - Action type not set", err.Error())
+		}
+		return
+	}
+	ts := t.StringValue()
+	salon, ok := optMap["channel"]
+	if !ok {
+		err := resp.Message("Le salon n'a pas été renseigné.").Send()
+		if err != nil {
+			utils.SendAlert("commands/config.go - Channel not set", err.Error())
+		}
+		return
+	}
+	channel := salon.ChannelValue(s)
+	cfg := config.GetGuildConfig(i.GuildID)
+	switch ts {
+	case "add":
+		if strings.Contains(cfg.DisabledChannels, channel.ID) {
+			err := resp.Message("Le salon est déjà dans la liste des salons désactivés").Send()
+			if err != nil {
+				utils.SendAlert("commands/config.go - Channel already disabled", err.Error())
+			}
+			return
+		}
+		cfg.DisabledChannels += channel.ID + ";"
+	case "del":
+		if !strings.Contains(cfg.DisabledChannels, channel.ID) {
+			err := resp.Message("Le salon n'est pas désactivé").Send()
+			if err != nil {
+				utils.SendAlert("commands/config.go - Channel not disabled", err.Error())
+			}
+			return
+		}
+		cfg.DisabledChannels = strings.ReplaceAll(cfg.DisabledChannels, channel.ID+";", "")
+	default:
+		err := resp.Message("Le type d'action n'est pas valide.").Send()
+		if err != nil {
+			utils.SendAlert("commands/config.go - Invalid action type", err.Error())
+		}
+		return
+	}
+	// save
+	cfg.Save()
+	err := resp.Message("Modification sauvegardé.").Send()
+	if err != nil {
+		utils.SendAlert("commands/config.go - Modification saved message", err.Error())
 	}
 }

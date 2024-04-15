@@ -15,7 +15,7 @@ type Copaing struct {
 	GuildID   string `gorm:"not null"`
 }
 
-var r *redis.Client
+var redisClient *redis.Client
 
 func GetCopaing(discordID string, guildID string) *Copaing {
 	c := Copaing{DiscordID: discordID, GuildID: guildID}
@@ -43,19 +43,19 @@ func (c *Copaing) AddXP(s *discordgo.Session, m *discordgo.Member, xp uint, fn f
 }
 
 func getRedisClient() (*redis.Client, error) {
-	if r == nil {
+	if redisClient == nil {
 		var err error
-		r, err = gokord.BaseCfg.Redis.Get()
-		return r, err
+		redisClient, err = gokord.BaseCfg.Redis.Get()
+		return redisClient, err
 	}
-	return r, nil
+	return redisClient, nil
 }
 
 func CloseRedisClient() {
-	if r == nil {
+	if redisClient == nil {
 		return
 	}
-	err := r.Close()
+	err := redisClient.Close()
 	if err != nil {
 		utils.SendAlert("xp/member.go - Closing redis client", err.Error())
 	}

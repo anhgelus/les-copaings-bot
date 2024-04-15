@@ -64,6 +64,24 @@ func main() {
 					"Rôle",
 				).IsRequired()).
 				SetHandler(commands.ConfigXP),
+		).
+		AddSub(
+			gokord.NewCommand("disabled-channels", "Modifie les salons désactivés").
+				HasOption().
+				AddOption(gokord.NewOption(
+					discordgo.ApplicationCommandOptionString,
+					"type",
+					"Type d'action à effectuer",
+				).
+					AddChoice(gokord.NewChoice("Désactiver", "add")).
+					AddChoice(gokord.NewChoice("Activer", "del")).IsRequired(),
+				).
+				AddOption(gokord.NewOption(
+					discordgo.ApplicationCommandOptionChannel,
+					"channel",
+					"Salon à modifier",
+				).IsRequired()).
+				SetHandler(commands.ConfigChannel),
 		)
 
 	bot := gokord.Bot{
