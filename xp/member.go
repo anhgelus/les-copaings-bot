@@ -1,11 +1,15 @@
 package xp
 
 import (
+	"context"
+	"fmt"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
 	"github.com/bwmarrin/discordgo"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+	"strconv"
+	"time"
 )
 
 type Copaing struct {
@@ -16,6 +20,10 @@ type Copaing struct {
 }
 
 var redisClient *redis.Client
+
+const (
+	LastEvent = "last_event"
+)
 
 func GetCopaing(discordID string, guildID string) *Copaing {
 	c := Copaing{DiscordID: discordID, GuildID: guildID}
@@ -40,6 +48,57 @@ func (c *Copaing) AddXP(s *discordgo.Session, m *discordgo.Member, xp uint, fn f
 		fn(c.XP, newLevel)
 		onNewLevel(s, m, newLevel)
 	}
+}
+
+func (c *Copaing) SetLastEvent() {
+	client, err := getRedisClient()
+	if err != nil {
+		utils.SendAlert("xp/member.go - Getting redis client (set)", err.Error())
+		return
+	}
+	u := c.GetUserBase()
+	t := time.Now().Unix()
+	err = client.Set(context.Background(), fmt.Sprintf(
+		"%s:%s",
+		u.GenKey(),
+		LastEvent,
+	), strconv.FormatInt(t, 10), 0).Err()
+	if err != nil {
+		utils.SendAlert("xp/member.go - Setting last event", err.Error(), "time", t, "base_key", u.GenKey())
+		return
+	}
+}
+
+func (c *Copaing) HourSinceLastEvent() uint {
+	client, err := getRedisClient()
+	if err != nil {
+		utils.SendAlert("xp/member.go - Getting redis client (get)", err.Error())
+		return 0
+	}
+	u := c.GetUserBase()
+	res := client.Get(context.Background(), fmt.Sprintf("%s:%s", u.GenKey(), LastEvent))
+	if res.Err() != nil {
+		utils.SendAlert("xp/member.go - Getting last event", res.Err().Error(), "base_key", u.GenKey())
+		return 0
+	}
+	t := time.Now().Unix()
+	last, err := strconv.Atoi(res.Val())
+	if err != nil {
+		utils.SendAlert(
+			"xp/member.go - Converting time fetched into int",
+			res.Err().Error(),
+			"base_key",
+			u.GenKey(),
+			"val",
+			res.Val(),
+		)
+		return 0
+	}
+	return utils.HoursOfUnix(t - int64(last))
+}
+
+func (c *Copaing) GetUserBase() *gokord.UserBase {
+	return &gokord.UserBase{DiscordID: c.DiscordID, GuildID: c.GuildID}
 }
 
 func getRedisClient() (*redis.Client, error) {
