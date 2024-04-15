@@ -21,8 +21,7 @@ const (
 )
 
 func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
-	c := Copaing{DiscordID: m.Author.ID, GuildID: m.GuildID}
-	c.Load()
+	c := GetCopaing(m.Author.ID, m.GuildID)
 	// add xp
 	trimmed := utils.TrimMessage(strings.ToLower(m.Content))
 	c.AddXP(s, XPMessage(uint(len(trimmed)), calcDiversity(trimmed)), func(_ uint, _ uint) {
@@ -119,8 +118,7 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 		utils.SendWarn(fmt.Sprintf("User %s spent more than 6 hours in vocal", e.Member.DisplayName()))
 		timeInVocal = MaxTimeInVocal
 	}
-	c := Copaing{DiscordID: u.DiscordID, GuildID: u.GuildID}
-	c.Load()
+	c := GetCopaing(u.DiscordID, u.GuildID)
 	c.AddXP(s, XPVocal(uint(timeInVocal)), func(_ uint, _ uint) {
 		//TODO: handle new level in vocal
 	})

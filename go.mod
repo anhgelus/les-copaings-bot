@@ -2,7 +2,7 @@ module github.com/anhgelus/les-copaings-bot
 
 go 1.22
 
-require github.com/anhgelus/gokord v0.1.5
+require github.com/anhgelus/gokord v0.2.0
 
 require (
 	github.com/bwmarrin/discordgo v0.28.1 // indirect

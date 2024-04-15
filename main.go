@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/les-copaings-bot/commands"
+	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/xp"
 	"github.com/bwmarrin/discordgo"
 )
@@ -21,20 +22,50 @@ func main() {
 		panic(err)
 	}
 
-	err = gokord.DB.AutoMigrate(&xp.Copaing{})
+	err = gokord.DB.AutoMigrate(&xp.Copaing{}, &config.GuildConfig{}, &config.XpRole{})
 	if err != nil {
 		panic(err)
 	}
 
-	rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'une personne").
+	rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'un copaing").
 		HasOption().
 		AddOption(gokord.NewOption(
 			discordgo.ApplicationCommandOptionUser,
 			"copaing",
 			"Le niveau du Copaing que vous souhaitez obtenir",
 		)).
-		SetHandler(commands.Rank).
-		ToCmd()
+		SetHandler(commands.Rank)
+
+	configCmd := gokord.NewCommand("config", "Modifie la config").
+		ContainsSub().
+		AddSub(
+			gokord.NewCommand("show", "Affiche la config").SetHandler(commands.ConfigShow),
+		).
+		AddSub(
+			gokord.NewCommand("xp", "Modifie l'xp").
+				HasOption().
+				AddOption(gokord.NewOption(
+					discordgo.ApplicationCommandOptionString,
+					"type",
+					"Type d'action à effectuer",
+				).
+					AddChoice(gokord.NewChoice("Ajouter", "add")).
+					AddChoice(gokord.NewChoice("Supprimer", "del")).
+					AddChoice(gokord.NewChoice("Modifier", "edit")).IsRequired(),
+				).
+				AddOption(gokord.NewOption(
+					discordgo.ApplicationCommandOptionInteger,
+					"level",
+					"Niveau du rôle",
+				).IsRequired()).
+				AddOption(gokord.NewOption(
+					discordgo.ApplicationCommandOptionRole,
+					"role",
+					"Rôle",
+				).IsRequired()).
+				SetHandler(commands.ConfigXP),
+		).
+		SetHandler(commands.Config)
 
 	bot := gokord.Bot{
 		Token: token,
@@ -45,8 +76,9 @@ func main() {
 				Url:     "",
 			},
 		},
-		Commands: []*gokord.Cmd{
+		Commands: []*gokord.GeneralCommand{
 			rankCmd,
+			configCmd,
 		},
 		AfterInit: afterInit,
 	}

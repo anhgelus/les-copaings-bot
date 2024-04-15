@@ -10,12 +10,17 @@ import (
 
 type Copaing struct {
 	gorm.Model
-	DiscordID string
-	XP        uint
-	GuildID   string
+	DiscordID string `gorm:"not null"`
+	XP        uint   `gorm:"default:0"`
+	GuildID   string `gorm:"not null"`
 }
 
 var r *redis.Client
+
+func GetCopaing(discordID string, guildID string) *Copaing {
+	c := Copaing{DiscordID: discordID, GuildID: guildID}
+	return c.Load()
+}
 
 func (c *Copaing) Load() *Copaing {
 	gokord.DB.Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).FirstOrCreate(c)
