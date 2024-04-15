@@ -9,8 +9,8 @@ import (
 
 func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	optMap := utils.GenerateOptionMap(i)
-	c := xp.GetCopaing(i.User.ID, i.GuildID) // current copaing = member who used /rank
-	xp.LastEventUpdate(c)                    // update xp and reset last event
+	c := xp.GetCopaing(i.Member.User.ID, i.GuildID) // current copaing = member who used /rank
+	xp.LastEventUpdate(c)                           // update xp and reset last event
 	msg := "Votre niveau"
 	m := i.Member
 	var err error
@@ -45,13 +45,13 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		msg = fmt.Sprintf("Le niveau de %s", m.DisplayName())
 	}
 	lvl := xp.Level(c.XP)
-	nxtLvl := xp.XPForLevel(lvl + 1)
+	nxtLvlXP := xp.XPForLevel(lvl + 1)
 	err = resp.Message(fmt.Sprintf(
 		"%s : **%d**\n> XP : %d\n> Prochain niveau dans %d XP",
 		msg,
 		lvl,
 		c.XP,
-		nxtLvl-lvl,
+		nxtLvlXP-xp.XPForLevel(lvl),
 	)).Send()
 	if err != nil {
 		utils.SendAlert("rank.go - Sending rank", err.Error())
