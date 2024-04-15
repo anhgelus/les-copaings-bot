@@ -86,12 +86,21 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// add or delete or edit
 	switch ts {
 	case "add":
+		for _, r := range cfg.XpRoles {
+			if r.RoleID == role.ID {
+				err := resp.Message("Le rôle est déjà présent dans la config").Send()
+				if err != nil {
+					utils.SendAlert("commands/config.go - Role already in config", err.Error())
+				}
+				return
+			}
+		}
 		cfg.XpRoles = append(cfg.XpRoles, config.XpRole{
 			XP:     exp,
 			RoleID: role.ID,
 		})
 	case "del":
-		_, r := cfg.FindXpRole(exp, role.ID)
+		_, r := cfg.FindXpRole(role.ID)
 		if r == nil {
 			err := resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
 			if err != nil {
@@ -101,7 +110,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		gokord.DB.Delete(r)
 	case "edit":
-		pos, r := cfg.FindXpRole(exp, role.ID)
+		pos, r := cfg.FindXpRole(role.ID)
 		if r == nil {
 			err := resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
 			if err != nil {

@@ -32,9 +32,9 @@ func (cfg *GuildConfig) Save() {
 	gokord.DB.Save(cfg)
 }
 
-func (cfg *GuildConfig) FindXpRole(xp uint, roleID string) (int, *XpRole) {
+func (cfg *GuildConfig) FindXpRole(roleID string) (int, *XpRole) {
 	for i, r := range cfg.XpRoles {
-		if r.XP == xp && r.RoleID == roleID {
+		if r.RoleID == roleID {
 			return i, &r
 		}
 	}
