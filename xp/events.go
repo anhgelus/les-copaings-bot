@@ -137,7 +137,15 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 	}
 	c := GetCopaing(u.DiscordID, u.GuildID)
 	e.Member.GuildID = e.GuildID
-	c.AddXP(s, e.Member, XPVocal(uint(timeInVocal)), func(_ uint, _ uint) {
-		//TODO: handle new level in vocal
+	c.AddXP(s, e.Member, XPVocal(uint(timeInVocal)), func(_ uint, newLevel uint) {
+		cfg := config.GetGuildConfig(e.GuildID)
+		_, err = s.ChannelMessageSend(cfg.FallbackChannel, fmt.Sprintf(
+			"%s est maintenant niveau %d",
+			e.Member.Mention(),
+			newLevel,
+		))
+		if err != nil {
+			utils.SendAlert("xp/events.go - Sending new level in fallback channel", err.Error())
+		}
 	})
 }
