@@ -70,6 +70,15 @@ func (c *Copaing) SetLastEvent() {
 		utils.SendAlert("xp/member.go - Setting last event", err.Error(), "time", t, "base_key", u.GenKey())
 		return
 	}
+	err = client.Set(context.Background(), fmt.Sprintf(
+		"%s:%s",
+		u.GenKey(),
+		AlreadyRemoved,
+	), "0", 0).Err()
+	if err != nil {
+		utils.SendAlert("xp/member.go - Setting already removed to 0", err.Error(), "time", t, "base_key", u.GenKey())
+		return
+	}
 }
 
 func (c *Copaing) HourSinceLastEvent() uint {
@@ -120,7 +129,7 @@ func (c *Copaing) AddXPAlreadyRemoved(xp uint) uint {
 	), exp, 0).Err()
 	if err != nil {
 		utils.SendAlert(
-			"xp/member.go - Setting last event",
+			"xp/member.go - Setting already removed",
 			err.Error(),
 			"xp already removed",
 			exp,
