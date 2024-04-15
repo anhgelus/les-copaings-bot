@@ -82,6 +82,16 @@ func main() {
 					"Salon à modifier",
 				).IsRequired()).
 				SetHandler(commands.ConfigChannel),
+		).
+		AddSub(
+			gokord.NewCommand("fallback-channel", "Modifie le salon textuel par défaut").
+				HasOption().
+				AddOption(gokord.NewOption(
+					discordgo.ApplicationCommandOptionChannel,
+					"channel",
+					"Salon textuel par défaut",
+				).IsRequired()).
+				SetHandler(commands.ConfigFallbackChannel),
 		)
 
 	bot := gokord.Bot{

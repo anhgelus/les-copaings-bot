@@ -11,6 +11,7 @@ type GuildConfig struct {
 	GuildID          string `gorm:"not null"`
 	XpRoles          []XpRole
 	DisabledChannels string
+	FallbackChannel  string
 }
 
 type XpRole struct {

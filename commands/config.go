@@ -44,6 +44,11 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			Color:       utils.Success,
 			Fields: []*discordgo.MessageEmbedField{
 				{
+					Name:   "Salons par défaut",
+					Value:  fmt.Sprintf("<#%s>", cfg.FallbackChannel),
+					Inline: false,
+				},
+				{
 					Name:   "Rôles liés aux niveaux",
 					Value:  roles,
 					Inline: false,
@@ -172,7 +177,7 @@ func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if !ok {
 		err := resp.Message("Le salon n'a pas été renseigné.").Send()
 		if err != nil {
-			utils.SendAlert("commands/config.go - Channel not set", err.Error())
+			utils.SendAlert("commands/config.go - Channel not set (disabled)", err.Error())
 		}
 		return
 	}
@@ -209,5 +214,36 @@ func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	err := resp.Message("Modification sauvegardé.").Send()
 	if err != nil {
 		utils.SendAlert("commands/config.go - Modification saved message", err.Error())
+	}
+}
+
+func ConfigFallbackChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	optMap := utils.GenerateOptionMapForSubcommand(i)
+	resp := utils.ResponseBuilder{C: s, I: i}
+	resp.IsEphemeral()
+	// verify every args
+	salon, ok := optMap["channel"]
+	if !ok {
+		err := resp.Message("Le salon n'a pas été renseigné.").Send()
+		if err != nil {
+			utils.SendAlert("commands/config.go - Channel not set (fallback)", err.Error())
+		}
+		return
+	}
+	channel := salon.ChannelValue(s)
+	if channel.Type != discordgo.ChannelTypeGuildText {
+		err := resp.Message("Le salon n'est pas un salon textuel.").Send()
+		if err != nil {
+			utils.SendAlert("commands/config.go - Invalid channel type", err.Error())
+		}
+		return
+	}
+	cfg := config.GetGuildConfig(i.GuildID)
+	cfg.FallbackChannel = channel.ID
+	// save
+	cfg.Save()
+	err := resp.Message("Salon enregistré.").Send()
+	if err != nil {
+		utils.SendAlert("commands/config.go - Channel saved message", err.Error())
 	}
 }
