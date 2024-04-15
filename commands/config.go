@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/xp"
@@ -90,7 +91,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			RoleID: role.ID,
 		})
 	case "del":
-		pos, r := cfg.FindXpRole(exp, role.ID)
+		_, r := cfg.FindXpRole(exp, role.ID)
 		if r == nil {
 			err := resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
 			if err != nil {
@@ -98,7 +99,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 			return
 		}
-		cfg.XpRoles = append(cfg.XpRoles[:pos], cfg.XpRoles[pos+1:]...)
+		gokord.DB.Delete(r)
 	case "edit":
 		pos, r := cfg.FindXpRole(exp, role.ID)
 		if r == nil {
