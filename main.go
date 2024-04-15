@@ -92,7 +92,11 @@ func main() {
 					"Salon textuel par défaut",
 				).IsRequired()).
 				SetHandler(commands.ConfigFallbackChannel),
-		)
+		).SetPermission(gokord.AdminPermission)
+
+	topCmd := gokord.NewCommand("top", "Copaings les plus actifs").
+		HasOption().
+		SetHandler(commands.Top)
 
 	bot := gokord.Bot{
 		Token: token,
@@ -106,6 +110,7 @@ func main() {
 		Commands: []*gokord.GeneralCommand{
 			rankCmd,
 			configCmd,
+			topCmd,
 		},
 		AfterInit: afterInit,
 	}
