@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"github.com/anhgelus/gokord"
+	"github.com/anhgelus/gokord/utils"
 	"github.com/anhgelus/les-copaings-bot/commands"
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/xp"
 	"github.com/bwmarrin/discordgo"
+	"time"
 )
 
 var token string
@@ -126,12 +128,12 @@ func afterInit(dg *discordgo.Session) {
 	dg.AddHandler(xp.OnLeave)
 
 	// setup timer for periodic reducer
-	//d := 24 * time.Hour
-	//if gokord.Debug {
-	//	// reduce for debug
-	//	d = time.Minute
-	//}
-	//utils.NewTimer(d, func(stop chan struct{}) {
-	//	xp.PeriodicReducer(dg)
-	//})
+	d := 24 * time.Hour
+	if gokord.Debug {
+		// reduce time for debug
+		d = time.Minute
+	}
+	utils.NewTimer(d, func(stop chan struct{}) {
+		xp.PeriodicReducer(dg)
+	})
 }

@@ -5,6 +5,8 @@ import (
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/bwmarrin/discordgo"
 	"slices"
+	"sync"
+	"time"
 )
 
 func onNewLevel(s *discordgo.Session, m *discordgo.Member, level uint) {
@@ -116,24 +118,24 @@ func XPUpdate(s *discordgo.Session, c *Copaing) {
 	}
 }
 
-//func PeriodicReducer(s *discordgo.Session) {
-//	var wg sync.WaitGroup
-//	for _, g := range s.State.Guilds {
-//		for _, m := range utils.FetchGuildUser(s, g.ID) {
-//			if m.User.Bot {
-//				continue
-//			}
-//			wg.Add(1)
-//			go func() {
-//				utils.SendDebug("Async reducer", "user", m.DisplayName(), "guild", g.Name)
-//				c := GetCopaing(m.User.ID, g.ID)
-//				XPUpdate(s, c)
-//				wg.Done()
-//			}()
-//		}
-//		wg.Wait() // finish the entire guild before starting another
-//		utils.SendDebug("Guild finished", "guild", g.Name)
-//		time.Sleep(10 * time.Second) // sleep prevents from spamming the Discord API
-//	}
-//	utils.SendDebug("Periodic reduce finished", "len(guilds)", len(s.State.Guilds))
-//}
+func PeriodicReducer(s *discordgo.Session) {
+	var wg sync.WaitGroup
+	for _, g := range s.State.Guilds {
+		for _, m := range utils.FetchGuildUser(s, g.ID) {
+			if m.User.Bot {
+				continue
+			}
+			wg.Add(1)
+			go func() {
+				utils.SendDebug("Async reducer", "user", m.DisplayName(), "guild", g.Name)
+				c := GetCopaing(m.User.ID, g.ID)
+				XPUpdate(s, c)
+				wg.Done()
+			}()
+		}
+		wg.Wait() // finish the entire guild before starting another
+		utils.SendDebug("Guild finished", "guild", g.Name)
+		time.Sleep(10 * time.Second) // sleep prevents from spamming the Discord API
+	}
+	utils.SendDebug("Periodic reduce finished", "len(guilds)", len(s.State.Guilds))
+}
