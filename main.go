@@ -100,6 +100,21 @@ func main() {
 		HasOption().
 		SetHandler(commands.Top)
 
+	resetCmd := gokord.NewCommand("reset", "Reset l'xp").
+		HasOption().
+		SetHandler(commands.Reset).
+		SetPermission(gokord.AdminPermission)
+
+	resetUserCmd := gokord.NewCommand("reset-user", "Reset l'xp d'un utilisation").
+		HasOption().
+		AddOption(gokord.NewOption(
+			discordgo.ApplicationCommandOptionUser,
+			"copaing",
+			"Copaing a reset",
+		).IsRequired()).
+		SetHandler(commands.ResetUser).
+		SetPermission(gokord.AdminPermission)
+
 	bot := gokord.Bot{
 		Token: token,
 		Status: []*gokord.Status{
@@ -113,6 +128,8 @@ func main() {
 			rankCmd,
 			configCmd,
 			topCmd,
+			resetCmd,
+			resetUserCmd,
 		},
 		AfterInit: afterInit,
 	}
