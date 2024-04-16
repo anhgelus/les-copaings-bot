@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	ConnectedSince = "connected_since"
-	NotConnected   = -1
-	MaxTimeInVocal = 60 * 60 * 6
+	ConnectedSince  = "connected_since"
+	NotConnected    = -1
+	MaxTimeInVocal  = 60 * 60 * 6
+	MaxXpPerMessage = 250
 )
 
 func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -34,7 +35,11 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	trimmed := utils.TrimMessage(strings.ToLower(m.Content))
 	m.Member.User = m.Author
 	m.Member.GuildID = m.GuildID
-	c.AddXP(s, m.Member, XPMessage(uint(len(trimmed)), calcDiversity(trimmed)), func(_ uint, _ uint) {
+	xp := XPMessage(uint(len(trimmed)), calcDiversity(trimmed))
+	if xp > MaxXpPerMessage {
+		xp = MaxXpPerMessage
+	}
+	c.AddXP(s, m.Member, xp, func(_ uint, _ uint) {
 		if err := s.MessageReactionAdd(m.ChannelID, m.Message.ID, "⬆"); err != nil {
 			utils.SendAlert(
 				"xp/events.go - add reaction for new level",
