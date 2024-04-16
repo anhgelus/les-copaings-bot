@@ -125,7 +125,7 @@ func main() {
 			},
 			{
 				Type:    gokord.GameStatus,
-				Content: "Dev par @anhgelus",
+				Content: "dev par @anhgelus",
 				Url:     "",
 			},
 			{
