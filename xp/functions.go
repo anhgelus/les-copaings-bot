@@ -1,6 +1,9 @@
 package xp
 
-import "math"
+import (
+	"github.com/anhgelus/gokord"
+	"math"
+)
 
 func XPMessage(length uint, diversity uint) uint {
 	return uint(math.Floor(
@@ -27,7 +30,12 @@ func XPForLevel(level uint) uint {
 }
 
 func Lose(time uint, xp uint) uint {
+	if gokord.Debug {
+		return uint(math.Floor(
+			math.Pow(float64(time), 3) * math.Pow(10, -2+math.Log(float64(time))) * math.Floor(float64(xp/500)+1),
+		)) // a little bit faster to lose xp
+	}
 	return uint(math.Floor(
-		math.Pow(float64(time), 2) * math.Pow(10, -2+math.Log(float64(time/85))) * math.Floor(float64(xp/500)),
+		math.Pow(float64(time), 2) * math.Pow(10, -2+math.Log(float64(time/85))) * math.Floor(float64(xp/500)+1),
 	))
 }
