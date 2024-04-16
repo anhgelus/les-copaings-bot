@@ -78,11 +78,22 @@ func LastEventUpdate(s *discordgo.Session, c *Copaing) {
 		}
 	}
 	if oldXP != c.XP {
-		c.Save()
 		lvl := Level(c.XP)
-		if Level(oldXP) != Level(c.XP) {
+		if Level(oldXP) != lvl {
+			utils.SendDebug(
+				"Level changed",
+				"old",
+				Level(oldXP),
+				"new",
+				lvl,
+				"discord_id",
+				c.DiscordID,
+				"guild_id",
+				c.GuildID,
+			)
 			c.OnNewLevel(s, lvl)
 		}
+		c.Save()
 	}
 	c.SetLastEvent()
 }
@@ -109,12 +120,23 @@ func XPUpdate(s *discordgo.Session, c *Copaing) {
 		}
 	}
 	if oldXP != c.XP {
-		utils.SendDebug("Save XP", "old", oldXP, "new", c.XP, "user", c.DiscordID)
-		c.Save()
 		lvl := Level(c.XP)
-		if Level(oldXP) != Level(c.XP) {
+		if Level(oldXP) != lvl {
+			utils.SendDebug(
+				"Level updated",
+				"old",
+				Level(oldXP),
+				"new",
+				lvl,
+				"discord_id",
+				c.DiscordID,
+				"guild_id",
+				c.GuildID,
+			)
 			c.OnNewLevel(s, lvl)
 		}
+		utils.SendDebug("Save XP", "old", oldXP, "new", c.XP, "user", c.DiscordID)
+		c.Save()
 	}
 }
 
@@ -127,15 +149,14 @@ func PeriodicReducer(s *discordgo.Session) {
 			}
 			wg.Add(1)
 			go func() {
-				utils.SendDebug("Async reducer", "user", m.DisplayName(), "guild", g.Name)
 				c := GetCopaing(m.User.ID, g.ID)
 				XPUpdate(s, c)
 				wg.Done()
 			}()
 		}
 		wg.Wait() // finish the entire guild before starting another
-		utils.SendDebug("Guild finished", "guild", g.Name)
-		time.Sleep(10 * time.Second) // sleep prevents from spamming the Discord API
+		utils.SendDebug("Periodic reduce, guild finished", "guild", g.Name)
+		time.Sleep(10 * time.Second) // sleep prevents from spamming the Discord API and the database
 	}
 	utils.SendDebug("Periodic reduce finished", "len(guilds)", len(s.State.Guilds))
 }
