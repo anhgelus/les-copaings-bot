@@ -9,7 +9,7 @@ import (
 )
 
 func Top(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	xp.LastEventUpdate(xp.GetCopaing(i.User.ID, i.GuildID))
+	xp.LastEventUpdate(s, xp.GetCopaing(i.User.ID, i.GuildID))
 	resp := utils.ResponseBuilder{C: s, I: i}
 	err := resp.IsDeferred().Send()
 	if err != nil {

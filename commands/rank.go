@@ -10,7 +10,7 @@ import (
 func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	optMap := utils.GenerateOptionMap(i)
 	c := xp.GetCopaing(i.Member.User.ID, i.GuildID) // current copaing = member who used /rank
-	xp.LastEventUpdate(c)                           // update xp and reset last event
+	xp.LastEventUpdate(s, c)                        // update xp and reset last event
 	msg := "Votre niveau"
 	m := i.Member
 	var err error
@@ -41,7 +41,7 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		c.DiscordID = u.ID // current copaing = member targeted by member who wrote /rank
 		c.Load()           // reload copaing (change line before)
-		xp.XPUpdate(c)     // update xp without resetting event
+		xp.XPUpdate(s, c)  // update xp without resetting event
 		msg = fmt.Sprintf("Le niveau de %s", m.DisplayName())
 	}
 	lvl := xp.Level(c.XP)

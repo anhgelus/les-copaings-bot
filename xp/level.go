@@ -43,7 +43,23 @@ func onNewLevel(s *discordgo.Session, m *discordgo.Member, level uint) {
 	}
 }
 
-func LastEventUpdate(c *Copaing) {
+func (c *Copaing) OnNewLevel(s *discordgo.Session, level uint) {
+	m, err := s.GuildMember(c.GuildID, c.DiscordID)
+	if err != nil {
+		utils.SendAlert(
+			"xp/level.go - Getting member for new level",
+			err.Error(),
+			"discord_id",
+			c.DiscordID,
+			"guild_id",
+			c.GuildID,
+		)
+		return
+	}
+	onNewLevel(s, m, level)
+}
+
+func LastEventUpdate(s *discordgo.Session, c *Copaing) {
 	h := c.HourSinceLastEvent()
 	l := Lose(h, c.XP)
 	xp := c.XPAlreadyRemoved()
@@ -61,11 +77,15 @@ func LastEventUpdate(c *Copaing) {
 	}
 	if oldXP != c.XP {
 		c.Save()
+		lvl := Level(c.XP)
+		if Level(oldXP) != Level(c.XP) {
+			c.OnNewLevel(s, lvl)
+		}
 	}
 	c.SetLastEvent()
 }
 
-func XPUpdate(c *Copaing) {
+func XPUpdate(s *discordgo.Session, c *Copaing) {
 	oldXP := c.XP
 	if oldXP == 0 {
 		return
@@ -89,6 +109,10 @@ func XPUpdate(c *Copaing) {
 	if oldXP != c.XP {
 		utils.SendDebug("Save XP", "old", oldXP, "new", c.XP, "user", c.DiscordID)
 		c.Save()
+		lvl := Level(c.XP)
+		if Level(oldXP) != Level(c.XP) {
+			c.OnNewLevel(s, lvl)
+		}
 	}
 }
 
@@ -103,7 +127,7 @@ func XPUpdate(c *Copaing) {
 //			go func() {
 //				utils.SendDebug("Async reducer", "user", m.DisplayName(), "guild", g.Name)
 //				c := GetCopaing(m.User.ID, g.ID)
-//				XPUpdate(c)
+//				XPUpdate(s, c)
 //				wg.Done()
 //			}()
 //		}
