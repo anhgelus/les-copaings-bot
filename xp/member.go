@@ -186,7 +186,7 @@ func (c *Copaing) GetUserBase() *gokord.UserBase {
 }
 
 func (c *Copaing) Reset() {
-	gokord.DB.Where("guild_id = ? AND discord_id", c.GuildID, c.DiscordID).Delete(c)
+	gokord.DB.Where("guild_id = ? AND discord_id = ?", c.GuildID, c.DiscordID).Delete(c)
 }
 
 func getRedisClient() (*redis.Client, error) {

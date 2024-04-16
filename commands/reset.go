@@ -28,8 +28,14 @@ func ResetUser(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	m := v.UserValue(s)
+	if m.Bot {
+		if err := resp.Message("Les bots n'ont pas de niveau :upside_down:").Send(); err != nil {
+			utils.SendAlert("commands/reset.go - Copaing not set", err.Error())
+		}
+		return
+	}
 	xp.GetCopaing(m.ID, i.GuildID).Reset()
-	if err := resp.Message("Le a bien été reset.").Send(); err != nil {
+	if err := resp.Message("Le copaing bien été reset.").Send(); err != nil {
 		utils.SendAlert("commands/reset.go - Sending success (copaing)", err.Error())
 	}
 }
