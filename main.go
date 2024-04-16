@@ -119,8 +119,18 @@ func main() {
 		Token: token,
 		Status: []*gokord.Status{
 			{
+				Type:    gokord.WatchStatus,
+				Content: "Les Copaings",
+				Url:     "",
+			},
+			{
 				Type:    gokord.GameStatus,
-				Content: "Les Copaings Bot 2.0",
+				Content: "Dev par @anhgelus",
+				Url:     "",
+			},
+			{
+				Type:    gokord.ListeningStatus,
+				Content: "http 418, I'm a tea pot",
 				Url:     "",
 			},
 		},
