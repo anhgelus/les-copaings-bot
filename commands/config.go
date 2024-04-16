@@ -29,8 +29,10 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	l = len(disChans) - 1
 	chans := ""
 	for i, c := range disChans {
-		if i != l {
+		if i == l-1 {
 			chans += fmt.Sprintf("> <#%s>", c)
+		} else if i != l {
+			chans += fmt.Sprintf("> <#%s>\n", c)
 		}
 	}
 	if len(chans) == 0 {
