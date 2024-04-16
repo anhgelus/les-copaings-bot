@@ -120,7 +120,18 @@ func main() {
 }
 
 func afterInit(dg *discordgo.Session) {
+	// handlers
 	dg.AddHandler(xp.OnMessage)
 	dg.AddHandler(xp.OnVoiceUpdate)
 	dg.AddHandler(xp.OnLeave)
+
+	// setup timer for periodic reducer
+	//d := 24 * time.Hour
+	//if gokord.Debug {
+	//	// reduce for debug
+	//	d = time.Minute
+	//}
+	//utils.NewTimer(d, func(stop chan struct{}) {
+	//	xp.PeriodicReducer(dg)
+	//})
 }
