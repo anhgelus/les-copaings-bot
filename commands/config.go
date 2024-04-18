@@ -111,6 +111,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	cfg := config.GetGuildConfig(i.GuildID)
 
 	// add or delete or edit
+	var err error
 	switch ts {
 	case "add":
 		for _, r := range cfg.XpRoles {
@@ -126,7 +127,19 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			XP:     exp,
 			RoleID: role.ID,
 		})
-		cfg.Save()
+		err = cfg.Save()
+		if err != nil {
+			utils.SendAlert(
+				"commands/config.go - Saving config",
+				err.Error(),
+				"guild_id",
+				i.GuildID,
+				"role_id",
+				role.ID,
+				"type",
+				"add",
+			)
+		}
 	case "del":
 		_, r := cfg.FindXpRole(role.ID)
 		if r == nil {
@@ -136,7 +149,19 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 			return
 		}
-		gokord.DB.Delete(r)
+		err = gokord.DB.Delete(r).Error
+		if err != nil {
+			utils.SendAlert(
+				"commands/config.go - Deleting entry",
+				err.Error(),
+				"guild_id",
+				i.GuildID,
+				"role_id",
+				role.ID,
+				"type",
+				"del",
+			)
+		}
 	case "edit":
 		_, r := cfg.FindXpRole(role.ID)
 		if r == nil {
@@ -147,7 +172,19 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 		r.XP = exp
-		gokord.DB.Save(r)
+		err = gokord.DB.Save(r).Error
+		if err != nil {
+			utils.SendAlert(
+				"commands/config.go - Saving config",
+				err.Error(),
+				"guild_id",
+				i.GuildID,
+				"role_id",
+				role.ID,
+				"type",
+				"edit",
+			)
+		}
 	default:
 		err := resp.Message("Le type d'action n'est pas valide.").Send()
 		if err != nil {
@@ -155,9 +192,13 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		return
 	}
-	err := resp.Message("La configuration a bien été mise à jour.").Send()
 	if err != nil {
-		utils.SendAlert("commands/config.go - Config updated", err.Error())
+		err = resp.Message("Il y a eu une erreur lors de la modification de de la base de données.").Send()
+	} else {
+		err = resp.Message("La configuration a bien été mise à jour.").Send()
+	}
+	if err != nil {
+		utils.SendAlert("commands/config.go - Config updated message", err.Error())
 	}
 }
 
@@ -212,8 +253,22 @@ func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	// save
-	cfg.Save()
-	err := resp.Message("Modification sauvegardé.").Send()
+	err := cfg.Save()
+	if err != nil {
+		utils.SendAlert(
+			"commands/config.go - Saving config",
+			err.Error(),
+			"guild_id",
+			i.GuildID,
+			"type",
+			ts,
+			"channel_id",
+			channel.ID,
+		)
+		err = resp.Message("Il y a eu une erreur lors de la modification de de la base de données.").Send()
+	} else {
+		err = resp.Message("Modification sauvegardé.").Send()
+	}
 	if err != nil {
 		utils.SendAlert("commands/config.go - Modification saved message", err.Error())
 	}
@@ -243,8 +298,20 @@ func ConfigFallbackChannel(s *discordgo.Session, i *discordgo.InteractionCreate)
 	cfg := config.GetGuildConfig(i.GuildID)
 	cfg.FallbackChannel = channel.ID
 	// save
-	cfg.Save()
-	err := resp.Message("Salon enregistré.").Send()
+	err := cfg.Save()
+	if err != nil {
+		utils.SendAlert(
+			"commands/config.go - Saving config",
+			err.Error(),
+			"guild_id",
+			i.GuildID,
+			"channel_id",
+			channel.ID,
+		)
+		err = resp.Message("Il y a eu une erreur lors de la modification de de la base de données.").Send()
+	} else {
+		err = resp.Message("Salon enregistré.").Send()
+	}
 	if err != nil {
 		utils.SendAlert("commands/config.go - Channel saved message", err.Error())
 	}

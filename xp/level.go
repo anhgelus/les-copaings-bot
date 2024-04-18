@@ -93,7 +93,18 @@ func LastEventUpdate(s *discordgo.Session, c *Copaing) {
 			)
 			c.OnNewLevel(s, lvl)
 		}
-		c.Save()
+		if err := c.Save(); err != nil {
+			utils.SendAlert(
+				"xp/level.go - Saving copaing",
+				err.Error(),
+				"xp",
+				c.XP,
+				"discord_id",
+				c.DiscordID,
+				"guild_id",
+				c.GuildID,
+			)
+		}
 	}
 	c.SetLastEvent()
 }
@@ -136,7 +147,18 @@ func XPUpdate(s *discordgo.Session, c *Copaing) {
 			c.OnNewLevel(s, lvl)
 		}
 		utils.SendDebug("Save XP", "old", oldXP, "new", c.XP, "user", c.DiscordID)
-		c.Save()
+		if err := c.Save(); err != nil {
+			utils.SendAlert(
+				"xp/level.go - Saving copaing",
+				err.Error(),
+				"xp",
+				c.XP,
+				"discord_id",
+				c.DiscordID,
+				"guild_id",
+				c.GuildID,
+			)
+		}
 	}
 }
 

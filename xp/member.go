@@ -16,6 +16,8 @@ import (
 
 type Copaing struct {
 	gorm.Model
+	gokord.RedisBase
+	gokord.DataBase
 	DiscordID string `gorm:"not null"`
 	XP        uint   `gorm:"default:0"`
 	GuildID   string `gorm:"not null"`
@@ -30,22 +32,50 @@ const (
 
 func GetCopaing(discordID string, guildID string) *Copaing {
 	c := Copaing{DiscordID: discordID, GuildID: guildID}
-	return c.Load()
+	if err := c.Load(); err != nil {
+		utils.SendAlert(
+			"xp/member.go - Loading copaing",
+			err.Error(),
+			"discord_id",
+			discordID,
+			"guild_id",
+			guildID,
+		)
+		return nil
+	}
+	return &c
 }
 
-func (c *Copaing) Load() *Copaing {
-	gokord.DB.Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).FirstOrCreate(c)
-	return c
+func (c *Copaing) Load() error {
+	return gokord.DB.Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).FirstOrCreate(c).Error
 }
 
-func (c *Copaing) Save() {
-	gokord.DB.Save(c)
+func (c *Copaing) Save() error {
+	return gokord.DB.Save(c).Error
+}
+
+func (c *Copaing) GenKey(key string) string {
+	return fmt.Sprintf("%s:%s:%s", c.GuildID, c.DiscordID, key)
 }
 
 func (c *Copaing) AddXP(s *discordgo.Session, m *discordgo.Member, xp uint, fn func(uint, uint)) {
 	pastLevel := Level(c.XP)
+	old := c.XP
 	c.XP += xp
-	c.Save()
+	if err := c.Save(); err != nil {
+		utils.SendAlert(
+			"xp/level.go - Saving copaing",
+			err.Error(),
+			"xp",
+			c.XP,
+			"discord_id",
+			c.DiscordID,
+			"guild_id",
+			c.GuildID,
+		)
+		c.XP = old
+		return
+	}
 	newLevel := Level(c.XP)
 	if newLevel > pastLevel {
 		fn(c.XP, newLevel)
@@ -59,24 +89,22 @@ func (c *Copaing) SetLastEvent() {
 		utils.SendAlert("xp/member.go - Getting redis client (set)", err.Error())
 		return
 	}
-	u := c.GetUserBase()
 	t := time.Now().Unix()
-	err = client.Set(context.Background(), fmt.Sprintf(
-		"%s:%s",
-		u.GenKey(),
-		LastEvent,
-	), strconv.FormatInt(t, 10), 0).Err()
+	err = client.Set(context.Background(), c.GenKey(LastEvent), strconv.FormatInt(t, 10), 0).Err()
 	if err != nil {
-		utils.SendAlert("xp/member.go - Setting last event", err.Error(), "time", t, "base_key", u.GenKey())
+		utils.SendAlert("xp/member.go - Setting last event", err.Error(), "time", t, "base_key", c.GenKey(""))
 		return
 	}
-	err = client.Set(context.Background(), fmt.Sprintf(
-		"%s:%s",
-		u.GenKey(),
-		AlreadyRemoved,
-	), "0", 0).Err()
+	err = client.Set(context.Background(), c.GenKey(AlreadyRemoved), "0", 0).Err()
 	if err != nil {
-		utils.SendAlert("xp/member.go - Setting already removed to 0", err.Error(), "time", t, "base_key", u.GenKey())
+		utils.SendAlert(
+			"xp/member.go - Setting already removed to 0",
+			err.Error(),
+			"time",
+			t,
+			"base_key",
+			c.GenKey(""),
+		)
 		return
 	}
 }
@@ -87,12 +115,11 @@ func (c *Copaing) HourSinceLastEvent() uint {
 		utils.SendAlert("xp/member.go - Getting redis client (get)", err.Error())
 		return 0
 	}
-	u := c.GetUserBase()
-	res := client.Get(context.Background(), fmt.Sprintf("%s:%s", u.GenKey(), LastEvent))
+	res := client.Get(context.Background(), fmt.Sprintf("%s:%s", c.GenKey(""), LastEvent))
 	if errors.Is(res.Err(), redis.Nil) {
 		return 0
 	} else if res.Err() != nil {
-		utils.SendAlert("xp/member.go - Getting last event", res.Err().Error(), "base_key", u.GenKey())
+		utils.SendAlert("xp/member.go - Getting last event", res.Err().Error(), "base_key", c.GenKey(""))
 		return 0
 	}
 	t := time.Now().Unix()
@@ -102,7 +129,7 @@ func (c *Copaing) HourSinceLastEvent() uint {
 			"xp/member.go - Converting time fetched into int (last event)",
 			err.Error(),
 			"base_key",
-			u.GenKey(),
+			c.GenKey(""),
 			"val",
 			res.Val(),
 		)
@@ -120,13 +147,8 @@ func (c *Copaing) AddXPAlreadyRemoved(xp uint) uint {
 		utils.SendAlert("xp/member.go - Getting redis client (set)", err.Error())
 		return 0
 	}
-	u := c.GetUserBase()
 	exp := xp + c.XPAlreadyRemoved()
-	err = client.Set(context.Background(), fmt.Sprintf(
-		"%s:%s",
-		u.GenKey(),
-		AlreadyRemoved,
-	), exp, 0).Err()
+	err = client.Set(context.Background(), c.GenKey(AlreadyRemoved), exp, 0).Err()
 	if err != nil {
 		utils.SendAlert(
 			"xp/member.go - Setting already removed",
@@ -134,7 +156,7 @@ func (c *Copaing) AddXPAlreadyRemoved(xp uint) uint {
 			"xp already removed",
 			exp,
 			"base_key",
-			u.GenKey(),
+			c.GenKey(""),
 		)
 		return 0
 	}
@@ -147,12 +169,11 @@ func (c *Copaing) XPAlreadyRemoved() uint {
 		utils.SendAlert("xp/member.go - Getting redis client (xp)", err.Error())
 		return 0
 	}
-	u := c.GetUserBase()
-	res := client.Get(context.Background(), fmt.Sprintf("%s:%s", u.GenKey(), AlreadyRemoved))
+	res := client.Get(context.Background(), fmt.Sprintf("%s:%s", c.GenKey(""), AlreadyRemoved))
 	if errors.Is(res.Err(), redis.Nil) {
 		return 0
 	} else if res.Err() != nil {
-		utils.SendAlert("xp/member.go - Getting already removed", res.Err().Error(), "base_key", u.GenKey())
+		utils.SendAlert("xp/member.go - Getting already removed", res.Err().Error(), "base_key", c.GenKey(""))
 		return 0
 	}
 	xp, err := strconv.Atoi(res.Val())
@@ -161,7 +182,7 @@ func (c *Copaing) XPAlreadyRemoved() uint {
 			"xp/member.go - Converting time fetched into int (already removed)",
 			err.Error(),
 			"base_key",
-			u.GenKey(),
+			c.GenKey(""),
 			"val",
 			res.Val(),
 		)
@@ -172,17 +193,13 @@ func (c *Copaing) XPAlreadyRemoved() uint {
 			"xp/member.go - Assertion xp >= 0",
 			"xp is negative",
 			"base_key",
-			u.GenKey(),
+			c.GenKey(""),
 			"xp",
 			xp,
 		)
 		return 0
 	}
 	return uint(xp)
-}
-
-func (c *Copaing) GetUserBase() *gokord.UserBase {
-	return &gokord.UserBase{DiscordID: c.DiscordID, GuildID: c.GuildID}
 }
 
 func (c *Copaing) Reset() {

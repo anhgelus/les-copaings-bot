@@ -2,12 +2,14 @@ package config
 
 import (
 	"github.com/anhgelus/gokord"
+	"github.com/anhgelus/gokord/utils"
 	"gorm.io/gorm"
 	"strings"
 )
 
 type GuildConfig struct {
 	gorm.Model
+	gokord.DataBase
 	GuildID          string `gorm:"not null"`
 	XpRoles          []XpRole
 	DisabledChannels string
@@ -23,16 +25,19 @@ type XpRole struct {
 
 func GetGuildConfig(guildID string) *GuildConfig {
 	cfg := GuildConfig{GuildID: guildID}
-	return cfg.Load()
+	if err := cfg.Load(); err != nil {
+		utils.SendAlert("config/guild.go - Loading guild config", err.Error(), "guild_id", guildID)
+		return nil
+	}
+	return &cfg
 }
 
-func (cfg *GuildConfig) Load() *GuildConfig {
-	gokord.DB.Where("guild_id = ?", cfg.GuildID).Preload("XpRoles").FirstOrCreate(cfg)
-	return cfg
+func (cfg *GuildConfig) Load() error {
+	return gokord.DB.Where("guild_id = ?", cfg.GuildID).Preload("XpRoles").FirstOrCreate(cfg).Error
 }
 
-func (cfg *GuildConfig) Save() {
-	gokord.DB.Save(cfg)
+func (cfg *GuildConfig) Save() error {
+	return gokord.DB.Save(cfg).Error
 }
 
 func (cfg *GuildConfig) IsDisabled(channelID string) bool {
