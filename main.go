@@ -13,6 +13,10 @@ import (
 
 var token string
 
+const (
+	Version = "2.2.0" // git version: 0.2.0 (it's the v2 of the bot)
+)
+
 func init() {
 	flag.StringVar(&token, "token", "", "token of the bot")
 	flag.Parse()
@@ -125,17 +129,18 @@ func main() {
 			{
 				Type:    gokord.WatchStatus,
 				Content: "Les Copaings",
-				Url:     "",
 			},
 			{
 				Type:    gokord.GameStatus,
 				Content: "dev par @anhgelus",
-				Url:     "",
 			},
 			{
 				Type:    gokord.ListeningStatus,
 				Content: "http 418, I'm a tea pot",
-				Url:     "",
+			},
+			{
+				Type:    gokord.GameStatus,
+				Content: "Les Copaings Bot " + Version,
 			},
 		},
 		Commands: []*gokord.GeneralCommand{
