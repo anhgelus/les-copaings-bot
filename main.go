@@ -14,7 +14,7 @@ import (
 var token string
 
 const (
-	Version = "2.2.0" // git version: 0.2.0 (it's the v2 of the bot)
+	Version = "2.2.1" // git version: 0.2.1 (it's the v2 of the bot)
 )
 
 func init() {
