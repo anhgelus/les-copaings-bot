@@ -16,8 +16,6 @@ import (
 
 type Copaing struct {
 	gorm.Model
-	gokord.RedisBase
-	gokord.DataBase
 	DiscordID string `gorm:"not null"`
 	XP        uint   `gorm:"default:0"`
 	GuildID   string `gorm:"not null"`

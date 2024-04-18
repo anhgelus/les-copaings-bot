@@ -9,7 +9,6 @@ import (
 
 type GuildConfig struct {
 	gorm.Model
-	gokord.DataBase
 	GuildID          string `gorm:"not null"`
 	XpRoles          []XpRole
 	DisabledChannels string
