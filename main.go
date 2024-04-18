@@ -115,6 +115,10 @@ func main() {
 		SetHandler(commands.ResetUser).
 		SetPermission(gokord.AdminPermission)
 
+	creditsCmd := gokord.NewCommand("credits", "Crédits").
+		HasOption().
+		SetHandler(commands.Credits)
+
 	bot := gokord.Bot{
 		Token: token,
 		Status: []*gokord.Status{
@@ -140,6 +144,7 @@ func main() {
 			topCmd,
 			resetCmd,
 			resetUserCmd,
+			creditsCmd,
 		},
 		AfterInit: afterInit,
 	}
