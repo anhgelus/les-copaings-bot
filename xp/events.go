@@ -86,10 +86,10 @@ func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 }
 
 func onConnection(_ *discordgo.Session, e *discordgo.VoiceStateUpdate, client *redis.Client) {
-	u := gokord.UserBase{DiscordID: e.UserID, GuildID: e.GuildID}
+	c := GetCopaing(e.UserID, e.GuildID)
 	err := client.Set(
 		context.Background(),
-		fmt.Sprintf("%s:%s", u.GenKey(), ConnectedSince),
+		c.GenKey(ConnectedSince),
 		strconv.FormatInt(time.Now().Unix(), 10),
 		0,
 	).Err()
@@ -100,8 +100,8 @@ func onConnection(_ *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 
 func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *redis.Client) {
 	now := time.Now().Unix()
-	u := gokord.UserBase{DiscordID: e.UserID, GuildID: e.GuildID}
-	key := fmt.Sprintf("%s:%s", u.GenKey(), ConnectedSince)
+	c := GetCopaing(e.UserID, e.GuildID)
+	key := c.GenKey(ConnectedSince)
 	res := client.Get(context.Background(), key)
 	// check validity of user (1)
 	if errors.Is(res.Err(), redis.Nil) {
@@ -146,7 +146,6 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 		utils.SendWarn(fmt.Sprintf("User %s spent more than 6 hours in vocal", e.Member.DisplayName()))
 		timeInVocal = MaxTimeInVocal
 	}
-	c := GetCopaing(u.DiscordID, u.GuildID)
 	e.Member.GuildID = e.GuildID
 	c.AddXP(s, e.Member, XPVocal(uint(timeInVocal)), func(_ uint, newLevel uint) {
 		cfg := config.GetGuildConfig(e.GuildID)
