@@ -3,10 +3,10 @@ module github.com/anhgelus/les-copaings-bot
 go 1.22
 
 require (
-	github.com/anhgelus/gokord v0.3.0
+	github.com/anhgelus/gokord v0.4.0
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/redis/go-redis/v9 v9.5.1
-	gorm.io/gorm v1.25.9
+	gorm.io/gorm v1.25.10
 )
 
 require (

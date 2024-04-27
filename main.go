@@ -11,14 +11,23 @@ import (
 	"time"
 )
 
-var token string
+var (
+	token               string
+	forgeCmdRegistering bool
+)
 
 const (
-	Version = "2.2.2" // git version: 0.2.2 (it's the v2 of the bot)
+	Version = "2.2.3" // git version: 0.2.3 (it's the v2 of the bot)
 )
 
 func init() {
 	flag.StringVar(&token, "token", "", "token of the bot")
+	flag.BoolVar(
+		&forgeCmdRegistering,
+		"forge-command-registering",
+		false,
+		"force the registration of command",
+	)
 	flag.Parse()
 }
 
@@ -32,6 +41,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	adm := gokord.AdminPermission
 
 	rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'un copaing").
 		HasOption().
@@ -98,7 +109,7 @@ func main() {
 					"Salon textuel par défaut",
 				).IsRequired()).
 				SetHandler(commands.ConfigFallbackChannel),
-		).SetPermission(gokord.AdminPermission)
+		).SetPermission(&adm)
 
 	topCmd := gokord.NewCommand("top", "Copaings les plus actifs").
 		HasOption().
@@ -107,7 +118,7 @@ func main() {
 	resetCmd := gokord.NewCommand("reset", "Reset l'xp").
 		HasOption().
 		SetHandler(commands.Reset).
-		SetPermission(gokord.AdminPermission)
+		SetPermission(&adm)
 
 	resetUserCmd := gokord.NewCommand("reset-user", "Reset l'xp d'un utilisation").
 		HasOption().
@@ -117,7 +128,7 @@ func main() {
 			"Copaing a reset",
 		).IsRequired()).
 		SetHandler(commands.ResetUser).
-		SetPermission(gokord.AdminPermission)
+		SetPermission(&adm)
 
 	creditsCmd := gokord.NewCommand("credits", "Crédits").
 		HasOption().
@@ -153,7 +164,7 @@ func main() {
 		},
 		AfterInit: afterInit,
 	}
-	bot.Start()
+	bot.Start(forgeCmdRegistering)
 
 	xp.CloseRedisClient()
 }
