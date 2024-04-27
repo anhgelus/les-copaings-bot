@@ -24,4 +24,5 @@ go.work
 .idea
 .env
 tmp
-
+config/**.toml
+data

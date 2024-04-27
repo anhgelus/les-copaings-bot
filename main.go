@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	token               string
-	forgeCmdRegistering bool
+	token                string
+	forceCmdRegistration bool
 )
 
 const (
@@ -23,8 +23,8 @@ const (
 func init() {
 	flag.StringVar(&token, "token", "", "token of the bot")
 	flag.BoolVar(
-		&forgeCmdRegistering,
-		"forge-command-registering",
+		&forceCmdRegistration,
+		"forge-command-registration",
 		false,
 		"force the registration of command",
 	)
@@ -164,7 +164,7 @@ func main() {
 		},
 		AfterInit: afterInit,
 	}
-	bot.Start(forgeCmdRegistering)
+	bot.Start(forceCmdRegistration)
 
 	xp.CloseRedisClient()
 }
