@@ -87,8 +87,8 @@ func main() {
 					"type",
 					"Type d'action à effectuer",
 				).
-					AddChoice(gokord.NewChoice("Désactiver", "add")).
-					AddChoice(gokord.NewChoice("Activer", "del")).IsRequired(),
+					AddChoice(gokord.NewChoice("Désactiver le salon", "add")).
+					AddChoice(gokord.NewChoice("Activer le salon", "del")).IsRequired(),
 				).
 				AddOption(gokord.NewOption(
 					discordgo.ApplicationCommandOptionChannel,
