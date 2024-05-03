@@ -4,7 +4,9 @@
     "commands": {
       "added": [],
       "removed": [],
-      "updated": []
+      "updated": [
+        "config"
+      ]
     }
   }
 ]
