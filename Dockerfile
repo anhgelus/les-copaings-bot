@@ -10,6 +10,4 @@ RUN go mod tidy && go build -o app .
 
 ENV TOKEN=""
 
-ENV FORCE_COMMAND_REGISTRATION="false"
-
-CMD ./app -token $TOKEN -forge-command-registration $FORCE_COMMAND_REGISTRATION
+CMD ./app -token $TOKEN

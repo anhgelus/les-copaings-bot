@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"flag"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
@@ -12,22 +13,18 @@ import (
 )
 
 var (
-	token                string
-	forceCmdRegistration bool
-)
-
-const (
-	Version = "2.2.3" // git version: 0.2.3 (it's the v2 of the bot)
+	token string
+	//go:embed updates.json
+	updatesData []byte
+	Version     = gokord.Version{
+		Major: 2,
+		Minor: 3,
+		Patch: 0,
+	} // git version: 0.3.0 (it's the v2 of the bot)
 )
 
 func init() {
 	flag.StringVar(&token, "token", "", "token of the bot")
-	flag.BoolVar(
-		&forceCmdRegistration,
-		"forge-command-registration",
-		false,
-		"force the registration of command",
-	)
 	flag.Parse()
 }
 
@@ -134,6 +131,11 @@ func main() {
 		HasOption().
 		SetHandler(commands.Credits)
 
+	innovations, err := gokord.LoadInnovationFromJson(updatesData)
+	if err != nil {
+		panic(err)
+	}
+
 	bot := gokord.Bot{
 		Token: token,
 		Status: []*gokord.Status{
@@ -143,7 +145,7 @@ func main() {
 			},
 			{
 				Type:    gokord.GameStatus,
-				Content: "dev par @anhgelus",
+				Content: "être dev par @anhgelus",
 			},
 			{
 				Type:    gokord.ListeningStatus,
@@ -151,7 +153,7 @@ func main() {
 			},
 			{
 				Type:    gokord.GameStatus,
-				Content: "Les Copaings Bot " + Version,
+				Content: "Les Copaings Bot " + Version.String(),
 			},
 		},
 		Commands: []*gokord.GeneralCommand{
@@ -162,9 +164,11 @@ func main() {
 			resetUserCmd,
 			creditsCmd,
 		},
-		AfterInit: afterInit,
+		AfterInit:   afterInit,
+		Innovations: innovations,
+		Version:     &Version,
 	}
-	bot.Start(forceCmdRegistration)
+	bot.Start()
 
 	xp.CloseRedisClient()
 }

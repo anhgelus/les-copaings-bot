@@ -3,7 +3,7 @@ module github.com/anhgelus/les-copaings-bot
 go 1.22
 
 require (
-	github.com/anhgelus/gokord v0.4.0
+	github.com/anhgelus/gokord v0.5.0
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/redis/go-redis/v9 v9.5.1
 	gorm.io/gorm v1.25.10
@@ -19,7 +19,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/pelletier/go-toml/v2 v2.2.1 // indirect
+	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
