@@ -39,20 +39,8 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 			return
 		}
-		c.DiscordID = u.ID // current copaing = member targeted by member who wrote /rank
-		err = c.Load()     // reload copaing (change line before)
-		if err != nil {
-			utils.SendAlert(
-				"commands/rank.go - Loading copaing",
-				err.Error(),
-				"discord_id",
-				u.ID,
-				"guild_id",
-				i.GuildID,
-			)
-			return
-		}
-		xp.XPUpdate(s, c) // update xp without resetting event
+		c = xp.GetCopaing(u.ID, i.GuildID) // current copaing = member targeted by member who wrote /rank
+		xp.XPUpdate(s, c)                  // update xp without resetting event
 		msg = fmt.Sprintf("Le niveau de %s", m.DisplayName())
 	}
 	lvl := xp.Level(c.XP)
