@@ -165,7 +165,10 @@ func XPUpdate(s *discordgo.Session, c *Copaing) {
 func PeriodicReducer(s *discordgo.Session) {
 	var wg sync.WaitGroup
 	for _, g := range s.State.Guilds {
-		for _, m := range utils.FetchGuildUser(s, g.ID) {
+		for i, m := range utils.FetchGuildUser(s, g.ID) {
+			if i%50 == 49 {
+				time.Sleep(15 * time.Second) // sleep prevents from spamming the Discord API and the database
+			}
 			if m.User.Bot {
 				continue
 			}
@@ -178,7 +181,7 @@ func PeriodicReducer(s *discordgo.Session) {
 		}
 		wg.Wait() // finish the entire guild before starting another
 		utils.SendDebug("Periodic reduce, guild finished", "guild", g.Name)
-		time.Sleep(10 * time.Second) // sleep prevents from spamming the Discord API and the database
+		time.Sleep(15 * time.Second) // sleep prevents from spamming the Discord API and the database
 	}
 	utils.SendDebug("Periodic reduce finished", "len(guilds)", len(s.State.Guilds))
 }
