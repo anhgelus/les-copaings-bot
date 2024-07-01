@@ -113,7 +113,7 @@ func (c *Copaing) HourSinceLastEvent() uint {
 		utils.SendAlert("xp/member.go - Getting redis client (get)", err.Error())
 		return 0
 	}
-	res := client.Get(context.Background(), fmt.Sprintf("%s:%s", c.GenKey(""), LastEvent))
+	res := client.Get(context.Background(), c.GenKey(LastEvent))
 	if errors.Is(res.Err(), redis.Nil) {
 		return 0
 	} else if res.Err() != nil {
