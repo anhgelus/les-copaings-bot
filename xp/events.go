@@ -70,22 +70,26 @@ func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	}
 	LastEventUpdate(s, GetCopaing(e.UserID, e.GuildID))
 	cfg := config.GetGuildConfig(e.GuildID)
-	if cfg.IsDisabled(e.ChannelID) {
-		return
-	}
 	client, err := getRedisClient()
 	if err != nil {
 		utils.SendAlert("xp/events.go - Getting redis client", err.Error())
 		return
 	}
-	if e.BeforeUpdate == nil {
+	if e.BeforeUpdate == nil && e.ChannelID != "" {
+		if cfg.IsDisabled(e.ChannelID) {
+			return
+		}
 		onConnection(s, e, client)
-	} else {
+	} else if e.BeforeUpdate != nil && e.ChannelID == "" {
+		if cfg.IsDisabled(e.BeforeUpdate.ChannelID) {
+			return
+		}
 		onDisconnect(s, e, client)
 	}
 }
 
 func onConnection(_ *discordgo.Session, e *discordgo.VoiceStateUpdate, client *redis.Client) {
+	utils.SendDebug("User connected", "username", e.Member.DisplayName())
 	c := GetCopaing(e.UserID, e.GuildID)
 	err := client.Set(
 		context.Background(),
@@ -132,6 +136,7 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 		))
 		return
 	}
+	utils.SendDebug("User disconnected", "username", e.Member.DisplayName(), "since", con)
 	err = client.Set(context.Background(), key, strconv.Itoa(NotConnected), 0).Err()
 	if err != nil {
 		utils.SendAlert("xp/events.go - Set connected_since to not connected", err.Error())
