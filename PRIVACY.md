@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-> [!info]
+> [!NOTE]
 > This privacy policy is in French, because I'm French. Feel free to translate this into your own language.
 
 Le robot Discord nommé "Les Copaings Bot" ("bot") suit cette politique de confidentialité.
