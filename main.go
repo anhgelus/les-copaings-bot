@@ -19,8 +19,8 @@ var (
 	Version     = gokord.Version{
 		Major: 2,
 		Minor: 3,
-		Patch: 1,
-	} // git version: 0.3.1 (it's the v2 of the bot)
+		Patch: 2,
+	} // git version: 0.3.2 (it's the v2 of the bot)
 )
 
 func init() {
