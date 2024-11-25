@@ -1,6 +1,7 @@
 package xp
 
 import (
+	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/bwmarrin/discordgo"
@@ -165,16 +166,74 @@ func XPUpdate(s *discordgo.Session, c *Copaing) {
 func PeriodicReducer(s *discordgo.Session) {
 	var wg sync.WaitGroup
 	for _, g := range s.State.Guilds {
-		for i, m := range utils.FetchGuildUser(s, g.ID) {
+		var cs []*Copaing
+		err := gokord.DB.Where("guild_id = ?", g.ID).Find(&cs).Error
+		if err != nil {
+			utils.SendAlert("xp/level.go - Querying all copaings in Guild", err.Error(), "guild_id", g.ID)
+			continue
+		}
+		for i, c := range cs {
 			if i%50 == 49 {
 				time.Sleep(15 * time.Second) // sleep prevents from spamming the Discord API and the database
 			}
-			if m.User.Bot {
+			var u *discordgo.User
+			u, err = s.User(c.DiscordID)
+			if err != nil {
+				utils.SendAlert(
+					"xp/level.go - Fetching user",
+					err.Error(),
+					"discord_id",
+					c.DiscordID,
+					"guild_id",
+					g.ID,
+				)
+				utils.SendWarn("Removing user from database", "discord_id", c.DiscordID)
+				if gokord.DB.Delete(c).Error != nil {
+					utils.SendAlert(
+						"xp/level.go - Removing user from database",
+						err.Error(),
+						"discord_id",
+						c.DiscordID,
+						"guild_id",
+						g.ID,
+					)
+				}
+				continue
+			}
+			if u.Bot {
+				continue
+			}
+			_, err = s.GuildMember(g.ID, c.DiscordID)
+			if err != nil {
+				utils.SendAlert(
+					"xp/level.go - Fetching member",
+					err.Error(),
+					"discord_id",
+					c.DiscordID,
+					"guild_id",
+					g.ID,
+				)
+				utils.SendWarn(
+					"Removing user from guild in database",
+					"discord_id",
+					c.DiscordID,
+					"guild_id",
+					g.ID,
+				)
+				if gokord.DB.Where("guild_id = ?", g.ID).Delete(c).Error != nil {
+					utils.SendAlert(
+						"xp/level.go - Removing user from guild in database",
+						err.Error(),
+						"discord_id",
+						c.DiscordID,
+						"guild_id",
+						g.ID,
+					)
+				}
 				continue
 			}
 			wg.Add(1)
 			go func() {
-				c := GetCopaing(m.User.ID, g.ID)
 				XPUpdate(s, c)
 				wg.Done()
 			}()
