@@ -207,7 +207,7 @@ func (c *Copaing) Reset() {
 func getRedisClient() (*redis.Client, error) {
 	if redisClient == nil {
 		var err error
-		redisClient, err = gokord.BaseCfg.Redis.Get()
+		redisClient, err = gokord.BaseCfg.GetRedisCredentials().Connect()
 		return redisClient, err
 	}
 	return redisClient, nil

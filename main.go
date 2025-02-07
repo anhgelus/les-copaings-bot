@@ -19,8 +19,8 @@ var (
 	Version     = gokord.Version{
 		Major: 2,
 		Minor: 3,
-		Patch: 3,
-	} // git version: 0.3.3 (it's the v2 of the bot)
+		Patch: 4,
+	} // git version: 0.3.4 (it's the v2 of the bot)
 )
 
 func init() {
@@ -29,7 +29,7 @@ func init() {
 }
 
 func main() {
-	err := gokord.SetupConfigs([]*gokord.ConfigInfo{})
+	err := gokord.SetupConfigs(nil, []*gokord.ConfigInfo{})
 	if err != nil {
 		panic(err)
 	}
