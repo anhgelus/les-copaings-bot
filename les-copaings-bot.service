@@ -1,0 +1,11 @@
+[Unit]
+Description=Les Copaings' Discord bot
+After=postgresql.service
+
+[Service]
+ExecStart=
+Type=exec
+Restart=always
+
+[Install]
+WantedBy=default.target
