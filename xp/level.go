@@ -10,35 +10,29 @@ import (
 	"time"
 )
 
-func onNewLevel(s *discordgo.Session, m *discordgo.Member, level uint) {
+func onNewLevel(dg *discordgo.Session, m *discordgo.Member, level uint) {
 	cfg := config.GetGuildConfig(m.GuildID)
 	xpForLevel := XPForLevel(level)
 	for _, role := range cfg.XpRoles {
 		if role.XP <= xpForLevel && !slices.Contains(m.Roles, role.RoleID) {
 			utils.SendDebug(
 				"Add role",
-				"role_id",
-				role.RoleID,
-				"user_id",
-				m.User.ID,
-				"guild_id",
-				m.GuildID,
+				"role_id", role.RoleID,
+				"user_id", m.User.ID,
+				"guild_id", m.GuildID,
 			)
-			err := s.GuildMemberRoleAdd(m.GuildID, m.User.ID, role.RoleID)
+			err := dg.GuildMemberRoleAdd(m.GuildID, m.User.ID, role.RoleID)
 			if err != nil {
 				utils.SendAlert("xp/level.go - Adding role", err.Error(), "role_id", role.RoleID)
 			}
 		} else if role.XP > xpForLevel && slices.Contains(m.Roles, role.RoleID) {
 			utils.SendDebug(
 				"Remove role",
-				"role_id",
-				role.RoleID,
-				"user_id",
-				m.User.ID,
-				"guild_id",
-				m.GuildID,
+				"role_id", role.RoleID,
+				"user_id", m.User.ID,
+				"guild_id", m.GuildID,
 			)
-			err := s.GuildMemberRoleRemove(m.GuildID, m.User.ID, role.RoleID)
+			err := dg.GuildMemberRoleRemove(m.GuildID, m.User.ID, role.RoleID)
 			if err != nil {
 				utils.SendAlert("xp/level.go - Removing role", err.Error(), "role_id", role.RoleID)
 			}
@@ -46,23 +40,20 @@ func onNewLevel(s *discordgo.Session, m *discordgo.Member, level uint) {
 	}
 }
 
-func (c *Copaing) OnNewLevel(s *discordgo.Session, level uint) {
-	m, err := s.GuildMember(c.GuildID, c.DiscordID)
+func (c *Copaing) OnNewLevel(dg *discordgo.Session, level uint) {
+	m, err := dg.GuildMember(c.GuildID, c.DiscordID)
 	if err != nil {
 		utils.SendAlert(
-			"xp/level.go - Getting member for new level",
-			err.Error(),
-			"discord_id",
-			c.DiscordID,
-			"guild_id",
-			c.GuildID,
+			"xp/level.go - Getting member for new level", err.Error(),
+			"discord_id", c.DiscordID,
+			"guild_id", c.GuildID,
 		)
 		return
 	}
-	onNewLevel(s, m, level)
+	onNewLevel(dg, m, level)
 }
 
-func LastEventUpdate(s *discordgo.Session, c *Copaing) {
+func LastEventUpdate(dg *discordgo.Session, c *Copaing) {
 	h := c.HourSinceLastEvent()
 	l := Lose(h, c.XP)
 	xp := c.XPAlreadyRemoved()
@@ -83,34 +74,26 @@ func LastEventUpdate(s *discordgo.Session, c *Copaing) {
 		if Level(oldXP) != lvl {
 			utils.SendDebug(
 				"Level changed",
-				"old",
-				Level(oldXP),
-				"new",
-				lvl,
-				"discord_id",
-				c.DiscordID,
-				"guild_id",
-				c.GuildID,
+				"old", Level(oldXP),
+				"new", lvl,
+				"discord_id", c.DiscordID,
+				"guild_id", c.GuildID,
 			)
-			c.OnNewLevel(s, lvl)
+			c.OnNewLevel(dg, lvl)
 		}
 		if err := c.Save(); err != nil {
 			utils.SendAlert(
-				"xp/level.go - Saving copaing",
-				err.Error(),
-				"xp",
-				c.XP,
-				"discord_id",
-				c.DiscordID,
-				"guild_id",
-				c.GuildID,
+				"xp/level.go - Saving copaing", err.Error(),
+				"xp", c.XP,
+				"discord_id", c.DiscordID,
+				"guild_id", c.GuildID,
 			)
 		}
 	}
 	c.SetLastEvent()
 }
 
-func XPUpdate(s *discordgo.Session, c *Copaing) {
+func XPUpdate(dg *discordgo.Session, c *Copaing) {
 	oldXP := c.XP
 	if oldXP == 0 {
 		return
@@ -136,36 +119,28 @@ func XPUpdate(s *discordgo.Session, c *Copaing) {
 		if Level(oldXP) != lvl {
 			utils.SendDebug(
 				"Level updated",
-				"old",
-				Level(oldXP),
-				"new",
-				lvl,
-				"discord_id",
-				c.DiscordID,
-				"guild_id",
-				c.GuildID,
+				"old", Level(oldXP),
+				"new", lvl,
+				"discord_id", c.DiscordID,
+				"guild_id", c.GuildID,
 			)
-			c.OnNewLevel(s, lvl)
+			c.OnNewLevel(dg, lvl)
 		}
 		utils.SendDebug("Save XP", "old", oldXP, "new", c.XP, "user", c.DiscordID)
 		if err := c.Save(); err != nil {
 			utils.SendAlert(
-				"xp/level.go - Saving copaing",
-				err.Error(),
-				"xp",
-				c.XP,
-				"discord_id",
-				c.DiscordID,
-				"guild_id",
-				c.GuildID,
+				"xp/level.go - Saving copaing", err.Error(),
+				"xp", c.XP,
+				"discord_id", c.DiscordID,
+				"guild_id", c.GuildID,
 			)
 		}
 	}
 }
 
-func PeriodicReducer(s *discordgo.Session) {
+func PeriodicReducer(dg *discordgo.Session) {
 	var wg sync.WaitGroup
-	for _, g := range s.State.Guilds {
+	for _, g := range dg.State.Guilds {
 		var cs []*Copaing
 		err := gokord.DB.Where("guild_id = ?", g.ID).Find(&cs).Error
 		if err != nil {
@@ -177,25 +152,19 @@ func PeriodicReducer(s *discordgo.Session) {
 				time.Sleep(15 * time.Second) // sleep prevents from spamming the Discord API and the database
 			}
 			var u *discordgo.User
-			u, err = s.User(c.DiscordID)
+			u, err = dg.User(c.DiscordID)
 			if err != nil {
 				utils.SendAlert(
-					"xp/level.go - Fetching user",
-					err.Error(),
-					"discord_id",
-					c.DiscordID,
-					"guild_id",
-					g.ID,
+					"xp/level.go - Fetching user", err.Error(),
+					"discord_id", c.DiscordID,
+					"guild_id", g.ID,
 				)
 				utils.SendWarn("Removing user from database", "discord_id", c.DiscordID)
-				if gokord.DB.Delete(c).Error != nil {
+				if err = gokord.DB.Delete(c).Error; err != nil {
 					utils.SendAlert(
-						"xp/level.go - Removing user from database",
-						err.Error(),
-						"discord_id",
-						c.DiscordID,
-						"guild_id",
-						g.ID,
+						"xp/level.go - Removing user from database", err.Error(),
+						"discord_id", c.DiscordID,
+						"guild_id", g.ID,
 					)
 				}
 				continue
@@ -203,38 +172,29 @@ func PeriodicReducer(s *discordgo.Session) {
 			if u.Bot {
 				continue
 			}
-			_, err = s.GuildMember(g.ID, c.DiscordID)
-			if err != nil {
+			if _, err = dg.GuildMember(g.ID, c.DiscordID); err != nil {
 				utils.SendAlert(
-					"xp/level.go - Fetching member",
-					err.Error(),
-					"discord_id",
-					c.DiscordID,
-					"guild_id",
-					g.ID,
+					"xp/level.go - Fetching member", err.Error(),
+					"discord_id", c.DiscordID,
+					"guild_id", g.ID,
 				)
 				utils.SendWarn(
 					"Removing user from guild in database",
-					"discord_id",
-					c.DiscordID,
-					"guild_id",
-					g.ID,
+					"discord_id", c.DiscordID,
+					"guild_id", g.ID,
 				)
-				if gokord.DB.Where("guild_id = ?", g.ID).Delete(c).Error != nil {
+				if err = gokord.DB.Where("guild_id = ?", g.ID).Delete(c).Error; err != nil {
 					utils.SendAlert(
-						"xp/level.go - Removing user from guild in database",
-						err.Error(),
-						"discord_id",
-						c.DiscordID,
-						"guild_id",
-						g.ID,
+						"xp/level.go - Removing user from guild in database", err.Error(),
+						"discord_id", c.DiscordID,
+						"guild_id", g.ID,
 					)
 				}
 				continue
 			}
 			wg.Add(1)
 			go func() {
-				XPUpdate(s, c)
+				XPUpdate(dg, c)
 				wg.Done()
 			}()
 		}
@@ -242,5 +202,5 @@ func PeriodicReducer(s *discordgo.Session) {
 		utils.SendDebug("Periodic reduce, guild finished", "guild", g.Name)
 		time.Sleep(15 * time.Second) // sleep prevents from spamming the Discord API and the database
 	}
-	utils.SendDebug("Periodic reduce finished", "len(guilds)", len(s.State.Guilds))
+	utils.SendDebug("Periodic reduce finished", "len(guilds)", len(dg.State.Guilds))
 }

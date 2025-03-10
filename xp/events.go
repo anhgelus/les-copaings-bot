@@ -43,12 +43,9 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	c.AddXP(s, m.Member, xp, func(_ uint, _ uint) {
 		if err := s.MessageReactionAdd(m.ChannelID, m.Message.ID, "⬆"); err != nil {
 			utils.SendAlert(
-				"xp/events.go - add reaction for new level",
-				err.Error(),
-				"channel id",
-				m.ChannelID,
-				"message id",
-				m.Message.ID,
+				"xp/events.go - add reaction for new level", err.Error(),
+				"channel id", m.ChannelID,
+				"message id", m.Message.ID,
 			)
 		}
 	})
@@ -110,8 +107,7 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 	// check validity of user (1)
 	if errors.Is(res.Err(), redis.Nil) {
 		utils.SendWarn(fmt.Sprintf(
-			"User %s diconnect from a vocal but does not have a connected_since",
-			e.Member.DisplayName(),
+			"User %s diconnect from a vocal but does not have a connected_since", e.Member.DisplayName(),
 		))
 		return
 	}
@@ -131,8 +127,7 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 	// check validity of user (2)
 	if con == NotConnected {
 		utils.SendWarn(fmt.Sprintf(
-			"User %s diconnect from a vocal but was registered as not connected",
-			e.Member.DisplayName(),
+			"User %s diconnect from a vocal but was registered as not connected", e.Member.DisplayName(),
 		))
 		return
 	}
@@ -155,9 +150,7 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 	c.AddXP(s, e.Member, XPVocal(uint(timeInVocal)), func(_ uint, newLevel uint) {
 		cfg := config.GetGuildConfig(e.GuildID)
 		_, err = s.ChannelMessageSend(cfg.FallbackChannel, fmt.Sprintf(
-			"%s est maintenant niveau %d",
-			e.Member.Mention(),
-			newLevel,
+			"%s est maintenant niveau %d", e.Member.Mention(), newLevel,
 		))
 		if err != nil {
 			utils.SendAlert("xp/events.go - Sending new level in fallback channel", err.Error())
@@ -168,5 +161,11 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 func OnLeave(_ *discordgo.Session, e *discordgo.GuildMemberRemove) {
 	utils.SendDebug("Leave event", "user_id", e.User.ID)
 	c := GetCopaing(e.User.ID, e.GuildID)
-	gokord.DB.Where("guild_id = ?", e.GuildID).Delete(c)
+	if err := gokord.DB.Where("guild_id = ?", e.GuildID).Delete(c).Error; err != nil {
+		utils.SendAlert(
+			"xp/events.go - deleting copaing from db", err.Error(),
+			"user_id", e.User.ID,
+			"guild_id", e.GuildID,
+		)
+	}
 }
