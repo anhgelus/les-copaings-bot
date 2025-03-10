@@ -9,7 +9,7 @@ services:
       - redis
       - postgres
   redis:
-    image: redis:alpine
+    image: docker.io/redis:alpine
   postgres:
     image: postgres:alpine
     env_file:

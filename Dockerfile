@@ -1,10 +1,10 @@
-FROM golang:1.22-alpine
+FROM docker.io/golang:1.22-alpine
 
 WORKDIR /app
 
-COPY . .
-
 RUN apk add git
+
+COPY . .
 
 RUN go mod tidy && go build -o app .
 

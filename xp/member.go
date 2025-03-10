@@ -204,6 +204,23 @@ func (c *Copaing) Reset() {
 	gokord.DB.Where("guild_id = ? AND discord_id = ?", c.GuildID, c.DiscordID).Delete(c)
 }
 
+func (c *Copaing) AfterDelete(db *gorm.DB) error {
+	id := c.ID
+	dID := c.DiscordID
+	gID := c.GuildID
+	utils.NewTimer(48*time.Hour, func(stop chan struct{}) {
+		if err := db.Unscoped().Where("id = ?", id).Delete(c).Error; err != nil {
+			utils.SendAlert(
+				"xp/member.go - Removing copaing from database", err.Error(),
+				"discord_id", dID,
+				"guild_id", gID,
+			)
+		}
+		stop <- struct{}{}
+	})
+	return nil
+}
+
 func getRedisClient() (*redis.Client, error) {
 	if redisClient == nil {
 		var err error
