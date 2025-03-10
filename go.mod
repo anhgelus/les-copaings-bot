@@ -1,11 +1,13 @@
 module github.com/anhgelus/les-copaings-bot
 
-go 1.22
+go 1.23.0
+
+toolchain go1.24.0
 
 require (
-	github.com/anhgelus/gokord v0.6.0
+	github.com/anhgelus/gokord v0.6.1
 	github.com/bwmarrin/discordgo v0.28.1
-	github.com/redis/go-redis/v9 v9.7.0
+	github.com/redis/go-redis/v9 v9.7.1
 	gorm.io/gorm v1.25.12
 )
 
@@ -20,9 +22,9 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
-	golang.org/x/crypto v0.32.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	gorm.io/driver/postgres v1.5.11 // indirect
 )

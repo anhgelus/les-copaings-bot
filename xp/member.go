@@ -208,7 +208,7 @@ func (c *Copaing) AfterDelete(db *gorm.DB) error {
 	id := c.ID
 	dID := c.DiscordID
 	gID := c.GuildID
-	utils.NewTimer(48*time.Hour, func(stop chan struct{}) {
+	utils.NewTimer(48*time.Hour, func(stop chan<- interface{}) {
 		if err := db.Unscoped().Where("id = ?", id).Delete(c).Error; err != nil {
 			utils.SendAlert(
 				"xp/member.go - Removing copaing from database", err.Error(),
@@ -216,7 +216,7 @@ func (c *Copaing) AfterDelete(db *gorm.DB) error {
 				"guild_id", gID,
 			)
 		}
-		stop <- struct{}{}
+		stop <- true
 	})
 	return nil
 }

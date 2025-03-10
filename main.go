@@ -185,7 +185,7 @@ func afterInit(dg *discordgo.Session) {
 		// reduce time for debug
 		d = time.Minute
 	}
-	utils.NewTimer(d, func(stop chan struct{}) {
+	utils.NewTimer(d, func(stop chan<- interface{}) {
 		xp.PeriodicReducer(dg)
 	})
 }
