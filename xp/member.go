@@ -21,7 +21,16 @@ type Copaing struct {
 	GuildID   string `gorm:"not null"`
 }
 
-var redisClient *redis.Client
+type leftCopaing struct {
+	ID         uint
+	StopDelete chan<- interface{}
+}
+
+var (
+	redisClient *redis.Client
+
+	leftCopaingsMap = map[string]*leftCopaing{}
+)
 
 const (
 	LastEvent      = "last_event"
@@ -45,7 +54,50 @@ func GetCopaing(discordID string, guildID string) *Copaing {
 }
 
 func (c *Copaing) Load() error {
-	return gokord.DB.Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).FirstOrCreate(c).Error
+	// check if user left in the past 48 hours
+	k := c.GuildID + ":" + c.DiscordID
+	l, ok := leftCopaingsMap[k]
+	if !ok || l == nil {
+		// if not, common first or create
+		return gokord.DB.Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).FirstOrCreate(c).Error
+	}
+	// else, getting last data
+	tmp := Copaing{
+		Model: gorm.Model{
+			ID: c.ID,
+		},
+		DiscordID: c.DiscordID,
+		GuildID:   c.GuildID,
+	}
+	if err := gokord.DB.Unscoped().Find(&tmp).Error; err != nil {
+		// if error, avoid getting old data and use new one
+		utils.SendAlert(
+			"xp/member.go - Getting copaing in soft delete", err.Error(),
+			"discord_id", c.DiscordID,
+			"guild_id", c.DiscordID,
+			"last_id", l.ID,
+		)
+		return gokord.DB.Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).FirstOrCreate(c).Error
+	}
+	// resetting internal data
+	tmp.Model = gorm.Model{}
+	l.StopDelete <- true
+	leftCopaingsMap[k] = nil
+	// creating new data
+	err := gokord.DB.Create(&tmp).Error
+	if err != nil {
+		return err
+	}
+	// delete old data
+	if err = gokord.DB.Unscoped().Delete(&tmp).Error; err != nil {
+		utils.SendAlert(
+			"xp/member.go - Deleting copaing in soft delete", err.Error(),
+			"discord_id", c.DiscordID,
+			"guild_id", c.DiscordID,
+			"last_id", l.ID,
+		)
+	}
+	return nil
 }
 
 func (c *Copaing) Save() error {
@@ -208,7 +260,8 @@ func (c *Copaing) AfterDelete(db *gorm.DB) error {
 	id := c.ID
 	dID := c.DiscordID
 	gID := c.GuildID
-	utils.NewTimer(48*time.Hour, func(stop chan<- interface{}) {
+	k := c.GuildID + ":" + c.DiscordID
+	ch := utils.NewTimer(48*time.Hour, func(stop chan<- interface{}) {
 		if err := db.Unscoped().Where("id = ?", id).Delete(c).Error; err != nil {
 			utils.SendAlert(
 				"xp/member.go - Removing copaing from database", err.Error(),
@@ -217,7 +270,9 @@ func (c *Copaing) AfterDelete(db *gorm.DB) error {
 			)
 		}
 		stop <- true
+		leftCopaingsMap[k] = nil
 	})
+	leftCopaingsMap[k] = &leftCopaing{id, ch}
 	return nil
 }
 

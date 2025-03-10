@@ -18,9 +18,11 @@ var (
 	updatesData []byte
 	Version     = gokord.Version{
 		Major: 2,
-		Minor: 3,
-		Patch: 5,
-	} // git version: 0.3.5 (it's the v2 of the bot)
+		Minor: 4,
+		Patch: 0,
+	} // git version: 0.4.0 (it's the v2 of the bot)
+
+	stopPeriodicReducer chan<- interface{}
 )
 
 func init() {
@@ -170,6 +172,10 @@ func main() {
 	}
 	bot.Start()
 
+	if stopPeriodicReducer != nil {
+		stopPeriodicReducer <- true
+	}
+
 	xp.CloseRedisClient()
 }
 
@@ -185,7 +191,7 @@ func afterInit(dg *discordgo.Session) {
 		// reduce time for debug
 		d = time.Minute
 	}
-	utils.NewTimer(d, func(stop chan<- interface{}) {
+	stopPeriodicReducer = utils.NewTimer(d, func(stop chan<- interface{}) {
 		xp.PeriodicReducer(dg)
 	})
 }
