@@ -24,7 +24,7 @@ func onNewLevel(dg *discordgo.Session, m *discordgo.Member, level uint) {
 			)
 			err := dg.GuildMemberRoleAdd(m.GuildID, m.User.ID, role.RoleID)
 			if err != nil {
-				utils.SendAlert("exp/level.go - Adding role", err.Error(), "role_id", role.RoleID)
+				utils.SendAlert("user/level.go - Adding role", err.Error(), "role_id", role.RoleID)
 			}
 		} else if role.XP > xpForLevel && slices.Contains(m.Roles, role.RoleID) {
 			utils.SendDebug(
@@ -35,7 +35,7 @@ func onNewLevel(dg *discordgo.Session, m *discordgo.Member, level uint) {
 			)
 			err := dg.GuildMemberRoleRemove(m.GuildID, m.User.ID, role.RoleID)
 			if err != nil {
-				utils.SendAlert("exp/level.go - Removing role", err.Error(), "role_id", role.RoleID)
+				utils.SendAlert("user/level.go - Removing role", err.Error(), "role_id", role.RoleID)
 			}
 		}
 	}
@@ -45,7 +45,7 @@ func (c *Copaing) OnNewLevel(dg *discordgo.Session, level uint) {
 	m, err := dg.GuildMember(c.GuildID, c.DiscordID)
 	if err != nil {
 		utils.SendAlert(
-			"exp/level.go - Getting member for new level", err.Error(),
+			"user/level.go - Getting member for new level", err.Error(),
 			"discord_id", c.DiscordID,
 			"guild_id", c.GuildID,
 		)
@@ -60,7 +60,7 @@ func LastEventUpdate(dg *discordgo.Session, c *Copaing) {
 	xp := c.XPAlreadyRemoved()
 	oldXP := c.XP
 	if l-xp < 0 {
-		utils.SendWarn("lose - exp already removed is negative", "lose", l, "exp", xp)
+		utils.SendWarn("lose - xp already removed is negative", "lose", l, "xp", xp)
 		c.XP = 0
 	} else {
 		calc := int(c.XP) - int(l) + int(c.XPAlreadyRemoved())
@@ -84,7 +84,7 @@ func LastEventUpdate(dg *discordgo.Session, c *Copaing) {
 		}
 		if err := c.Save(); err != nil {
 			utils.SendAlert(
-				"exp/level.go - Saving user", err.Error(),
+				"user/level.go - Saving user", err.Error(),
 				"exp", c.XP,
 				"discord_id", c.DiscordID,
 				"guild_id", c.GuildID,
@@ -103,7 +103,7 @@ func UpdateXP(dg *discordgo.Session, c *Copaing) {
 	l := exp.Lose(h, c.XP)
 	xp := c.XPAlreadyRemoved()
 	if l-xp < 0 {
-		utils.SendWarn("lose - xp_removed is negative", "lose", l, "exp removed", xp)
+		utils.SendWarn("lose - xp_removed is negative", "lose", l, "xp removed", xp)
 		c.AddXPAlreadyRemoved(0)
 	} else {
 		calc := int(c.XP) - int(l) + int(xp)
@@ -130,8 +130,8 @@ func UpdateXP(dg *discordgo.Session, c *Copaing) {
 		utils.SendDebug("Save XP", "old", oldXP, "new", c.XP, "user", c.DiscordID)
 		if err := c.Save(); err != nil {
 			utils.SendAlert(
-				"exp/level.go - Saving user", err.Error(),
-				"exp", c.XP,
+				"user/level.go - Saving user", err.Error(),
+				"xp", c.XP,
 				"discord_id", c.DiscordID,
 				"guild_id", c.GuildID,
 			)
@@ -145,7 +145,7 @@ func PeriodicReducer(dg *discordgo.Session) {
 		var cs []*Copaing
 		err := gokord.DB.Where("guild_id = ?", g.ID).Find(&cs).Error
 		if err != nil {
-			utils.SendAlert("exp/level.go - Querying all copaings in Guild", err.Error(), "guild_id", g.ID)
+			utils.SendAlert("user/level.go - Querying all copaings in Guild", err.Error(), "guild_id", g.ID)
 			continue
 		}
 		for i, c := range cs {
@@ -156,14 +156,14 @@ func PeriodicReducer(dg *discordgo.Session) {
 			u, err = dg.User(c.DiscordID)
 			if err != nil {
 				utils.SendAlert(
-					"exp/level.go - Fetching user", err.Error(),
+					"user/level.go - Fetching user", err.Error(),
 					"discord_id", c.DiscordID,
 					"guild_id", g.ID,
 				)
 				utils.SendWarn("Removing user from database", "discord_id", c.DiscordID)
 				if err = gokord.DB.Delete(c).Error; err != nil {
 					utils.SendAlert(
-						"exp/level.go - Removing user from database", err.Error(),
+						"user/level.go - Removing user from database", err.Error(),
 						"discord_id", c.DiscordID,
 						"guild_id", g.ID,
 					)
@@ -175,7 +175,7 @@ func PeriodicReducer(dg *discordgo.Session) {
 			}
 			if _, err = dg.GuildMember(g.ID, c.DiscordID); err != nil {
 				utils.SendAlert(
-					"exp/level.go - Fetching member", err.Error(),
+					"user/level.go - Fetching member", err.Error(),
 					"discord_id", c.DiscordID,
 					"guild_id", g.ID,
 				)
@@ -186,7 +186,7 @@ func PeriodicReducer(dg *discordgo.Session) {
 				)
 				if err = gokord.DB.Where("guild_id = ?", g.ID).Delete(c).Error; err != nil {
 					utils.SendAlert(
-						"exp/level.go - Removing user from guild in database", err.Error(),
+						"user/level.go - Removing user from guild in database", err.Error(),
 						"discord_id", c.DiscordID,
 						"guild_id", g.ID,
 					)

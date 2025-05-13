@@ -39,7 +39,7 @@ func GetCopaing(discordID string, guildID string) *Copaing {
 	c := Copaing{DiscordID: discordID, GuildID: guildID}
 	if err := c.Load(); err != nil {
 		utils.SendAlert(
-			"exp/member.go - Loading user",
+			"user/member.go - Loading user",
 			err.Error(),
 			"discord_id",
 			discordID,
@@ -70,7 +70,7 @@ func (c *Copaing) Load() error {
 	if err := gokord.DB.Unscoped().Find(&tmp).Error; err != nil {
 		// if error, avoid getting old data and use new one
 		utils.SendAlert(
-			"exp/member.go - Getting user in soft delete", err.Error(),
+			"user/member.go - Getting user in soft delete", err.Error(),
 			"discord_id", c.DiscordID,
 			"guild_id", c.DiscordID,
 			"last_id", l.ID,
@@ -89,7 +89,7 @@ func (c *Copaing) Load() error {
 	// delete old data
 	if err = gokord.DB.Unscoped().Delete(&tmp).Error; err != nil {
 		utils.SendAlert(
-			"exp/member.go - Deleting user in soft delete", err.Error(),
+			"user/member.go - Deleting user in soft delete", err.Error(),
 			"discord_id", c.DiscordID,
 			"guild_id", c.DiscordID,
 			"last_id", l.ID,

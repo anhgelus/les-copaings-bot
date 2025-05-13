@@ -23,6 +23,6 @@ func CloseRedisClient() {
 	}
 	err := redisClient.Close()
 	if err != nil {
-		utils.SendAlert("exp/member.go - Closing redis client", err.Error())
+		utils.SendAlert("config/redis.go - Closing redis client", err.Error())
 	}
 }
