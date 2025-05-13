@@ -35,10 +35,7 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	trimmed := utils.TrimMessage(strings.ToLower(m.Content))
 	m.Member.User = m.Author
 	m.Member.GuildID = m.GuildID
-	xp := exp.MessageXP(uint(len(trimmed)), exp.CalcDiversity(trimmed))
-	if xp > MaxXpPerMessage {
-		xp = MaxXpPerMessage
-	}
+	xp := min(exp.MessageXP(uint(len(trimmed)), exp.CalcDiversity(trimmed)), MaxXpPerMessage)
 	c.AddXP(s, m.Member, xp, func(_ uint, _ uint) {
 		if err := s.MessageReactionAdd(m.ChannelID, m.Message.ID, "⬆"); err != nil {
 			utils.SendAlert(
@@ -127,7 +124,7 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 	// add exp
 	timeInVocal := now - con
 	if timeInVocal < 0 {
-		utils.SendAlert("events.go - Calculating time spent in vocal", "the time is negative")
+		utils.SendAlert("events.go - Calculating time spent in vocal", "the time is negative", "discord_id", e.UserID, "guild_id", e.GuildID)
 		return
 	}
 	if timeInVocal > MaxTimeInVocal {
