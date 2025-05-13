@@ -11,12 +11,12 @@ func Credits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		{
 			Type:        discordgo.EmbedTypeRich,
 			Title:       "Crédits",
-			Description: "Auteur du bot : @anhgelus (https://github.com/anhgelus)\nLangage : Go 1.22\nLicence : AGPLv3",
+			Description: "Auteur du bot : @anhgelus (https://github.com/anhgelus)\nLangage : Go 1.24\nLicence : AGPLv3",
 			Color:       utils.Success,
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "anhgelus/gokord",
-					Value:  "v0.3.0 - MPL 2.0",
+					Value:  "v0.6.3 - MPL 2.0",
 					Inline: true,
 				},
 				{
@@ -25,28 +25,8 @@ func Credits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 					Inline: true,
 				},
 				{
-					Name:   "pelletier/go-toml/v2",
-					Value:  "v2.2.1 - MIT",
-					Inline: true,
-				},
-				{
 					Name:   "redis/go-redis/v9",
-					Value:  "v9.5.1 - BSD-2-Clause",
-					Inline: true,
-				},
-				{
-					Name:   "gorm.io/gorm",
-					Value:  "v1.25.9 - MIT",
-					Inline: true,
-				},
-				{
-					Name:   "gorm.io/driver/postgres",
-					Value:  "v1.5.7 - MIT",
-					Inline: true,
-				},
-				{
-					Name:   "other",
-					Value:  "Et leurs dépendances !",
+					Value:  "v9.8.0 - BSD-2-Clause",
 					Inline: true,
 				},
 			},

@@ -6,7 +6,6 @@ require (
 	github.com/anhgelus/gokord v0.6.3
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/redis/go-redis/v9 v9.8.0
-	gorm.io/gorm v1.26.1
 )
 
 require (
