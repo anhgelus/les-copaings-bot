@@ -31,7 +31,6 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	c := user.GetCopaing(m.Author.ID, m.GuildID)
-	user.LastEventUpdate(s, c)
 	// add exp
 	trimmed := utils.TrimMessage(strings.ToLower(m.Content))
 	m.Member.User = m.Author
@@ -55,7 +54,6 @@ func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	if e.Member.User.Bot {
 		return
 	}
-	user.LastEventUpdate(s, user.GetCopaing(e.UserID, e.GuildID))
 	cfg := config.GetGuildConfig(e.GuildID)
 	client, err := config.GetRedisClient()
 	if err != nil {

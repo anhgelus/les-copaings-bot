@@ -54,91 +54,6 @@ func (c *Copaing) OnNewLevel(dg *discordgo.Session, level uint) {
 	onNewLevel(dg, m, level)
 }
 
-func LastEventUpdate(dg *discordgo.Session, c *Copaing) {
-	h := c.HourSinceLastEvent()
-	l := exp.Lose(h, c.XP)
-	xp := c.XPAlreadyRemoved()
-	oldXP := c.XP
-	if l-xp < 0 {
-		utils.SendWarn("lose - xp already removed is negative", "lose", l, "xp", xp)
-		c.XP = 0
-	} else {
-		calc := int(c.XP) - int(l) + int(c.XPAlreadyRemoved())
-		if calc < 0 {
-			c.XP = 0
-		} else {
-			c.XP = uint(calc)
-		}
-	}
-	if oldXP != c.XP {
-		lvl := exp.Level(c.XP)
-		if exp.Level(oldXP) != lvl {
-			utils.SendDebug(
-				"Level changed",
-				"old", exp.Level(oldXP),
-				"new", lvl,
-				"discord_id", c.DiscordID,
-				"guild_id", c.GuildID,
-			)
-			c.OnNewLevel(dg, lvl)
-		}
-		if err := c.Save(); err != nil {
-			utils.SendAlert(
-				"user/level.go - Saving user", err.Error(),
-				"exp", c.XP,
-				"discord_id", c.DiscordID,
-				"guild_id", c.GuildID,
-			)
-		}
-	}
-	c.SetLastEvent()
-}
-
-func UpdateXP(dg *discordgo.Session, c *Copaing) {
-	oldXP := c.XP
-	if oldXP == 0 {
-		return
-	}
-	h := c.HourSinceLastEvent()
-	l := exp.Lose(h, c.XP)
-	xp := c.XPAlreadyRemoved()
-	if l-xp < 0 {
-		utils.SendWarn("lose - xp_removed is negative", "lose", l, "xp removed", xp)
-		c.AddXPAlreadyRemoved(0)
-	} else {
-		calc := int(c.XP) - int(l) + int(xp)
-		if calc < 0 {
-			c.AddXPAlreadyRemoved(c.XP)
-			c.XP = 0
-		} else {
-			c.XP = uint(calc)
-			c.AddXPAlreadyRemoved(l - xp)
-		}
-	}
-	if oldXP != c.XP {
-		lvl := exp.Level(c.XP)
-		if exp.Level(oldXP) != lvl {
-			utils.SendDebug(
-				"Level updated",
-				"old", exp.Level(oldXP),
-				"new", lvl,
-				"discord_id", c.DiscordID,
-				"guild_id", c.GuildID,
-			)
-			c.OnNewLevel(dg, lvl)
-		}
-		utils.SendDebug("Save XP", "old", oldXP, "new", c.XP, "user", c.DiscordID)
-		if err := c.Save(); err != nil {
-			utils.SendAlert(
-				"user/level.go - Saving user", err.Error(),
-				"xp", c.XP,
-				"discord_id", c.DiscordID,
-				"guild_id", c.GuildID,
-			)
-		}
-	}
-}
-
 func PeriodicReducer(dg *discordgo.Session) {
 	var wg sync.WaitGroup
 	for _, g := range dg.State.Guilds {
@@ -195,7 +110,7 @@ func PeriodicReducer(dg *discordgo.Session) {
 			}
 			wg.Add(1)
 			go func() {
-				UpdateXP(dg, c)
+				//do things
 				wg.Done()
 			}()
 		}

@@ -1,7 +1,6 @@
 package exp
 
 import (
-	"github.com/anhgelus/gokord"
 	"math"
 	"slices"
 )
@@ -41,16 +40,5 @@ func Level(xp uint) uint {
 func LevelXP(level uint) uint {
 	return uint(math.Floor(
 		math.Pow(float64(5*level), 2),
-	))
-}
-
-func Lose(time uint, xp uint) uint {
-	if gokord.Debug {
-		return uint(math.Floor(
-			math.Pow(float64(time), 3) * math.Pow(10, -2+math.Log(float64(time))) * math.Floor(float64(xp/500)+1),
-		)) // a little bit faster to lose exp
-	}
-	return uint(math.Floor(
-		math.Pow(float64(time), 2) * math.Pow(10, -2+math.Log(float64(time/85))) * math.Floor(float64(xp/500)+1),
 	))
 }
