@@ -100,6 +100,16 @@ func main() {
 				SetHandler(commands.ConfigChannel),
 		).
 		AddSub(
+			gokord.NewCommand("period-before-reduce", "Temps avant la perte d'xp (affecte aussi le /top)").
+				HasOption().
+				AddOption(gokord.NewOption(
+					discordgo.ApplicationCommandOptionInteger,
+					"days",
+					"Nombre de jours avant la perte d'xp (doit être égal ou plus grand que 30)",
+				).IsRequired()).
+				SetHandler(commands.ConfigPeriodBeforeReduce),
+		).
+		AddSub(
 			gokord.NewCommand("fallback-channel", "Modifie le salon textuel par défaut").
 				HasOption().
 				AddOption(gokord.NewOption(

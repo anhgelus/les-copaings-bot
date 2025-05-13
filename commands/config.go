@@ -40,10 +40,9 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	err := resp.Embeds([]*discordgo.MessageEmbed{
 		{
-			Type:        discordgo.EmbedTypeRich,
-			Title:       "Config",
-			Description: "Configuration",
-			Color:       utils.Success,
+			Type:  discordgo.EmbedTypeRich,
+			Title: "Config",
+			Color: utils.Success,
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Salons par défaut",
@@ -58,6 +57,11 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				{
 					Name:   "Salons désactivés",
 					Value:  chans,
+					Inline: false,
+				},
+				{
+					Name:   "Jours avant la réduction",
+					Value:  fmt.Sprintf("%d", cfg.DaysXPRemains),
 					Inline: false,
 				},
 			},
@@ -314,5 +318,48 @@ func ConfigFallbackChannel(s *discordgo.Session, i *discordgo.InteractionCreate)
 	}
 	if err != nil {
 		utils.SendAlert("commands/config.go - Channel saved message", err.Error())
+	}
+}
+
+func ConfigPeriodBeforeReduce(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	optMap := utils.GenerateOptionMapForSubcommand(i)
+	resp := utils.ResponseBuilder{C: s, I: i}
+	resp.IsEphemeral()
+	// verify every args
+	days, ok := optMap["days"]
+	if !ok {
+		err := resp.Message("Le nombre de jours n'a pas été renseigné.").Send()
+		if err != nil {
+			utils.SendAlert("commands/config.go - Days not set (fallback)", err.Error())
+		}
+		return
+	}
+	d := days.IntValue()
+	if d < 30 {
+		err := resp.Message("Le nombre de jours est inférieur à 30.").Send()
+		if err != nil {
+			utils.SendAlert("commands/config.go - Days < 30 (fallback)", err.Error())
+		}
+		return
+	}
+	// save
+	cfg := config.GetGuildConfig(i.GuildID)
+	cfg.DaysXPRemains = uint(d)
+	err := cfg.Save()
+	if err != nil {
+		utils.SendAlert(
+			"commands/config.go - Saving config",
+			err.Error(),
+			"guild_id",
+			i.GuildID,
+			"days",
+			d,
+		)
+		err = resp.Message("Il y a eu une erreur lors de la modification de de la base de données.").Send()
+	} else {
+		err = resp.Message("Nombre de jours enregistré.").Send()
+	}
+	if err != nil {
+		utils.SendAlert("commands/config.go - Days saved message", err.Error())
 	}
 }
