@@ -7,7 +7,7 @@ import (
 	"github.com/anhgelus/gokord/utils"
 	"github.com/anhgelus/les-copaings-bot/commands"
 	"github.com/anhgelus/les-copaings-bot/config"
-	"github.com/anhgelus/les-copaings-bot/xp"
+	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
 	"time"
 )
@@ -36,18 +36,18 @@ func main() {
 		panic(err)
 	}
 
-	err = gokord.DB.AutoMigrate(&xp.Copaing{}, &config.GuildConfig{}, &config.XpRole{})
+	err = gokord.DB.AutoMigrate(&user.Copaing{}, &config.GuildConfig{}, &config.XpRole{})
 	if err != nil {
 		panic(err)
 	}
 
 	adm := gokord.AdminPermission
 
-	rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'un copaing").
+	rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'un user").
 		HasOption().
 		AddOption(gokord.NewOption(
 			discordgo.ApplicationCommandOptionUser,
-			"copaing",
+			"user",
 			"Le niveau du Copaing que vous souhaitez obtenir",
 		)).
 		SetHandler(commands.Rank)
@@ -58,7 +58,7 @@ func main() {
 			gokord.NewCommand("show", "Affiche la config").SetHandler(commands.ConfigShow),
 		).
 		AddSub(
-			gokord.NewCommand("xp", "Modifie l'xp").
+			gokord.NewCommand("exp", "Modifie l'exp").
 				HasOption().
 				AddOption(gokord.NewOption(
 					discordgo.ApplicationCommandOptionString,
@@ -114,16 +114,16 @@ func main() {
 		HasOption().
 		SetHandler(commands.Top)
 
-	resetCmd := gokord.NewCommand("reset", "Reset l'xp").
+	resetCmd := gokord.NewCommand("reset", "Reset l'exp").
 		HasOption().
 		SetHandler(commands.Reset).
 		SetPermission(&adm)
 
-	resetUserCmd := gokord.NewCommand("reset-user", "Reset l'xp d'un utilisation").
+	resetUserCmd := gokord.NewCommand("reset-user", "Reset l'exp d'un utilisation").
 		HasOption().
 		AddOption(gokord.NewOption(
 			discordgo.ApplicationCommandOptionUser,
-			"copaing",
+			"user",
 			"Copaing a reset",
 		).IsRequired()).
 		SetHandler(commands.ResetUser).
@@ -176,14 +176,14 @@ func main() {
 		stopPeriodicReducer <- true
 	}
 
-	xp.CloseRedisClient()
+	config.CloseRedisClient()
 }
 
 func afterInit(dg *discordgo.Session) {
 	// handlers
-	dg.AddHandler(xp.OnMessage)
-	dg.AddHandler(xp.OnVoiceUpdate)
-	dg.AddHandler(xp.OnLeave)
+	dg.AddHandler(OnMessage)
+	dg.AddHandler(OnVoiceUpdate)
+	dg.AddHandler(OnLeave)
 
 	// setup timer for periodic reducer
 	d := 24 * time.Hour
@@ -192,6 +192,6 @@ func afterInit(dg *discordgo.Session) {
 		d = time.Minute
 	}
 	stopPeriodicReducer = utils.NewTimer(d, func(stop chan<- interface{}) {
-		xp.PeriodicReducer(dg)
+		user.PeriodicReducer(dg)
 	})
 }

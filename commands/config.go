@@ -5,7 +5,7 @@ import (
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
 	"github.com/anhgelus/les-copaings-bot/config"
-	"github.com/anhgelus/les-copaings-bot/xp"
+	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/bwmarrin/discordgo"
 	"strings"
 )
@@ -17,9 +17,9 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	l := len(cfg.XpRoles) - 1
 	for i, r := range cfg.XpRoles {
 		if i == l {
-			roles += fmt.Sprintf("> Niveau %d - <@&%s>", xp.Level(r.XP), r.RoleID)
+			roles += fmt.Sprintf("> Niveau %d - <@&%s>", exp.Level(r.XP), r.RoleID)
 		} else {
-			roles += fmt.Sprintf("> Niveau %d - <@&%s>\n", xp.Level(r.XP), r.RoleID)
+			roles += fmt.Sprintf("> Niveau %d - <@&%s>\n", exp.Level(r.XP), r.RoleID)
 		}
 	}
 	if len(roles) == 0 {
@@ -98,7 +98,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		return
 	}
-	exp := xp.XPForLevel(uint(level))
+	exp := exp.LevelXP(uint(level))
 	r, ok := optMap["role"]
 	if !ok {
 		err := resp.Message("Le rôle n'a pas été renseigné.").Send()

@@ -3,19 +3,20 @@ package commands
 import (
 	"fmt"
 	"github.com/anhgelus/gokord/utils"
-	"github.com/anhgelus/les-copaings-bot/xp"
+	"github.com/anhgelus/les-copaings-bot/exp"
+	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
 )
 
 func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	optMap := utils.GenerateOptionMap(i)
-	c := xp.GetCopaing(i.Member.User.ID, i.GuildID) // current copaing = member who used /rank
-	xp.LastEventUpdate(s, c)                        // update xp and reset last event
+	c := user.GetCopaing(i.Member.User.ID, i.GuildID) // current user = member who used /rank
+	user.LastEventUpdate(s, c)                        // update exp and reset last event
 	msg := "Votre niveau"
 	m := i.Member
 	var err error
 	resp := utils.ResponseBuilder{C: s, I: i}
-	if v, ok := optMap["copaing"]; ok {
+	if v, ok := optMap["user"]; ok {
 		u := v.UserValue(s)
 		if u.Bot {
 			err = resp.Message("Imagine si les bots avaient un niveau :rolling_eyes:").IsEphemeral().Send()
@@ -39,12 +40,12 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 			return
 		}
-		c = xp.GetCopaing(u.ID, i.GuildID) // current copaing = member targeted by member who wrote /rank
-		xp.XPUpdate(s, c)                  // update xp without resetting event
+		c = user.GetCopaing(u.ID, i.GuildID) // current user = member targeted by member who wrote /rank
+		user.UpdateXP(s, c)                  // update exp without resetting event
 		msg = fmt.Sprintf("Le niveau de %s", m.DisplayName())
 	}
-	lvl := xp.Level(c.XP)
-	nxtLvlXP := xp.XPForLevel(lvl + 1)
+	lvl := exp.Level(c.XP)
+	nxtLvlXP := exp.LevelXP(lvl + 1)
 	err = resp.Message(fmt.Sprintf(
 		"%s : **%d**\n> XP : %d\n> Prochain niveau dans %d XP",
 		msg,
