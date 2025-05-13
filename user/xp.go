@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
 	"github.com/anhgelus/les-copaings-bot/config"
@@ -9,7 +8,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"slices"
 	"sync"
-	"time"
 )
 
 type cXP struct {
@@ -61,16 +59,14 @@ func (c *Copaing) GetXP() (uint, error) {
 
 func (c *Copaing) GetXPForDays(n uint) (uint, error) {
 	xp := uint(0)
-	var y, d int
-	var m time.Month
-	if gokord.Debug {
-		y, m, d = time.Unix(time.Now().Unix()-int64(24*60*60), 0).Date() // reduce time for debug
-	} else {
-		y, m, d = time.Unix(time.Now().Unix()-int64(n*24*60*60), 0).Date()
-	}
 	rows, err := gokord.DB.
 		Model(&CopaingXP{}).
-		Where(fmt.Sprintf("created_at >= '%d-%d-%d' and guild_id = ? and copaing_id = ?", y, m, d), c.GuildID, c.ID).
+		Where(
+			"created_at >= '?' and guild_id = ? and copaing_id = ?",
+			exp.TimeStampNDaysBefore(n),
+			c.GuildID,
+			c.ID,
+		).
 		Rows()
 	defer rows.Close()
 	if err != nil {

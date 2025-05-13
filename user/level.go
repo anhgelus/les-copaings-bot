@@ -8,7 +8,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"slices"
 	"sync"
-	"time"
 )
 
 func onNewLevel(dg *discordgo.Session, m *discordgo.Member, level uint) {
@@ -55,68 +54,22 @@ func (c *Copaing) OnNewLevel(dg *discordgo.Session, level uint) {
 }
 
 func PeriodicReducer(dg *discordgo.Session) {
-	var wg sync.WaitGroup
+	wg := &sync.WaitGroup{}
 	for _, g := range dg.State.Guilds {
-		var cs []*Copaing
-		err := gokord.DB.Where("guild_id = ?", g.ID).Find(&cs).Error
-		if err != nil {
-			utils.SendAlert("user/level.go - Querying all copaings in Guild", err.Error(), "guild_id", g.ID)
-			continue
-		}
-		for i, c := range cs {
-			if i%50 == 49 {
-				time.Sleep(15 * time.Second) // sleep prevents from spamming the Discord API and the database
-			}
-			var u *discordgo.User
-			u, err = dg.User(c.DiscordID)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			cfg := config.GetGuildConfig(g.ID)
+			err := gokord.DB.
+				Model(&CopaingXP{}).
+				Where("guild_id = ? and created_at < ?", g.ID, exp.TimeStampNDaysBefore(cfg.DaysXPRemains)).
+				Delete(&CopaingXP{}).
+				Error
 			if err != nil {
-				utils.SendAlert(
-					"user/level.go - Fetching user", err.Error(),
-					"discord_id", c.DiscordID,
-					"guild_id", g.ID,
-				)
-				utils.SendWarn("Removing user from database", "discord_id", c.DiscordID)
-				if err = gokord.DB.Delete(c).Error; err != nil {
-					utils.SendAlert(
-						"user/level.go - Removing user from database", err.Error(),
-						"discord_id", c.DiscordID,
-						"guild_id", g.ID,
-					)
-				}
-				continue
+				utils.SendAlert("user/level.go - Removing old XP", err.Error(), "guild_id", g.ID)
 			}
-			if u.Bot {
-				continue
-			}
-			if _, err = dg.GuildMember(g.ID, c.DiscordID); err != nil {
-				utils.SendAlert(
-					"user/level.go - Fetching member", err.Error(),
-					"discord_id", c.DiscordID,
-					"guild_id", g.ID,
-				)
-				utils.SendWarn(
-					"Removing user from guild in database",
-					"discord_id", c.DiscordID,
-					"guild_id", g.ID,
-				)
-				if err = gokord.DB.Where("guild_id = ?", g.ID).Delete(c).Error; err != nil {
-					utils.SendAlert(
-						"user/level.go - Removing user from guild in database", err.Error(),
-						"discord_id", c.DiscordID,
-						"guild_id", g.ID,
-					)
-				}
-				continue
-			}
-			wg.Add(1)
-			go func() {
-				//do things
-				wg.Done()
-			}()
-		}
-		wg.Wait() // finish the entire guild before starting another
-		utils.SendDebug("Periodic reduce, guild finished", "guild", g.Name)
-		time.Sleep(15 * time.Second) // sleep prevents from spamming the Discord API and the database
+		}()
 	}
+	wg.Wait()
 	utils.SendDebug("Periodic reduce finished", "len(guilds)", len(dg.State.Guilds))
 }
