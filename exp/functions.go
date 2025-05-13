@@ -3,12 +3,23 @@ package exp
 import (
 	"github.com/anhgelus/gokord"
 	"math"
+	"slices"
 )
 
 func MessageXP(length uint, diversity uint) uint {
 	return uint(math.Floor(
 		0.025*math.Pow(float64(length), 1.25)*math.Sqrt(float64(diversity)) + 1,
 	))
+}
+
+func CalcDiversity(msg string) uint {
+	var chars []rune
+	for _, c := range []rune(msg) {
+		if !slices.Contains(chars, c) {
+			chars = append(chars, c)
+		}
+	}
+	return uint(len(chars))
 }
 
 func VocalXP(time uint) uint {

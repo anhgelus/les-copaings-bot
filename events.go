@@ -10,7 +10,6 @@ import (
 	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
 	"github.com/redis/go-redis/v9"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -37,7 +36,7 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	trimmed := utils.TrimMessage(strings.ToLower(m.Content))
 	m.Member.User = m.Author
 	m.Member.GuildID = m.GuildID
-	xp := exp.MessageXP(uint(len(trimmed)), calcDiversity(trimmed))
+	xp := exp.MessageXP(uint(len(trimmed)), exp.CalcDiversity(trimmed))
 	if xp > MaxXpPerMessage {
 		xp = MaxXpPerMessage
 	}
@@ -50,16 +49,6 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			)
 		}
 	})
-}
-
-func calcDiversity(msg string) uint {
-	var chars []rune
-	for _, c := range []rune(msg) {
-		if !slices.Contains(chars, c) {
-			chars = append(chars, c)
-		}
-	}
-	return uint(len(chars))
 }
 
 func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
