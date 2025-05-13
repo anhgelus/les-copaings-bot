@@ -4,31 +4,20 @@ import (
 	"fmt"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
-	"gorm.io/gorm"
 )
 
 type Copaing struct {
-	gorm.Model
-	DiscordID string `gorm:"not null"`
-	//XP        []CopaingXP
-	XP      uint   `gorm:"default:0"`
-	GuildID string `gorm:"not null"`
+	ID        uint        `gorm:"primarykey"`
+	DiscordID string      `gorm:"not null"`
+	XP        []CopaingXP `gorm:"constraint:OnDelete:SET NULL;"`
+	GuildID   string      `gorm:"not null"`
 }
 
-type leftCopaing struct {
-	ID         uint
-	StopDelete chan<- interface{}
+type CopaingXP struct {
+	ID        uint `gorm:"primarykey"`
+	XP        uint `gorm:"default:0"`
+	CopaingID uint `gorm:"not null;constraint:OnDelete:CASCADE;"`
 }
-
-//type CopaingXP struct {
-//	gorm.Model
-//	XP        uint `gorm:"default:0"`
-//	CopaingID uint
-//}
-
-var (
-	leftCopaingsMap = map[string]*leftCopaing{}
-)
 
 const (
 	LastEvent      = "last_event"
@@ -52,50 +41,11 @@ func GetCopaing(discordID string, guildID string) *Copaing {
 }
 
 func (c *Copaing) Load() error {
-	// check if user left in the past 48 hours
-	k := c.GuildID + ":" + c.DiscordID
-	l, ok := leftCopaingsMap[k]
-	if !ok || l == nil {
-		// if not, common first or create
-		return gokord.DB.Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).FirstOrCreate(c).Error
-	}
-	// else, getting last data
-	tmp := Copaing{
-		Model: gorm.Model{
-			ID: c.ID,
-		},
-		DiscordID: c.DiscordID,
-		GuildID:   c.GuildID,
-	}
-	if err := gokord.DB.Unscoped().Find(&tmp).Error; err != nil {
-		// if error, avoid getting old data and use new one
-		utils.SendAlert(
-			"user/member.go - Getting user in soft delete", err.Error(),
-			"discord_id", c.DiscordID,
-			"guild_id", c.DiscordID,
-			"last_id", l.ID,
-		)
-		return gokord.DB.Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).FirstOrCreate(c).Error
-	}
-	// resetting internal data
-	tmp.Model = gorm.Model{}
-	l.StopDelete <- true
-	leftCopaingsMap[k] = nil
-	// creating new data
-	err := gokord.DB.Create(&tmp).Error
-	if err != nil {
-		return err
-	}
-	// delete old data
-	if err = gokord.DB.Unscoped().Delete(&tmp).Error; err != nil {
-		utils.SendAlert(
-			"user/member.go - Deleting user in soft delete", err.Error(),
-			"discord_id", c.DiscordID,
-			"guild_id", c.DiscordID,
-			"last_id", l.ID,
-		)
-	}
-	return nil
+	return gokord.DB.
+		Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).
+		Preload("XP").
+		FirstOrCreate(c).
+		Error
 }
 
 func (c *Copaing) Save() error {
@@ -104,4 +54,8 @@ func (c *Copaing) Save() error {
 
 func (c *Copaing) GenKey(key string) string {
 	return fmt.Sprintf("%s:%s:%s", c.GuildID, c.DiscordID, key)
+}
+
+func (c *Copaing) Delete() error {
+	return gokord.DB.Where("guild_id = ? AND discord_id = ?", c.GuildID, c.DiscordID).Delete(c).Error
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/exp"
@@ -162,8 +161,11 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 
 func OnLeave(_ *discordgo.Session, e *discordgo.GuildMemberRemove) {
 	utils.SendDebug("Leave event", "user_id", e.User.ID)
+	if e.User.Bot {
+		return
+	}
 	c := user.GetCopaing(e.User.ID, e.GuildID)
-	if err := gokord.DB.Where("guild_id = ?", e.GuildID).Delete(c).Error; err != nil {
+	if err := c.Delete(); err != nil {
 		utils.SendAlert(
 			"events.go - deleting user from db", err.Error(),
 			"user_id", e.User.ID,

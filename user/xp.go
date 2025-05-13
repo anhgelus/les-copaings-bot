@@ -10,7 +10,6 @@ import (
 	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/bwmarrin/discordgo"
 	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
 	"math"
 	"strconv"
 	"time"
@@ -105,20 +104,20 @@ func (c *Copaing) AddXPAlreadyRemoved(xp uint) uint {
 		utils.SendAlert("user/xp.go - Getting redis client (set)", err.Error())
 		return 0
 	}
-	exp := xp + c.XPAlreadyRemoved()
-	err = client.Set(context.Background(), c.GenKey(AlreadyRemoved), exp, 0).Err()
+	nxp := xp + c.XPAlreadyRemoved()
+	err = client.Set(context.Background(), c.GenKey(AlreadyRemoved), nxp, 0).Err()
 	if err != nil {
 		utils.SendAlert(
 			"user/xp.go - Setting already removed",
 			err.Error(),
 			"exp already removed",
-			exp,
+			nxp,
 			"base_key",
 			c.GenKey(""),
 		)
 		return 0
 	}
-	return exp
+	return nxp
 }
 
 func (c *Copaing) XPAlreadyRemoved() uint {
@@ -158,28 +157,4 @@ func (c *Copaing) XPAlreadyRemoved() uint {
 		return 0
 	}
 	return uint(xp)
-}
-
-func (c *Copaing) Reset() {
-	gokord.DB.Where("guild_id = ? AND discord_id = ?", c.GuildID, c.DiscordID).Delete(c)
-}
-
-func (c *Copaing) AfterDelete(db *gorm.DB) error {
-	id := c.ID
-	dID := c.DiscordID
-	gID := c.GuildID
-	k := c.GuildID + ":" + c.DiscordID
-	ch := utils.NewTimer(48*time.Hour, func(stop chan<- interface{}) {
-		if err := db.Unscoped().Where("id = ?", id).Delete(c).Error; err != nil {
-			utils.SendAlert(
-				"user/xp.go - Removing user from database", err.Error(),
-				"discord_id", dID,
-				"guild_id", gID,
-			)
-		}
-		stop <- true
-		leftCopaingsMap[k] = nil
-	})
-	leftCopaingsMap[k] = &leftCopaing{id, ch}
-	return nil
 }
