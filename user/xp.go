@@ -7,10 +7,10 @@ import (
 )
 
 func (c *Copaing) AddXP(s *discordgo.Session, m *discordgo.Member, xp uint, fn func(uint, uint)) {
-	pastLevel := exp.Level(c.XP)
-	old := c.XP
-	c.XP += xp
-	if err := c.Save(); err != nil {
+	old, err := c.GetXP()
+	pastLevel := exp.Level(old)
+	c.XP = append(c.XP, CopaingXP{CopaingID: c.ID, XP: xp, GuildID: c.GuildID})
+	if err = c.Save(); err != nil {
 		utils.SendAlert(
 			"user/xp.go - Saving user",
 			err.Error(),
@@ -21,12 +21,11 @@ func (c *Copaing) AddXP(s *discordgo.Session, m *discordgo.Member, xp uint, fn f
 			"guild_id",
 			c.GuildID,
 		)
-		c.XP = old
 		return
 	}
-	newLevel := exp.Level(c.XP)
+	newLevel := exp.Level(old + xp)
 	if newLevel > pastLevel {
-		fn(c.XP, newLevel)
+		fn(old+xp, newLevel)
 		onNewLevel(s, m, newLevel)
 	}
 }

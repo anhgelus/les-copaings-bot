@@ -12,6 +12,7 @@ type GuildConfig struct {
 	XpRoles          []XpRole
 	DisabledChannels string
 	FallbackChannel  string
+	DaysXPRemains    uint `gorm:"default:90"` // 30 * 3 = 90 (three months)
 }
 
 type XpRole struct {

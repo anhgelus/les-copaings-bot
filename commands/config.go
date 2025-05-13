@@ -98,7 +98,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		return
 	}
-	exp := exp.LevelXP(uint(level))
+	xp := exp.LevelXP(uint(level))
 	r, ok := optMap["role"]
 	if !ok {
 		err := resp.Message("Le rôle n'a pas été renseigné.").Send()
@@ -116,7 +116,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case "add":
 		for _, r := range cfg.XpRoles {
 			if r.RoleID == role.ID {
-				err := resp.Message("Le rôle est déjà présent dans la config").Send()
+				err = resp.Message("Le rôle est déjà présent dans la config").Send()
 				if err != nil {
 					utils.SendAlert("commands/config.go - Role already in config", err.Error())
 				}
@@ -124,7 +124,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 		}
 		cfg.XpRoles = append(cfg.XpRoles, config.XpRole{
-			XP:     exp,
+			XP:     xp,
 			RoleID: role.ID,
 		})
 		err = cfg.Save()
@@ -143,7 +143,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case "del":
 		_, r := cfg.FindXpRole(role.ID)
 		if r == nil {
-			err := resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
+			err = resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
 			if err != nil {
 				utils.SendAlert("commands/config.go - Role not found (del)", err.Error())
 			}
@@ -165,13 +165,13 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case "edit":
 		_, r := cfg.FindXpRole(role.ID)
 		if r == nil {
-			err := resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
+			err = resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
 			if err != nil {
 				utils.SendAlert("commands/config.go - Role not found (edit)", err.Error())
 			}
 			return
 		}
-		r.XP = exp
+		r.XP = xp
 		err = gokord.DB.Save(r).Error
 		if err != nil {
 			utils.SendAlert(
@@ -186,7 +186,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			)
 		}
 	default:
-		err := resp.Message("Le type d'action n'est pas valide.").Send()
+		err = resp.Message("Le type d'action n'est pas valide.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Invalid action type", err.Error())
 		}
