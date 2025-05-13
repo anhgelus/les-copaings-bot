@@ -1,4 +1,4 @@
-FROM docker.io/golang:1.23-alpine
+FROM docker.io/golang:1.24-alpine
 
 WORKDIR /app
 
@@ -9,5 +9,6 @@ COPY . .
 RUN go mod tidy && go build -o app .
 
 ENV TOKEN=""
+ENV TZ="Europe/Paris"
 
 CMD ./app -token $TOKEN

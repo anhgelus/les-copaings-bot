@@ -1,15 +1,15 @@
-package xp
+package main
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
 	"github.com/anhgelus/les-copaings-bot/config"
+	"github.com/anhgelus/les-copaings-bot/exp"
+	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
 	"github.com/redis/go-redis/v9"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -30,20 +30,19 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if cfg.IsDisabled(m.ChannelID) {
 		return
 	}
-	c := GetCopaing(m.Author.ID, m.GuildID)
-	LastEventUpdate(s, c)
-	// add xp
+	c := user.GetCopaing(m.Author.ID, m.GuildID)
+	// add exp
 	trimmed := utils.TrimMessage(strings.ToLower(m.Content))
 	m.Member.User = m.Author
 	m.Member.GuildID = m.GuildID
-	xp := XPMessage(uint(len(trimmed)), calcDiversity(trimmed))
+	xp := exp.MessageXP(uint(len(trimmed)), exp.CalcDiversity(trimmed))
 	if xp > MaxXpPerMessage {
 		xp = MaxXpPerMessage
 	}
 	c.AddXP(s, m.Member, xp, func(_ uint, _ uint) {
 		if err := s.MessageReactionAdd(m.ChannelID, m.Message.ID, "⬆"); err != nil {
 			utils.SendAlert(
-				"xp/events.go - add reaction for new level", err.Error(),
+				"events.go - add reaction for new level", err.Error(),
 				"channel id", m.ChannelID,
 				"message id", m.Message.ID,
 			)
@@ -51,25 +50,14 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	})
 }
 
-func calcDiversity(msg string) uint {
-	var chars []rune
-	for _, c := range []rune(msg) {
-		if !slices.Contains(chars, c) {
-			chars = append(chars, c)
-		}
-	}
-	return uint(len(chars))
-}
-
 func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	if e.Member.User.Bot {
 		return
 	}
-	LastEventUpdate(s, GetCopaing(e.UserID, e.GuildID))
 	cfg := config.GetGuildConfig(e.GuildID)
-	client, err := getRedisClient()
+	client, err := config.GetRedisClient()
 	if err != nil {
-		utils.SendAlert("xp/events.go - Getting redis client", err.Error())
+		utils.SendAlert("events.go - Getting redis client", err.Error())
 		return
 	}
 	if e.BeforeUpdate == nil && e.ChannelID != "" {
@@ -87,7 +75,7 @@ func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 
 func onConnection(_ *discordgo.Session, e *discordgo.VoiceStateUpdate, client *redis.Client) {
 	utils.SendDebug("User connected", "username", e.Member.DisplayName())
-	c := GetCopaing(e.UserID, e.GuildID)
+	c := user.GetCopaing(e.UserID, e.GuildID)
 	err := client.Set(
 		context.Background(),
 		c.GenKey(ConnectedSince),
@@ -95,13 +83,13 @@ func onConnection(_ *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 		0,
 	).Err()
 	if err != nil {
-		utils.SendAlert("xp/events.go - Setting connected_since", err.Error())
+		utils.SendAlert("events.go - Setting connected_since", err.Error())
 	}
 }
 
 func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *redis.Client) {
 	now := time.Now().Unix()
-	c := GetCopaing(e.UserID, e.GuildID)
+	c := user.GetCopaing(e.UserID, e.GuildID)
 	key := c.GenKey(ConnectedSince)
 	res := client.Get(context.Background(), key)
 	// check validity of user (1)
@@ -112,16 +100,16 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 		return
 	}
 	if res.Err() != nil {
-		utils.SendAlert("xp/events.go - Getting connected_since", res.Err().Error())
+		utils.SendAlert("events.go - Getting connected_since", res.Err().Error())
 		err := client.Set(context.Background(), key, strconv.Itoa(NotConnected), 0).Err()
 		if err != nil {
-			utils.SendAlert("xp/events.go - Set connected_since to not connected after get err", err.Error())
+			utils.SendAlert("events.go - Set connected_since to not connected after get err", err.Error())
 		}
 		return
 	}
 	con, err := res.Int64()
 	if err != nil {
-		utils.SendAlert("xp/events.go - Converting result to int64", err.Error())
+		utils.SendAlert("events.go - Converting result to int64", err.Error())
 		return
 	}
 	// check validity of user (2)
@@ -134,12 +122,12 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 	utils.SendDebug("User disconnected", "username", e.Member.DisplayName(), "since", con)
 	err = client.Set(context.Background(), key, strconv.Itoa(NotConnected), 0).Err()
 	if err != nil {
-		utils.SendAlert("xp/events.go - Set connected_since to not connected", err.Error())
+		utils.SendAlert("events.go - Set connected_since to not connected", err.Error())
 	}
-	// add xp
+	// add exp
 	timeInVocal := now - con
 	if timeInVocal < 0 {
-		utils.SendAlert("xp/events.go - Calculating time spent in vocal", "the time is negative")
+		utils.SendAlert("events.go - Calculating time spent in vocal", "the time is negative")
 		return
 	}
 	if timeInVocal > MaxTimeInVocal {
@@ -147,23 +135,26 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 		timeInVocal = MaxTimeInVocal
 	}
 	e.Member.GuildID = e.GuildID
-	c.AddXP(s, e.Member, XPVocal(uint(timeInVocal)), func(_ uint, newLevel uint) {
+	c.AddXP(s, e.Member, exp.VocalXP(uint(timeInVocal)), func(_ uint, newLevel uint) {
 		cfg := config.GetGuildConfig(e.GuildID)
 		_, err = s.ChannelMessageSend(cfg.FallbackChannel, fmt.Sprintf(
 			"%s est maintenant niveau %d", e.Member.Mention(), newLevel,
 		))
 		if err != nil {
-			utils.SendAlert("xp/events.go - Sending new level in fallback channel", err.Error())
+			utils.SendAlert("events.go - Sending new level in fallback channel", err.Error())
 		}
 	})
 }
 
 func OnLeave(_ *discordgo.Session, e *discordgo.GuildMemberRemove) {
 	utils.SendDebug("Leave event", "user_id", e.User.ID)
-	c := GetCopaing(e.User.ID, e.GuildID)
-	if err := gokord.DB.Where("guild_id = ?", e.GuildID).Delete(c).Error; err != nil {
+	if e.User.Bot {
+		return
+	}
+	c := user.GetCopaing(e.User.ID, e.GuildID)
+	if err := c.Delete(); err != nil {
 		utils.SendAlert(
-			"xp/events.go - deleting copaing from db", err.Error(),
+			"events.go - deleting user from db", err.Error(),
 			"user_id", e.User.ID,
 			"guild_id", e.GuildID,
 		)

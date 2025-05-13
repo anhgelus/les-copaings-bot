@@ -32,9 +32,9 @@ En tant qu'utilisateur, vous avez le droit de :
 - avoir accès à vos données sauvegardées
 - modifier ces données
 
-Pour exercer vos droits concernant l'accès aux données ou à la modification des données, contacter me@anhgelus.world.
+Pour exercer vos droits concernant l'accès aux données ou à la modification des données, contactez me@anhgelus.world.
 
-Concernant la suppression des données, entraîne de facto une remise à zéro de votre profile sur un serveur, contacter le propriétaire du serveur.
+La suppression des données entraîne de facto une remise à zéro de votre profile sur un serveur, contactez le propriétaire du serveur pour exercer ce droit.
 
 Concernant la suppression intégrale des données, contacter me@anhgelus.world.
 

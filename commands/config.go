@@ -5,7 +5,7 @@ import (
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
 	"github.com/anhgelus/les-copaings-bot/config"
-	"github.com/anhgelus/les-copaings-bot/xp"
+	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/bwmarrin/discordgo"
 	"strings"
 )
@@ -17,9 +17,9 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	l := len(cfg.XpRoles) - 1
 	for i, r := range cfg.XpRoles {
 		if i == l {
-			roles += fmt.Sprintf("> Niveau %d - <@&%s>", xp.Level(r.XP), r.RoleID)
+			roles += fmt.Sprintf("> Niveau %d - <@&%s>", exp.Level(r.XP), r.RoleID)
 		} else {
-			roles += fmt.Sprintf("> Niveau %d - <@&%s>\n", xp.Level(r.XP), r.RoleID)
+			roles += fmt.Sprintf("> Niveau %d - <@&%s>\n", exp.Level(r.XP), r.RoleID)
 		}
 	}
 	if len(roles) == 0 {
@@ -38,16 +38,21 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if len(chans) == 0 {
 		chans = "Aucun salon désactivé :)"
 	}
+	var defaultChan string
+	if len(cfg.FallbackChannel) == 0 {
+		defaultChan = "Pas de valeur"
+	} else {
+		defaultChan = fmt.Sprintf("<#%s>", cfg.FallbackChannel)
+	}
 	err := resp.Embeds([]*discordgo.MessageEmbed{
 		{
-			Type:        discordgo.EmbedTypeRich,
-			Title:       "Config",
-			Description: "Configuration",
-			Color:       utils.Success,
+			Type:  discordgo.EmbedTypeRich,
+			Title: "Config",
+			Color: utils.Success,
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Salons par défaut",
-					Value:  fmt.Sprintf("<#%s>", cfg.FallbackChannel),
+					Value:  defaultChan,
 					Inline: false,
 				},
 				{
@@ -58,6 +63,11 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				{
 					Name:   "Salons désactivés",
 					Value:  chans,
+					Inline: false,
+				},
+				{
+					Name:   "Jours avant la réduction",
+					Value:  fmt.Sprintf("%d", cfg.DaysXPRemains),
 					Inline: false,
 				},
 			},
@@ -98,7 +108,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		return
 	}
-	exp := xp.XPForLevel(uint(level))
+	xp := exp.LevelXP(uint(level))
 	r, ok := optMap["role"]
 	if !ok {
 		err := resp.Message("Le rôle n'a pas été renseigné.").Send()
@@ -116,7 +126,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case "add":
 		for _, r := range cfg.XpRoles {
 			if r.RoleID == role.ID {
-				err := resp.Message("Le rôle est déjà présent dans la config").Send()
+				err = resp.Message("Le rôle est déjà présent dans la config").Send()
 				if err != nil {
 					utils.SendAlert("commands/config.go - Role already in config", err.Error())
 				}
@@ -124,7 +134,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 		}
 		cfg.XpRoles = append(cfg.XpRoles, config.XpRole{
-			XP:     exp,
+			XP:     xp,
 			RoleID: role.ID,
 		})
 		err = cfg.Save()
@@ -143,7 +153,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case "del":
 		_, r := cfg.FindXpRole(role.ID)
 		if r == nil {
-			err := resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
+			err = resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
 			if err != nil {
 				utils.SendAlert("commands/config.go - Role not found (del)", err.Error())
 			}
@@ -165,13 +175,13 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case "edit":
 		_, r := cfg.FindXpRole(role.ID)
 		if r == nil {
-			err := resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
+			err = resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
 			if err != nil {
 				utils.SendAlert("commands/config.go - Role not found (edit)", err.Error())
 			}
 			return
 		}
-		r.XP = exp
+		r.XP = xp
 		err = gokord.DB.Save(r).Error
 		if err != nil {
 			utils.SendAlert(
@@ -186,7 +196,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			)
 		}
 	default:
-		err := resp.Message("Le type d'action n'est pas valide.").Send()
+		err = resp.Message("Le type d'action n'est pas valide.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Invalid action type", err.Error())
 		}
@@ -314,5 +324,48 @@ func ConfigFallbackChannel(s *discordgo.Session, i *discordgo.InteractionCreate)
 	}
 	if err != nil {
 		utils.SendAlert("commands/config.go - Channel saved message", err.Error())
+	}
+}
+
+func ConfigPeriodBeforeReduce(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	optMap := utils.GenerateOptionMapForSubcommand(i)
+	resp := utils.ResponseBuilder{C: s, I: i}
+	resp.IsEphemeral()
+	// verify every args
+	days, ok := optMap["days"]
+	if !ok {
+		err := resp.Message("Le nombre de jours n'a pas été renseigné.").Send()
+		if err != nil {
+			utils.SendAlert("commands/config.go - Days not set (fallback)", err.Error())
+		}
+		return
+	}
+	d := days.IntValue()
+	if d < 30 {
+		err := resp.Message("Le nombre de jours est inférieur à 30.").Send()
+		if err != nil {
+			utils.SendAlert("commands/config.go - Days < 30 (fallback)", err.Error())
+		}
+		return
+	}
+	// save
+	cfg := config.GetGuildConfig(i.GuildID)
+	cfg.DaysXPRemains = uint(d)
+	err := cfg.Save()
+	if err != nil {
+		utils.SendAlert(
+			"commands/config.go - Saving config",
+			err.Error(),
+			"guild_id",
+			i.GuildID,
+			"days",
+			d,
+		)
+		err = resp.Message("Il y a eu une erreur lors de la modification de de la base de données.").Send()
+	} else {
+		err = resp.Message("Nombre de jours enregistré.").Send()
+	}
+	if err != nil {
+		utils.SendAlert("commands/config.go - Days saved message", err.Error())
 	}
 }

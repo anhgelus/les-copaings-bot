@@ -1,6 +1,7 @@
 services:
   bot:
     build: .
+    restart: always
     env_file:
       - .env
     volumes:
@@ -16,3 +17,9 @@ services:
       - .env
     volumes:
       - ./data:/var/lib/postgresql/data
+  adminer:
+    image: docker.io/adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres

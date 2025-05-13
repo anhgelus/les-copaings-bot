@@ -8,5 +8,15 @@
         "config"
       ]
     }
+  },
+  {
+    "version": "3.0.0",
+    "commands": {
+      "added": [],
+      "removed": [],
+      "updated": [
+        "config"
+      ]
+    }
   }
 ]

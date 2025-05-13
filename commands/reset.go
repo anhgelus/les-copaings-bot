@@ -3,12 +3,12 @@ package commands
 import (
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
-	"github.com/anhgelus/les-copaings-bot/xp"
+	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
 )
 
 func Reset(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	var copaings []*xp.Copaing
+	var copaings []*user.Copaing
 	gokord.DB.Where("guild_id = ?", i.GuildID).Delete(&copaings)
 	resp := utils.ResponseBuilder{C: s, I: i}
 	if err := resp.IsEphemeral().Message("L'XP a été reset.").Send(); err != nil {
@@ -20,9 +20,9 @@ func ResetUser(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	resp := utils.ResponseBuilder{C: s, I: i}
 	resp.IsEphemeral()
 	optMap := utils.GenerateOptionMap(i)
-	v, ok := optMap["copaing"]
+	v, ok := optMap["user"]
 	if !ok {
-		if err := resp.Message("Le copaing n'a pas été renseigné.").Send(); err != nil {
+		if err := resp.Message("Le user n'a pas été renseigné.").Send(); err != nil {
 			utils.SendAlert("commands/reset.go - Copaing not set", err.Error())
 		}
 		return
@@ -34,8 +34,15 @@ func ResetUser(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		return
 	}
-	xp.GetCopaing(m.ID, i.GuildID).Reset()
-	if err := resp.Message("Le copaing bien été reset.").Send(); err != nil {
-		utils.SendAlert("commands/reset.go - Sending success (copaing)", err.Error())
+	err := user.GetCopaing(m.ID, i.GuildID).Delete()
+	if err != nil {
+		utils.SendAlert("commands/reset.go - Copaing not deleted", err.Error(), "discord_id", m.ID, "guild_id", i.GuildID)
+		err = resp.Message("Erreur : impossible de reset l'utilisateur").Send()
+		if err != nil {
+			utils.SendAlert("commands/reset.go - Error deleting", err.Error())
+		}
+	}
+	if err = resp.Message("Le user bien été reset.").Send(); err != nil {
+		utils.SendAlert("commands/reset.go - Sending success (user)", err.Error())
 	}
 }

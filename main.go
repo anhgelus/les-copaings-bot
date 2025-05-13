@@ -7,7 +7,7 @@ import (
 	"github.com/anhgelus/gokord/utils"
 	"github.com/anhgelus/les-copaings-bot/commands"
 	"github.com/anhgelus/les-copaings-bot/config"
-	"github.com/anhgelus/les-copaings-bot/xp"
+	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
 	"time"
 )
@@ -17,10 +17,10 @@ var (
 	//go:embed updates.json
 	updatesData []byte
 	Version     = gokord.Version{
-		Major: 2,
-		Minor: 4,
+		Major: 3,
+		Minor: 0,
 		Patch: 0,
-	} // git version: 0.4.0 (it's the v2 of the bot)
+	}
 
 	stopPeriodicReducer chan<- interface{}
 )
@@ -36,7 +36,7 @@ func main() {
 		panic(err)
 	}
 
-	err = gokord.DB.AutoMigrate(&xp.Copaing{}, &config.GuildConfig{}, &config.XpRole{})
+	err = gokord.DB.AutoMigrate(&user.Copaing{}, &config.GuildConfig{}, &config.XpRole{}, &user.CopaingXP{})
 	if err != nil {
 		panic(err)
 	}
@@ -100,6 +100,16 @@ func main() {
 				SetHandler(commands.ConfigChannel),
 		).
 		AddSub(
+			gokord.NewCommand("period-before-reduce", "Temps avant la perte d'xp (affecte aussi le /top)").
+				HasOption().
+				AddOption(gokord.NewOption(
+					discordgo.ApplicationCommandOptionInteger,
+					"days",
+					"Nombre de jours avant la perte d'xp (doit être égal ou plus grand que 30)",
+				).IsRequired()).
+				SetHandler(commands.ConfigPeriodBeforeReduce),
+		).
+		AddSub(
 			gokord.NewCommand("fallback-channel", "Modifie le salon textuel par défaut").
 				HasOption().
 				AddOption(gokord.NewOption(
@@ -123,7 +133,7 @@ func main() {
 		HasOption().
 		AddOption(gokord.NewOption(
 			discordgo.ApplicationCommandOptionUser,
-			"copaing",
+			"user",
 			"Copaing a reset",
 		).IsRequired()).
 		SetHandler(commands.ResetUser).
@@ -176,22 +186,16 @@ func main() {
 		stopPeriodicReducer <- true
 	}
 
-	xp.CloseRedisClient()
+	config.CloseRedisClient()
 }
 
 func afterInit(dg *discordgo.Session) {
 	// handlers
-	dg.AddHandler(xp.OnMessage)
-	dg.AddHandler(xp.OnVoiceUpdate)
-	dg.AddHandler(xp.OnLeave)
+	dg.AddHandler(OnMessage)
+	dg.AddHandler(OnVoiceUpdate)
+	dg.AddHandler(OnLeave)
 
-	// setup timer for periodic reducer
-	d := 24 * time.Hour
-	if gokord.Debug {
-		// reduce time for debug
-		d = time.Minute
-	}
-	stopPeriodicReducer = utils.NewTimer(d, func(stop chan<- interface{}) {
-		xp.PeriodicReducer(dg)
+	stopPeriodicReducer = utils.NewTimer(24*time.Hour, func(stop chan<- interface{}) {
+		user.PeriodicReducer(dg)
 	})
 }

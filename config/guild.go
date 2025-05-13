@@ -3,20 +3,20 @@ package config
 import (
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
-	"gorm.io/gorm"
 	"strings"
 )
 
 type GuildConfig struct {
-	gorm.Model
-	GuildID          string `gorm:"not null"`
+	ID               uint   `gorm:"primarykey"`
+	GuildID          string `gorm:"not null;unique"`
 	XpRoles          []XpRole
 	DisabledChannels string
 	FallbackChannel  string
+	DaysXPRemains    uint `gorm:"default:90"` // 30 * 3 = 90 (three months)
 }
 
 type XpRole struct {
-	gorm.Model
+	ID            uint `gorm:"primarykey"`
 	XP            uint
 	RoleID        string
 	GuildConfigID uint

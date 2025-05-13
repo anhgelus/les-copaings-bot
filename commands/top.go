@@ -2,14 +2,14 @@ package commands
 
 import (
 	"fmt"
-	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
-	"github.com/anhgelus/les-copaings-bot/xp"
+	"github.com/anhgelus/les-copaings-bot/exp"
+	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
+	"sync"
 )
 
 func Top(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	xp.LastEventUpdate(s, xp.GetCopaing(i.Member.User.ID, i.GuildID))
 	resp := utils.ResponseBuilder{C: s, I: i}
 	err := resp.IsDeferred().Send()
 	if err != nil {
@@ -17,26 +17,48 @@ func Top(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 	resp.NotDeferred().IsEdit()
-	go func() {
-		var tops []xp.Copaing
-		gokord.DB.Where("guild_id = ?", i.GuildID).Limit(10).Order("xp desc").Find(&tops)
-		msg := ""
-		for i, c := range tops {
-			if i == 9 {
-				msg += fmt.Sprintf("%d. **<@%s>** - niveau %d", i+1, c.DiscordID, xp.Level(c.XP))
-			} else {
-				msg += fmt.Sprintf("%d. **<@%s>** - niveau %d\n", i+1, c.DiscordID, xp.Level(c.XP))
+	embeds := make([]*discordgo.MessageEmbed, 3)
+	wg := sync.WaitGroup{}
+
+	fn := func(s string, n uint, d int, id int) {
+		defer wg.Done()
+		tops, err := user.GetBestXP(i.GuildID, n, d)
+		if err != nil {
+			utils.SendAlert("commands/top.go - Fetching best xp", err.Error(), "n", n, "d", d, "id", id, "guild_id", i.GuildID)
+			embeds[id] = &discordgo.MessageEmbed{
+				Title:       s,
+				Description: "Erreur : impossible de récupérer la liste",
+				Color:       utils.Error,
 			}
+			return
 		}
-		err = resp.Embeds([]*discordgo.MessageEmbed{
-			{
-				Title:       "Top",
-				Description: msg,
-				Color:       utils.Success,
-			},
-		}).Send()
+		embeds[id] = &discordgo.MessageEmbed{
+			Title:       s,
+			Description: genTopsMessage(tops),
+			Color:       utils.Success,
+		}
+	}
+
+	wg.Add(3)
+	go fn("Top full time", 10, -1, 0)
+	go fn("Top 30 jours", 5, 30, 1)
+	go fn("Top 7 jours", 5, 7, 2)
+	go func() {
+		wg.Wait()
+		err = resp.Embeds(embeds).Send()
 		if err != nil {
 			utils.SendAlert("commands/top.go - Sending response top", err.Error())
 		}
 	}()
+}
+
+func genTopsMessage(tops []user.CopaingAccess) string {
+	msg := ""
+	for i, c := range tops {
+		msg += fmt.Sprintf("%d. **<@%s>** - niveau %d", i+1, c.ToCopaing().DiscordID, exp.Level(c.GetXP()))
+		if i != len(tops)-1 {
+			msg += "\n"
+		}
+	}
+	return msg
 }
