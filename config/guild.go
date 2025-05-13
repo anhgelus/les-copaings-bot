@@ -9,8 +9,8 @@ import (
 
 type GuildConfig struct {
 	gorm.Model
-	GuildID          string `gorm:"not null"`
-	XpRoles          []XpRole
+	GuildID          string `gorm:"not null;unique"`
+	XpRoles          []*XpRole
 	DisabledChannels string
 	FallbackChannel  string
 }
@@ -46,7 +46,7 @@ func (cfg *GuildConfig) IsDisabled(channelID string) bool {
 func (cfg *GuildConfig) FindXpRole(roleID string) (int, *XpRole) {
 	for i, r := range cfg.XpRoles {
 		if r.RoleID == roleID {
-			return i, &r
+			return i, r
 		}
 	}
 	return 0, nil
