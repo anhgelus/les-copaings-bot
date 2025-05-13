@@ -58,7 +58,7 @@ func main() {
 			gokord.NewCommand("show", "Affiche la config").SetHandler(commands.ConfigShow),
 		).
 		AddSub(
-			gokord.NewCommand("exp", "Modifie l'exp").
+			gokord.NewCommand("xp", "Modifie l'xp").
 				HasOption().
 				AddOption(gokord.NewOption(
 					discordgo.ApplicationCommandOptionString,
@@ -114,12 +114,12 @@ func main() {
 		HasOption().
 		SetHandler(commands.Top)
 
-	resetCmd := gokord.NewCommand("reset", "Reset l'exp").
+	resetCmd := gokord.NewCommand("reset", "Reset l'xp").
 		HasOption().
 		SetHandler(commands.Reset).
 		SetPermission(&adm)
 
-	resetUserCmd := gokord.NewCommand("reset-user", "Reset l'exp d'un utilisation").
+	resetUserCmd := gokord.NewCommand("reset-user", "Reset l'xp d'un utilisation").
 		HasOption().
 		AddOption(gokord.NewOption(
 			discordgo.ApplicationCommandOptionUser,
