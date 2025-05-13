@@ -4,11 +4,11 @@ Bot for the private server Discord "Les Copaings"
 
 ## Features
 
-- Levels & XP
+- Levels & CopaingXPs
 - Roles management
 - Purge command
 
-### XP
+### CopaingXPs
 
 Functions:
 - $xp-message(x;y) = 0.025 x^{1.25}\sqrt{y}+1$ where $x$ is the length of the message and $y$ is the diversity of the 

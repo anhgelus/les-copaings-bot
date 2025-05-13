@@ -28,13 +28,13 @@ func (c *cXP) GetXP() uint {
 func (c *Copaing) AddXP(s *discordgo.Session, m *discordgo.Member, xp uint, fn func(uint, uint)) {
 	old, err := c.GetXP()
 	pastLevel := exp.Level(old)
-	c.XP = append(c.XP, CopaingXP{CopaingID: c.ID, XP: xp, GuildID: c.GuildID})
+	c.CopaingXPs = append(c.CopaingXPs, CopaingXP{CopaingID: c.ID, XP: xp, GuildID: c.GuildID})
 	if err = c.Save(); err != nil {
 		utils.SendAlert(
 			"user/xp.go - Saving user",
 			err.Error(),
-			"exp",
-			c.XP,
+			"xp",
+			c.CopaingXPs,
 			"discord_id",
 			c.DiscordID,
 			"guild_id",
@@ -56,10 +56,16 @@ func (c *Copaing) GetXP() (uint, error) {
 
 func (c *Copaing) GetXPForDays(n uint) (uint, error) {
 	xp := uint(0)
-	y, m, d := time.Unix(time.Now().Unix()-int64(n*24*60*60), 0).Date()
+	var y, d int
+	var m time.Month
+	if gokord.Debug {
+		y, m, d = time.Unix(time.Now().Unix()-int64(n*24), 0).Date() // reduce time for debug
+	} else {
+		y, m, d = time.Unix(time.Now().Unix()-int64(n*24*60*60), 0).Date()
+	}
 	rows, err := gokord.DB.
 		Model(&CopaingXP{}).
-		Where(fmt.Sprintf("created_at >= '%d-%d-%d' and guild_id = ? and discord_id = ?", y, m, d), c.GuildID, c.DiscordID).
+		Where(fmt.Sprintf("created_at >= '%d-%d-%d' and guild_id = ? and copaing_id = ?", y, m, d), c.GuildID, c.DiscordID).
 		Rows()
 	defer rows.Close()
 	if err != nil {
@@ -69,7 +75,7 @@ func (c *Copaing) GetXPForDays(n uint) (uint, error) {
 		var cXP CopaingXP
 		err = gokord.DB.ScanRows(rows, &cXP)
 		if err != nil {
-			utils.SendAlert("user/xp.go - Scanning rows", err.Error(), "discord_id", c.DiscordID, "guild_id", c.GuildID)
+			utils.SendAlert("user/xp.go - Scanning rows", err.Error(), "copaing_id", c.DiscordID, "guild_id", c.GuildID)
 			continue
 		}
 		xp += cXP.XP
@@ -96,7 +102,7 @@ func GetBestXP(guildId string, n uint, d int) ([]CopaingAccess, error) {
 		var c Copaing
 		err = gokord.DB.ScanRows(rows, &c)
 		if err != nil {
-			utils.SendAlert("user/xp.go - Scanning rows", err.Error(), "discord_id", c.DiscordID, "guild_id", guildId)
+			utils.SendAlert("user/xp.go - Scanning rows", err.Error(), "guild_id", guildId)
 			continue
 		}
 		wg.Add(1)

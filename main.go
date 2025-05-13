@@ -36,7 +36,7 @@ func main() {
 		panic(err)
 	}
 
-	err = gokord.DB.AutoMigrate(&user.Copaing{}, &config.GuildConfig{}, &config.XpRole{})
+	err = gokord.DB.AutoMigrate(&user.Copaing{}, &config.GuildConfig{}, &config.XpRole{}, &user.CopaingXP{})
 	if err != nil {
 		panic(err)
 	}

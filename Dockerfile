@@ -9,5 +9,6 @@ COPY . .
 RUN go mod tidy && go build -o app .
 
 ENV TOKEN=""
+ENV TZ="Europe/Paris"
 
 CMD ./app -token $TOKEN

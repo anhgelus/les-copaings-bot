@@ -45,7 +45,7 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	xp, err := c.GetXP()
 	if err != nil {
 		utils.SendAlert(
-			"commands/rank.go - Fetching XP",
+			"commands/rank.go - Fetching xp",
 			err.Error(),
 			"discord_id",
 			c.ID,

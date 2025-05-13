@@ -8,16 +8,16 @@ import (
 )
 
 type Copaing struct {
-	ID        uint        `gorm:"primarykey"`
-	DiscordID string      `gorm:"not null"`
-	XP        []CopaingXP `gorm:"constraint:OnDelete:SET NULL;"`
-	GuildID   string      `gorm:"not null"`
+	ID         uint        `gorm:"primarykey"`
+	DiscordID  string      `gorm:"not null"`
+	CopaingXPs []CopaingXP `gorm:"constraint:OnDelete:SET NULL;"`
+	GuildID    string      `gorm:"not null"`
 }
 
 type CopaingXP struct {
-	ID        uint   `gorm:"primarykey"`
-	XP        uint   `gorm:"default:0"`
-	CopaingID uint   `gorm:"not null;constraint:OnDelete:CASCADE;"`
+	ID        uint `gorm:"primarykey"`
+	XP        uint `gorm:"default:0"`
+	CopaingID uint
 	GuildID   string `gorm:"not null;"`
 	CreatedAt time.Time
 }
@@ -51,7 +51,7 @@ func GetCopaing(discordID string, guildID string) *Copaing {
 func (c *Copaing) Load() error {
 	return gokord.DB.
 		Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).
-		Preload("XP").
+		Preload("CopaingXPs").
 		FirstOrCreate(c).
 		Error
 }
