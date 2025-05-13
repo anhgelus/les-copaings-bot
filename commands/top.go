@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"github.com/anhgelus/gokord/utils"
+	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
@@ -38,14 +39,22 @@ func Top(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			Color:       utils.Success,
 		}
 	}
-
-	wg.Add(3)
-	go fn("Top full time", 10, -1, 0)
+	cfg := config.GetGuildConfig(i.GuildID)
+	if cfg.DaysXPRemains > 30 {
+		wg.Add(1)
+		go fn("Top full time", 10, -1, 0)
+	}
+	wg.Add(2)
 	go fn("Top 30 jours", 5, 30, 1)
 	go fn("Top 7 jours", 5, 7, 2)
 	go func() {
 		wg.Wait()
-		err = resp.Embeds(embeds).Send()
+		if cfg.DaysXPRemains > 30 {
+			resp.Embeds(embeds)
+		} else {
+			resp.Embeds(embeds[1:])
+		}
+		err = resp.Send()
 		if err != nil {
 			utils.SendAlert("commands/top.go - Sending response top", err.Error())
 		}
