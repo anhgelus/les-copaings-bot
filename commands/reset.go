@@ -34,8 +34,15 @@ func ResetUser(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		return
 	}
-	user.GetCopaing(m.ID, i.GuildID).Reset()
-	if err := resp.Message("Le user bien été reset.").Send(); err != nil {
+	err := user.GetCopaing(m.ID, i.GuildID).Delete()
+	if err != nil {
+		utils.SendAlert("commands/reset.go - Copaing not deleted", err.Error(), "discord_id", m.ID, "guild_id", i.GuildID)
+		err = resp.Message("Erreur : impossible de reset l'utilisateur").Send()
+		if err != nil {
+			utils.SendAlert("commands/reset.go - Error deleting", err.Error())
+		}
+	}
+	if err = resp.Message("Le user bien été reset.").Send(); err != nil {
 		utils.SendAlert("commands/reset.go - Sending success (user)", err.Error())
 	}
 }

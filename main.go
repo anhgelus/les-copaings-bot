@@ -17,10 +17,10 @@ var (
 	//go:embed updates.json
 	updatesData []byte
 	Version     = gokord.Version{
-		Major: 2,
-		Minor: 4,
+		Major: 3,
+		Minor: 0,
 		Patch: 0,
-	} // git version: 0.4.0 (it's the v2 of the bot)
+	}
 
 	stopPeriodicReducer chan<- interface{}
 )
