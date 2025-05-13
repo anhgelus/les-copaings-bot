@@ -15,7 +15,7 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	m := i.Member
 	var err error
 	resp := utils.ResponseBuilder{C: s, I: i}
-	if v, ok := optMap["user"]; ok {
+	if v, ok := optMap["copaing"]; ok {
 		u := v.UserValue(s)
 		if u.Bot {
 			err = resp.Message("Imagine si les bots avaient un niveau :rolling_eyes:").IsEphemeral().Send()

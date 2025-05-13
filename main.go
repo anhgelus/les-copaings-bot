@@ -43,11 +43,11 @@ func main() {
 
 	adm := gokord.AdminPermission
 
-	rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'un user").
+	rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'un copaing").
 		HasOption().
 		AddOption(gokord.NewOption(
 			discordgo.ApplicationCommandOptionUser,
-			"user",
+			"copaing",
 			"Le niveau du Copaing que vous souhaitez obtenir",
 		)).
 		SetHandler(commands.Rank)
@@ -185,13 +185,7 @@ func afterInit(dg *discordgo.Session) {
 	dg.AddHandler(OnVoiceUpdate)
 	dg.AddHandler(OnLeave)
 
-	// setup timer for periodic reducer
-	d := 24 * time.Hour
-	if gokord.Debug {
-		// reduce time for debug
-		d = time.Minute
-	}
-	stopPeriodicReducer = utils.NewTimer(d, func(stop chan<- interface{}) {
+	stopPeriodicReducer = utils.NewTimer(24*time.Hour, func(stop chan<- interface{}) {
 		user.PeriodicReducer(dg)
 	})
 }
