@@ -15,7 +15,7 @@ Functions:
 message (number of different rune)
 - $xp-vocal(x)=0.01 x^{1.3}+1$ where $x$ is the time spent in vocal (in second)
 - $level(x)=0.2 \sqrt{x}$ where $x$ is the xp
-- $level^{-1}(x)=(5x)^2$ where $x$ is the level
+- $level^{-1}(x)=25x^2$ where $x$ is the level
 
 ## Installation
 

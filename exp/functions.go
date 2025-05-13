@@ -42,7 +42,7 @@ func Level(xp uint) uint {
 // See Level to get the level with the given XP.
 func LevelXP(level uint) uint {
 	return uint(math.Floor(
-		math.Pow(float64(5*level), 2),
+		25 * math.Pow(float64(level), 2),
 	))
 }
 
