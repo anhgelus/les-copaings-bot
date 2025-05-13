@@ -38,6 +38,12 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if len(chans) == 0 {
 		chans = "Aucun salon désactivé :)"
 	}
+	var defaultChan string
+	if len(cfg.FallbackChannel) == 0 {
+		defaultChan = "Pas de valeur"
+	} else {
+		defaultChan = fmt.Sprintf("<#%s>", cfg.FallbackChannel)
+	}
 	err := resp.Embeds([]*discordgo.MessageEmbed{
 		{
 			Type:  discordgo.EmbedTypeRich,
@@ -46,7 +52,7 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Salons par défaut",
-					Value:  fmt.Sprintf("<#%s>", cfg.FallbackChannel),
+					Value:  defaultChan,
 					Inline: false,
 				},
 				{
