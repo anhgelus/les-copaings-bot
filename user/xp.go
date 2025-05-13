@@ -62,7 +62,7 @@ func (c *Copaing) GetXPForDays(n uint) (uint, error) {
 	rows, err := gokord.DB.
 		Model(&CopaingXP{}).
 		Where(
-			"created_at >= '?' and guild_id = ? and copaing_id = ?",
+			"created_at >= ? and guild_id = ? and copaing_id = ?",
 			exp.TimeStampNDaysBefore(n),
 			c.GuildID,
 			c.ID,
@@ -73,13 +73,13 @@ func (c *Copaing) GetXPForDays(n uint) (uint, error) {
 		return 0, err
 	}
 	for rows.Next() {
-		var cXP CopaingXP
-		err = gokord.DB.ScanRows(rows, &cXP)
+		var cxp CopaingXP
+		err = gokord.DB.ScanRows(rows, &cxp)
 		if err != nil {
 			utils.SendAlert("user/xp.go - Scanning rows", err.Error(), "copaing_id", c.ID, "guild_id", c.GuildID)
 			continue
 		}
-		xp += cXP.XP
+		xp += cxp.XP
 	}
 	return xp, nil
 }
