@@ -42,7 +42,7 @@ func Top(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	cfg := config.GetGuildConfig(i.GuildID)
 	if cfg.DaysXPRemains > 30 {
 		wg.Add(1)
-		go fn("Top full time", 10, -1, 0)
+		go fn(fmt.Sprintf("Top %d jours", cfg.DaysXPRemains), 10, -1, 0)
 	}
 	wg.Add(2)
 	go fn("Top 30 jours", 5, 30, 1)
