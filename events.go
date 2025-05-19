@@ -134,6 +134,9 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 	e.Member.GuildID = e.GuildID
 	c.AddXP(s, e.Member, exp.VocalXP(uint(timeInVocal)), func(_ uint, newLevel uint) {
 		cfg := config.GetGuildConfig(e.GuildID)
+		if len(cfg.FallbackChannel) == 0 {
+			return
+		}
 		_, err = s.ChannelMessageSend(cfg.FallbackChannel, fmt.Sprintf(
 			"%s est maintenant niveau %d", e.Member.Mention(), newLevel,
 		))
