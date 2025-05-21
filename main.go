@@ -27,10 +27,11 @@ var (
 
 func init() {
 	flag.StringVar(&token, "token", "", "token of the bot")
-	flag.Parse()
 }
 
 func main() {
+	flag.Parse()
+	gokord.UseRedis = false
 	err := gokord.SetupConfigs(&Config{}, []*gokord.ConfigInfo{})
 	if err != nil {
 		panic(err)
@@ -176,8 +177,6 @@ func main() {
 	if stopPeriodicReducer != nil {
 		stopPeriodicReducer <- true
 	}
-
-	config.CloseRedisClient()
 }
 
 func afterInit(dg *discordgo.Session) {

@@ -1,25 +1,24 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"github.com/anhgelus/gokord/utils"
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
-	"github.com/redis/go-redis/v9"
-	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	ConnectedSince  = "connected_since"
 	NotConnected    = -1
 	MaxTimeInVocal  = 60 * 60 * 6
 	MaxXpPerMessage = 250
+)
+
+var (
+	connectedSince = map[string]int64{}
 )
 
 func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -52,79 +51,45 @@ func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 		return
 	}
 	cfg := config.GetGuildConfig(e.GuildID)
-	client, err := config.GetRedisClient()
-	if err != nil {
-		utils.SendAlert("events.go - Getting redis client", err.Error())
-		return
-	}
 	if e.BeforeUpdate == nil && e.ChannelID != "" {
 		if cfg.IsDisabled(e.ChannelID) {
 			return
 		}
-		onConnection(s, e, client)
+		onConnection(s, e)
 	} else if e.BeforeUpdate != nil && e.ChannelID == "" {
 		if cfg.IsDisabled(e.BeforeUpdate.ChannelID) {
 			return
 		}
-		onDisconnect(s, e, client)
+		onDisconnect(s, e)
 	}
 }
 
-func onConnection(_ *discordgo.Session, e *discordgo.VoiceStateUpdate, client *redis.Client) {
+func onConnection(_ *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	utils.SendDebug("User connected", "username", e.Member.DisplayName())
-	c := user.GetCopaing(e.UserID, e.GuildID)
-	err := client.Set(
-		context.Background(),
-		c.GenKey(ConnectedSince),
-		strconv.FormatInt(time.Now().Unix(), 10),
-		0,
-	).Err()
-	if err != nil {
-		utils.SendAlert("events.go - Setting connected_since", err.Error())
-	}
+	connectedSince[e.UserID] = time.Now().Unix()
 }
 
-func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *redis.Client) {
+func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	now := time.Now().Unix()
 	c := user.GetCopaing(e.UserID, e.GuildID)
-	key := c.GenKey(ConnectedSince)
-	res := client.Get(context.Background(), key)
-	// check validity of user (1)
-	if errors.Is(res.Err(), redis.Nil) {
-		utils.SendWarn(fmt.Sprintf(
-			"User %s diconnect from a vocal but does not have a connected_since", e.Member.DisplayName(),
-		))
-		return
-	}
-	if res.Err() != nil {
-		utils.SendAlert("events.go - Getting connected_since", res.Err().Error())
-		err := client.Set(context.Background(), key, strconv.Itoa(NotConnected), 0).Err()
-		if err != nil {
-			utils.SendAlert("events.go - Set connected_since to not connected after get err", err.Error())
-		}
-		return
-	}
-	con, err := res.Int64()
-	if err != nil {
-		utils.SendAlert("events.go - Converting result to int64", err.Error())
-		return
-	}
-	// check validity of user (2)
+	// check the validity of user
+	con := connectedSince[e.UserID]
 	if con == NotConnected {
 		utils.SendWarn(fmt.Sprintf(
 			"User %s diconnect from a vocal but was registered as not connected", e.Member.DisplayName(),
 		))
 		return
 	}
-	utils.SendDebug("User disconnected", "username", e.Member.DisplayName(), "since", con)
-	err = client.Set(context.Background(), key, strconv.Itoa(NotConnected), 0).Err()
-	if err != nil {
-		utils.SendAlert("events.go - Set connected_since to not connected", err.Error())
-	}
-	// add exp
 	timeInVocal := now - con
+	utils.SendDebug("User disconnected", "username", e.Member.DisplayName(), "time in vocal", timeInVocal)
+	connectedSince[e.UserID] = NotConnected
+	// add exp
 	if timeInVocal < 0 {
-		utils.SendAlert("events.go - Calculating time spent in vocal", "the time is negative", "discord_id", e.UserID, "guild_id", e.GuildID)
+		utils.SendAlert(
+			"events.go - Calculating time spent in vocal", "the time is negative",
+			"discord_id", e.UserID,
+			"guild_id", e.GuildID,
+		)
 		return
 	}
 	if timeInVocal > MaxTimeInVocal {
@@ -137,7 +102,7 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate, client *r
 		if len(cfg.FallbackChannel) == 0 {
 			return
 		}
-		_, err = s.ChannelMessageSend(cfg.FallbackChannel, fmt.Sprintf(
+		_, err := s.ChannelMessageSend(cfg.FallbackChannel, fmt.Sprintf(
 			"%s est maintenant niveau %d", e.Member.Mention(), newLevel,
 		))
 		if err != nil {

@@ -7,10 +7,7 @@ services:
     volumes:
       - ./config:/app/config
     depends_on:
-      - redis
       - postgres
-  redis:
-    image: docker.io/redis:alpine
   postgres:
     image: postgres:alpine
     env_file:

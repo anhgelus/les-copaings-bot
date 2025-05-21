@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/utils"
 	"time"
@@ -58,10 +57,6 @@ func (c *Copaing) Load() error {
 
 func (c *Copaing) Save() error {
 	return gokord.DB.Save(c).Error
-}
-
-func (c *Copaing) GenKey(key string) string {
-	return fmt.Sprintf("%s:%s:%s", c.GuildID, c.DiscordID, key)
 }
 
 func (c *Copaing) Delete() error {

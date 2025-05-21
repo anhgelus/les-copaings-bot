@@ -47,7 +47,7 @@ You can stop the compose file with `docker compose down`
 ```bash
 $ git clone https://github.com/anhgelus/les-copaings-bot.git
 ```
-2. Install Go 1.22+
+2. Install Go 1.24+
 3. Go into the repository and build the program
 ```bash
 $ go build . 
@@ -68,11 +68,6 @@ The default configuration is
 debug = false
 author = "anhgelus"
 
-[redis]
-address = "localhost:6379"
-password = ""
-db = 0
-
 [database]
 host = "localhost"
 user = ""
@@ -83,9 +78,6 @@ port = 5432
 
 - `debug` is true if the bot is in debug mode (don't turn it on unless you are modifying the source code)
 - `author` is the author's name
-- `[redis].address` is the address of redis (using docker, it's `redis:6379`)
-- `[redis].password` is the redis's password
-- `[redis].db` is the db to use
 - `[database].host` is the host of postgres (using docker, it's `postgres`)
 - `[database].user` is the user of postgres to use (using docker, it must be the same value as `POSTGRES_USER` in `.env`)
 - `[database].password` is the user's password of postgres to use (using docker, it must be the same value as

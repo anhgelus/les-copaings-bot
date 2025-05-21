@@ -9,10 +9,9 @@ import (
 )
 
 type Config struct {
-	Debug    bool                     `toml:"debug"`
-	Author   string                   `toml:"author"`
-	Redis    *gokord.RedisCredentials `toml:"redis"`
-	Database *PostgresConfig          `toml:"database"`
+	Debug    bool            `toml:"debug"`
+	Author   string          `toml:"author"`
+	Database *PostgresConfig `toml:"database"`
 }
 
 type PostgresConfig struct {
@@ -55,14 +54,12 @@ func (c *Config) GetAuthor() string {
 }
 
 func (c *Config) GetRedisCredentials() *gokord.RedisCredentials {
-	return c.Redis
+	return nil
 }
 
 func (c *Config) SetDefaultValues() {
 	c.Debug = false
 	c.Author = "anhgelus"
-	c.Redis = &gokord.RedisCredentials{}
-	c.Redis.SetDefaultValues()
 	c.Database = &PostgresConfig{}
 	c.Database.SetDefaultValues()
 }
