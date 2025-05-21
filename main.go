@@ -18,8 +18,8 @@ var (
 	updatesData []byte
 	Version     = gokord.Version{
 		Major: 3,
-		Minor: 0,
-		Patch: 1,
+		Minor: 1,
+		Patch: 0,
 	}
 
 	stopPeriodicReducer chan<- interface{}
