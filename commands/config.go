@@ -51,7 +51,7 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			Color: utils.Success,
 			Fields: []*discordgo.MessageEmbedField{
 				{
-					Name:   "Salons par défaut",
+					Name:   "Salon par défaut",
 					Value:  defaultChan,
 					Inline: false,
 				},
