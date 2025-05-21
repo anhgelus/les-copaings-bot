@@ -3,9 +3,10 @@ module github.com/anhgelus/les-copaings-bot
 go 1.24
 
 require (
-	github.com/anhgelus/gokord v0.6.3
+	github.com/anhgelus/gokord v0.7.0
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/redis/go-redis/v9 v9.8.0
+	gorm.io/driver/postgres v1.5.11
 )
 
 require (
@@ -23,5 +24,5 @@ require (
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
-	gorm.io/driver/postgres v1.5.11 // indirect
+	gorm.io/gorm v1.26.1 // indirect
 )

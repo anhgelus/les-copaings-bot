@@ -18,5 +18,15 @@
         "config"
       ]
     }
+  },
+  {
+    "version": "3.0.1",
+    "commands": {
+      "added": [],
+      "removed": [],
+      "updated": [
+        "config", "ping"
+      ]
+    }
   }
 ]

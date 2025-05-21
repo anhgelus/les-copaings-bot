@@ -31,7 +31,7 @@ func init() {
 }
 
 func main() {
-	err := gokord.SetupConfigs(nil, []*gokord.ConfigInfo{})
+	err := gokord.SetupConfigs(&Config{}, []*gokord.ConfigInfo{})
 	if err != nil {
 		panic(err)
 	}
@@ -44,7 +44,6 @@ func main() {
 	adm := gokord.AdminPermission
 
 	rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'un copaing").
-		HasOption().
 		AddOption(gokord.NewOption(
 			discordgo.ApplicationCommandOptionUser,
 			"copaing",
@@ -59,7 +58,6 @@ func main() {
 		).
 		AddSub(
 			gokord.NewCommand("xp", "Modifie l'xp").
-				HasOption().
 				AddOption(gokord.NewOption(
 					discordgo.ApplicationCommandOptionString,
 					"type",
@@ -83,7 +81,6 @@ func main() {
 		).
 		AddSub(
 			gokord.NewCommand("disabled-channels", "Modifie les salons désactivés").
-				HasOption().
 				AddOption(gokord.NewOption(
 					discordgo.ApplicationCommandOptionString,
 					"type",
@@ -101,7 +98,6 @@ func main() {
 		).
 		AddSub(
 			gokord.NewCommand("period-before-reduce", "Temps avant la perte d'xp (affecte aussi le /top)").
-				HasOption().
 				AddOption(gokord.NewOption(
 					discordgo.ApplicationCommandOptionInteger,
 					"days",
@@ -111,7 +107,6 @@ func main() {
 		).
 		AddSub(
 			gokord.NewCommand("fallback-channel", "Modifie le salon textuel par défaut").
-				HasOption().
 				AddOption(gokord.NewOption(
 					discordgo.ApplicationCommandOptionChannel,
 					"channel",
@@ -121,16 +116,13 @@ func main() {
 		).SetPermission(&adm)
 
 	topCmd := gokord.NewCommand("top", "Copaings les plus actifs").
-		HasOption().
 		SetHandler(commands.Top)
 
 	resetCmd := gokord.NewCommand("reset", "Reset l'xp").
-		HasOption().
 		SetHandler(commands.Reset).
 		SetPermission(&adm)
 
 	resetUserCmd := gokord.NewCommand("reset-user", "Reset l'xp d'un utilisation").
-		HasOption().
 		AddOption(gokord.NewOption(
 			discordgo.ApplicationCommandOptionUser,
 			"user",
@@ -140,7 +132,6 @@ func main() {
 		SetPermission(&adm)
 
 	creditsCmd := gokord.NewCommand("credits", "Crédits").
-		HasOption().
 		SetHandler(commands.Credits)
 
 	innovations, err := gokord.LoadInnovationFromJson(updatesData)
@@ -168,7 +159,7 @@ func main() {
 				Content: "Les Copaings Bot " + Version.String(),
 			},
 		},
-		Commands: []*gokord.GeneralCommand{
+		Commands: []gokord.CommandBuilder{
 			rankCmd,
 			configCmd,
 			topCmd,

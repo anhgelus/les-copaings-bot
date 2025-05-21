@@ -6,7 +6,7 @@ import (
 )
 
 func Credits(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	resp := utils.ResponseBuilder{C: s, I: i}
+	resp := utils.NewResponseBuilder(s, i)
 	err := resp.Embeds([]*discordgo.MessageEmbed{
 		{
 			Type:        discordgo.EmbedTypeRich,

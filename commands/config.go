@@ -12,7 +12,7 @@ import (
 
 func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	cfg := config.GetGuildConfig(i.GuildID)
-	resp := utils.ResponseBuilder{C: s, I: i}
+	resp := utils.NewResponseBuilder(s, i)
 	roles := ""
 	l := len(cfg.XpRoles) - 1
 	for i, r := range cfg.XpRoles {
@@ -80,8 +80,7 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	optMap := utils.GenerateOptionMapForSubcommand(i)
-	resp := utils.ResponseBuilder{C: s, I: i}
-	resp.IsEphemeral()
+	resp := utils.NewResponseBuilder(s, i).IsEphemeral()
 	// verify every args
 	t, ok := optMap["type"]
 	if !ok {
@@ -214,8 +213,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	optMap := utils.GenerateOptionMapForSubcommand(i)
-	resp := utils.ResponseBuilder{C: s, I: i}
-	resp.IsEphemeral()
+	resp := utils.NewResponseBuilder(s, i).IsEphemeral()
 	// verify every args
 	t, ok := optMap["type"]
 	if !ok {
@@ -286,8 +284,7 @@ func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 func ConfigFallbackChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	optMap := utils.GenerateOptionMapForSubcommand(i)
-	resp := utils.ResponseBuilder{C: s, I: i}
-	resp.IsEphemeral()
+	resp := utils.NewResponseBuilder(s, i).IsEphemeral()
 	// verify every args
 	salon, ok := optMap["channel"]
 	if !ok {
@@ -329,8 +326,7 @@ func ConfigFallbackChannel(s *discordgo.Session, i *discordgo.InteractionCreate)
 
 func ConfigPeriodBeforeReduce(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	optMap := utils.GenerateOptionMapForSubcommand(i)
-	resp := utils.ResponseBuilder{C: s, I: i}
-	resp.IsEphemeral()
+	resp := utils.NewResponseBuilder(s, i).IsEphemeral()
 	// verify every args
 	days, ok := optMap["days"]
 	if !ok {

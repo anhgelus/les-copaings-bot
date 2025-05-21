@@ -10,15 +10,13 @@ import (
 func Reset(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	var copaings []*user.Copaing
 	gokord.DB.Where("guild_id = ?", i.GuildID).Delete(&copaings)
-	resp := utils.ResponseBuilder{C: s, I: i}
-	if err := resp.IsEphemeral().Message("L'XP a été reset.").Send(); err != nil {
+	if err := utils.NewResponseBuilder(s, i).IsEphemeral().Message("L'XP a été reset.").Send(); err != nil {
 		utils.SendAlert("commands/reset.go - Sending success (all)", err.Error())
 	}
 }
 
 func ResetUser(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	resp := utils.ResponseBuilder{C: s, I: i}
-	resp.IsEphemeral()
+	resp := utils.NewResponseBuilder(s, i).IsEphemeral()
 	optMap := utils.GenerateOptionMap(i)
 	v, ok := optMap["user"]
 	if !ok {

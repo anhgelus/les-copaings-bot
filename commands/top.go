@@ -11,13 +11,12 @@ import (
 )
 
 func Top(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	resp := utils.ResponseBuilder{C: s, I: i}
-	err := resp.IsDeferred().Send()
+	resp := utils.NewResponseBuilder(s, i).IsDeferred()
+	err := resp.Send()
 	if err != nil {
 		utils.SendAlert("commands/top.go - Sending deferred", err.Error())
 		return
 	}
-	resp.NotDeferred().IsEdit()
 	embeds := make([]*discordgo.MessageEmbed, 3)
 	wg := sync.WaitGroup{}
 

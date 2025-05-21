@@ -14,7 +14,7 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	msg := "Votre niveau"
 	m := i.Member
 	var err error
-	resp := utils.ResponseBuilder{C: s, I: i}
+	resp := utils.NewResponseBuilder(s, i)
 	if v, ok := optMap["copaing"]; ok {
 		u := v.UserValue(s)
 		if u.Bot {
