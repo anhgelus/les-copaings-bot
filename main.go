@@ -19,7 +19,7 @@ var (
 	Version     = gokord.Version{
 		Major: 3,
 		Minor: 1,
-		Patch: 1,
+		Patch: 2,
 	}
 
 	stopPeriodicReducer chan<- interface{}
@@ -171,7 +171,9 @@ func main() {
 		AfterInit:   afterInit,
 		Innovations: innovations,
 		Version:     &Version,
-		Intents:     discordgo.IntentsAllWithoutPrivileged | discordgo.IntentsGuildMessages | discordgo.IntentGuildMembers,
+		Intents: discordgo.IntentsAllWithoutPrivileged |
+			discordgo.IntentsMessageContent |
+			discordgo.IntentGuildMembers,
 	}
 	bot.Start()
 
