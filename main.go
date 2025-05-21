@@ -171,6 +171,7 @@ func main() {
 		AfterInit:   afterInit,
 		Innovations: innovations,
 		Version:     &Version,
+		Intents:     discordgo.IntentsAllWithoutPrivileged | discordgo.IntentsGuildMessages | discordgo.IntentGuildMembers,
 	}
 	bot.Start()
 
