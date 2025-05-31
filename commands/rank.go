@@ -18,7 +18,7 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if v, ok := optMap["copaing"]; ok {
 		u := v.UserValue(s)
 		if u.Bot {
-			err = resp.Message("Imagine si les bots avaient un niveau :rolling_eyes:").IsEphemeral().Send()
+			err = resp.SetMessage("Imagine si les bots avaient un niveau :rolling_eyes:").IsEphemeral().Send()
 			if err != nil {
 				utils.SendAlert("commands/rank.go - Reply error user is a bot", err.Error())
 			}
@@ -33,7 +33,7 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				"guild_id",
 				i.GuildID,
 			)
-			err = resp.Message("Erreur : impossible de récupérer le membre").IsEphemeral().Send()
+			err = resp.SetMessage("Erreur : impossible de récupérer le membre").IsEphemeral().Send()
 			if err != nil {
 				utils.SendAlert("commands/rank.go - Reply error fetching guild member", err.Error())
 			}
@@ -52,7 +52,7 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			"guild_id",
 			i.GuildID,
 		)
-		err = resp.Message("Erreur : impossible de récupérer l'XP").IsEphemeral().Send()
+		err = resp.SetMessage("Erreur : impossible de récupérer l'XP").IsEphemeral().Send()
 		if err != nil {
 			utils.SendAlert("commands/rank.go - Reply error fetching xp", err.Error())
 		}
@@ -60,7 +60,7 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	lvl := exp.Level(xp)
 	nxtLvlXP := exp.LevelXP(lvl + 1)
-	err = resp.Message(fmt.Sprintf(
+	err = resp.SetMessage(fmt.Sprintf(
 		"%s : **%d**\n> XP : %d\n> Prochain niveau dans %d XP",
 		msg,
 		lvl,

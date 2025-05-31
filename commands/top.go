@@ -49,9 +49,12 @@ func Top(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	go func() {
 		wg.Wait()
 		if cfg.DaysXPRemains > 30 {
-			resp.Embeds(embeds)
+			resp.AddEmbed(embeds[0]).
+				AddEmbed(embeds[1]).
+				AddEmbed(embeds[2])
 		} else {
-			resp.Embeds(embeds[1:])
+			resp.AddEmbed(embeds[1]).
+				AddEmbed(embeds[2])
 		}
 		err = resp.Send()
 		if err != nil {

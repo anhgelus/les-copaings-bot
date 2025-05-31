@@ -44,32 +44,30 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	} else {
 		defaultChan = fmt.Sprintf("<#%s>", cfg.FallbackChannel)
 	}
-	err := resp.Embeds([]*discordgo.MessageEmbed{
-		{
-			Type:  discordgo.EmbedTypeRich,
-			Title: "Config",
-			Color: utils.Success,
-			Fields: []*discordgo.MessageEmbedField{
-				{
-					Name:   "Salon par défaut",
-					Value:  defaultChan,
-					Inline: false,
-				},
-				{
-					Name:   "Rôles liés aux niveaux",
-					Value:  roles,
-					Inline: false,
-				},
-				{
-					Name:   "Salons désactivés",
-					Value:  chans,
-					Inline: false,
-				},
-				{
-					Name:   "Jours avant la réduction",
-					Value:  fmt.Sprintf("%d", cfg.DaysXPRemains),
-					Inline: false,
-				},
+	err := resp.AddEmbed(&discordgo.MessageEmbed{
+		Type:  discordgo.EmbedTypeRich,
+		Title: "Config",
+		Color: utils.Success,
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Salon par défaut",
+				Value:  defaultChan,
+				Inline: false,
+			},
+			{
+				Name:   "Rôles liés aux niveaux",
+				Value:  roles,
+				Inline: false,
+			},
+			{
+				Name:   "Salons désactivés",
+				Value:  chans,
+				Inline: false,
+			},
+			{
+				Name:   "Jours avant la réduction",
+				Value:  fmt.Sprintf("%d", cfg.DaysXPRemains),
+				Inline: false,
 			},
 		},
 	}).Send()
@@ -84,7 +82,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// verify every args
 	t, ok := optMap["type"]
 	if !ok {
-		err := resp.Message("Le type d'action n'a pas été renseigné.").Send()
+		err := resp.SetMessage("Le type d'action n'a pas été renseigné.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Action type not set", err.Error())
 		}
@@ -93,7 +91,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	ts := t.StringValue()
 	lvl, ok := optMap["level"]
 	if !ok {
-		err := resp.Message("Le niveau n'a pas été renseigné.").Send()
+		err := resp.SetMessage("Le niveau n'a pas été renseigné.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Level not set", err.Error())
 		}
@@ -101,7 +99,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	level := lvl.IntValue()
 	if level < 1 {
-		err := resp.Message("Le niveau doit forcément être supérieur à 0.").Send()
+		err := resp.SetMessage("Le niveau doit forcément être supérieur à 0.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Invalid level", err.Error())
 		}
@@ -110,7 +108,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	xp := exp.LevelXP(uint(level))
 	r, ok := optMap["role"]
 	if !ok {
-		err := resp.Message("Le rôle n'a pas été renseigné.").Send()
+		err := resp.SetMessage("Le rôle n'a pas été renseigné.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Role not set", err.Error())
 		}
@@ -125,7 +123,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case "add":
 		for _, r := range cfg.XpRoles {
 			if r.RoleID == role.ID {
-				err = resp.Message("Le rôle est déjà présent dans la config").Send()
+				err = resp.SetMessage("Le rôle est déjà présent dans la config").Send()
 				if err != nil {
 					utils.SendAlert("commands/config.go - Role already in config", err.Error())
 				}
@@ -152,7 +150,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case "del":
 		_, r := cfg.FindXpRole(role.ID)
 		if r == nil {
-			err = resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
+			err = resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
 			if err != nil {
 				utils.SendAlert("commands/config.go - Role not found (del)", err.Error())
 			}
@@ -174,7 +172,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case "edit":
 		_, r := cfg.FindXpRole(role.ID)
 		if r == nil {
-			err = resp.Message("Le rôle n'a pas été trouvé dans la config.").Send()
+			err = resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
 			if err != nil {
 				utils.SendAlert("commands/config.go - Role not found (edit)", err.Error())
 			}
@@ -195,16 +193,16 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			)
 		}
 	default:
-		err = resp.Message("Le type d'action n'est pas valide.").Send()
+		err = resp.SetMessage("Le type d'action n'est pas valide.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Invalid action type", err.Error())
 		}
 		return
 	}
 	if err != nil {
-		err = resp.Message("Il y a eu une erreur lors de la modification de de la base de données.").Send()
+		err = resp.SetMessage("Il y a eu une erreur lors de la modification de de la base de données.").Send()
 	} else {
-		err = resp.Message("La configuration a bien été mise à jour.").Send()
+		err = resp.SetMessage("La configuration a bien été mise à jour.").Send()
 	}
 	if err != nil {
 		utils.SendAlert("commands/config.go - Config updated message", err.Error())
@@ -217,7 +215,7 @@ func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// verify every args
 	t, ok := optMap["type"]
 	if !ok {
-		err := resp.Message("Le type d'action n'a pas été renseigné.").Send()
+		err := resp.SetMessage("Le type d'action n'a pas été renseigné.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Action type not set", err.Error())
 		}
@@ -226,7 +224,7 @@ func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	ts := t.StringValue()
 	salon, ok := optMap["channel"]
 	if !ok {
-		err := resp.Message("Le salon n'a pas été renseigné.").Send()
+		err := resp.SetMessage("Le salon n'a pas été renseigné.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Channel not set (disabled)", err.Error())
 		}
@@ -237,7 +235,7 @@ func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	switch ts {
 	case "add":
 		if strings.Contains(cfg.DisabledChannels, channel.ID) {
-			err := resp.Message("Le salon est déjà dans la liste des salons désactivés").Send()
+			err := resp.SetMessage("Le salon est déjà dans la liste des salons désactivés").Send()
 			if err != nil {
 				utils.SendAlert("commands/config.go - Channel already disabled", err.Error())
 			}
@@ -246,7 +244,7 @@ func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		cfg.DisabledChannels += channel.ID + ";"
 	case "del":
 		if !strings.Contains(cfg.DisabledChannels, channel.ID) {
-			err := resp.Message("Le salon n'est pas désactivé").Send()
+			err := resp.SetMessage("Le salon n'est pas désactivé").Send()
 			if err != nil {
 				utils.SendAlert("commands/config.go - Channel not disabled", err.Error())
 			}
@@ -254,7 +252,7 @@ func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		cfg.DisabledChannels = strings.ReplaceAll(cfg.DisabledChannels, channel.ID+";", "")
 	default:
-		err := resp.Message("Le type d'action n'est pas valide.").Send()
+		err := resp.SetMessage("Le type d'action n'est pas valide.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Invalid action type", err.Error())
 		}
@@ -273,9 +271,9 @@ func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			"channel_id",
 			channel.ID,
 		)
-		err = resp.Message("Il y a eu une erreur lors de la modification de de la base de données.").Send()
+		err = resp.SetMessage("Il y a eu une erreur lors de la modification de de la base de données.").Send()
 	} else {
-		err = resp.Message("Modification sauvegardé.").Send()
+		err = resp.SetMessage("Modification sauvegardé.").Send()
 	}
 	if err != nil {
 		utils.SendAlert("commands/config.go - Modification saved message", err.Error())
@@ -288,7 +286,7 @@ func ConfigFallbackChannel(s *discordgo.Session, i *discordgo.InteractionCreate)
 	// verify every args
 	salon, ok := optMap["channel"]
 	if !ok {
-		err := resp.Message("Le salon n'a pas été renseigné.").Send()
+		err := resp.SetMessage("Le salon n'a pas été renseigné.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Channel not set (fallback)", err.Error())
 		}
@@ -296,7 +294,7 @@ func ConfigFallbackChannel(s *discordgo.Session, i *discordgo.InteractionCreate)
 	}
 	channel := salon.ChannelValue(s)
 	if channel.Type != discordgo.ChannelTypeGuildText {
-		err := resp.Message("Le salon n'est pas un salon textuel.").Send()
+		err := resp.SetMessage("Le salon n'est pas un salon textuel.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Invalid channel type", err.Error())
 		}
@@ -315,9 +313,9 @@ func ConfigFallbackChannel(s *discordgo.Session, i *discordgo.InteractionCreate)
 			"channel_id",
 			channel.ID,
 		)
-		err = resp.Message("Il y a eu une erreur lors de la modification de de la base de données.").Send()
+		err = resp.SetMessage("Il y a eu une erreur lors de la modification de de la base de données.").Send()
 	} else {
-		err = resp.Message("Salon enregistré.").Send()
+		err = resp.SetMessage("Salon enregistré.").Send()
 	}
 	if err != nil {
 		utils.SendAlert("commands/config.go - Channel saved message", err.Error())
@@ -330,7 +328,7 @@ func ConfigPeriodBeforeReduce(s *discordgo.Session, i *discordgo.InteractionCrea
 	// verify every args
 	days, ok := optMap["days"]
 	if !ok {
-		err := resp.Message("Le nombre de jours n'a pas été renseigné.").Send()
+		err := resp.SetMessage("Le nombre de jours n'a pas été renseigné.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Days not set (fallback)", err.Error())
 		}
@@ -338,7 +336,7 @@ func ConfigPeriodBeforeReduce(s *discordgo.Session, i *discordgo.InteractionCrea
 	}
 	d := days.IntValue()
 	if d < 30 {
-		err := resp.Message("Le nombre de jours est inférieur à 30.").Send()
+		err := resp.SetMessage("Le nombre de jours est inférieur à 30.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Days < 30 (fallback)", err.Error())
 		}
@@ -357,9 +355,9 @@ func ConfigPeriodBeforeReduce(s *discordgo.Session, i *discordgo.InteractionCrea
 			"days",
 			d,
 		)
-		err = resp.Message("Il y a eu une erreur lors de la modification de de la base de données.").Send()
+		err = resp.SetMessage("Il y a eu une erreur lors de la modification de de la base de données.").Send()
 	} else {
-		err = resp.Message("Nombre de jours enregistré.").Send()
+		err = resp.SetMessage("Nombre de jours enregistré.").Send()
 	}
 	if err != nil {
 		utils.SendAlert("commands/config.go - Days saved message", err.Error())
