@@ -5,8 +5,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Credits(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	resp := utils.NewResponseBuilder(s, i)
+func Credits(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {
 	err := resp.AddEmbed(&discordgo.MessageEmbed{
 
 		Type:        discordgo.EmbedTypeRich,
@@ -16,7 +15,7 @@ func Credits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "anhgelus/gokord",
-				Value:  "v0.9.0 - MPL 2.0",
+				Value:  "v0.10.0 - MPL 2.0",
 				Inline: true,
 			},
 			{
@@ -25,8 +24,8 @@ func Credits(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				Inline: true,
 			},
 			{
-				Name:   "redis/go-redis/v9",
-				Value:  "v9.8.0 - BSD-2-Clause",
+				Name:   "gorm",
+				Value:  "v1.30.0 - MIT",
 				Inline: true,
 			},
 		},

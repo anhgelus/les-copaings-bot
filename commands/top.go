@@ -10,9 +10,8 @@ import (
 	"sync"
 )
 
-func Top(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	resp := utils.NewResponseBuilder(s, i).IsDeferred()
-	err := resp.Send()
+func Top(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {
+	err := resp.IsDeferred().Send()
 	if err != nil {
 		utils.SendAlert("commands/top.go - Sending deferred", err.Error())
 		return

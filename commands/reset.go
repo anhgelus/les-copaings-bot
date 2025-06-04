@@ -7,17 +7,16 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Reset(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func Reset(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {
 	var copaings []*user.Copaing
 	gokord.DB.Where("guild_id = ?", i.GuildID).Delete(&copaings)
-	if err := utils.NewResponseBuilder(s, i).IsEphemeral().SetMessage("L'XP a été reset.").Send(); err != nil {
+	if err := resp.IsEphemeral().SetMessage("L'XP a été reset.").Send(); err != nil {
 		utils.SendAlert("commands/reset.go - Sending success (all)", err.Error())
 	}
 }
 
-func ResetUser(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	resp := utils.NewResponseBuilder(s, i).IsEphemeral()
-	optMap := utils.GenerateOptionMap(i)
+func ResetUser(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {
+	resp.IsEphemeral()
 	v, ok := optMap["user"]
 	if !ok {
 		if err := resp.SetMessage("Le user n'a pas été renseigné.").Send(); err != nil {

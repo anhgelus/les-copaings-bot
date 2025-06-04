@@ -8,13 +8,11 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Rank(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	optMap := utils.GenerateOptionMap(i)
+func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {
 	c := user.GetCopaing(i.Member.User.ID, i.GuildID) // current user = member who used /rank
 	msg := "Votre niveau"
 	m := i.Member
 	var err error
-	resp := utils.NewResponseBuilder(s, i)
 	if v, ok := optMap["copaing"]; ok {
 		u := v.UserValue(s)
 		if u.Bot {
