@@ -51,12 +51,12 @@ func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 		return
 	}
 	cfg := config.GetGuildConfig(e.GuildID)
-	if e.BeforeUpdate == nil && e.ChannelID != "" {
+	if (e.BeforeUpdate == nil || cfg.IsDisabled(e.BeforeUpdate.ChannelID)) && e.ChannelID != "" {
 		if cfg.IsDisabled(e.ChannelID) {
 			return
 		}
 		onConnection(s, e)
-	} else if e.BeforeUpdate != nil && e.ChannelID == "" {
+	} else if e.BeforeUpdate != nil && (e.ChannelID == "" || cfg.IsDisabled(e.ChannelID)) {
 		if cfg.IsDisabled(e.BeforeUpdate.ChannelID) {
 			return
 		}
@@ -73,8 +73,8 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	now := time.Now().Unix()
 	c := user.GetCopaing(e.UserID, e.GuildID)
 	// check the validity of user
-	con := connectedSince[e.UserID]
-	if con == NotConnected {
+	con, ok := connectedSince[e.UserID]
+	if !ok || con == NotConnected {
 		utils.SendWarn(fmt.Sprintf(
 			"User %s diconnect from a vocal but was registered as not connected", e.Member.DisplayName(),
 		))
