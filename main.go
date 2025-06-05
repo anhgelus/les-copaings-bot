@@ -19,7 +19,7 @@ var (
 	Version     = gokord.Version{
 		Major: 3,
 		Minor: 1,
-		Patch: 2,
+		Patch: 3,
 	}
 
 	stopPeriodicReducer chan<- interface{}
