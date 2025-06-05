@@ -64,16 +64,20 @@ func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	}
 }
 
+func genMapKey(guildID string, userID string) string {
+	return fmt.Sprintf("%s:%s", guildID, userID)
+}
+
 func onConnection(_ *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	utils.SendDebug("User connected", "username", e.Member.DisplayName())
-	connectedSince[e.UserID] = time.Now().Unix()
+	connectedSince[genMapKey(e.GuildID, e.UserID)] = time.Now().Unix()
 }
 
 func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	now := time.Now().Unix()
 	c := user.GetCopaing(e.UserID, e.GuildID)
 	// check the validity of user
-	con, ok := connectedSince[e.UserID]
+	con, ok := connectedSince[genMapKey(e.GuildID, e.UserID)]
 	if !ok || con == NotConnected {
 		utils.SendWarn(fmt.Sprintf(
 			"User %s diconnect from a vocal but was registered as not connected", e.Member.DisplayName(),
@@ -82,7 +86,7 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	}
 	timeInVocal := now - con
 	utils.SendDebug("User disconnected", "username", e.Member.DisplayName(), "time in vocal", timeInVocal)
-	connectedSince[e.UserID] = NotConnected
+	connectedSince[genMapKey(e.GuildID, e.UserID)] = NotConnected
 	// add exp
 	if timeInVocal < 0 {
 		utils.SendAlert(
