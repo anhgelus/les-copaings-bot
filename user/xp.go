@@ -6,6 +6,7 @@ import (
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/bwmarrin/discordgo"
+	"math"
 	"slices"
 	"sync"
 )
@@ -31,17 +32,18 @@ func (c *Copaing) AddXP(s *discordgo.Session, m *discordgo.Member, xp uint, fn f
 	}
 	pastLevel := exp.Level(old)
 	utils.SendDebug("Adding xp", "member", m.DisplayName(), "old xp", old, "xp to add", xp, "old level", pastLevel)
-	c.CopaingXPs = append(c.CopaingXPs, CopaingXP{CopaingID: c.ID, XP: xp, GuildID: c.GuildID})
+	c.CopaingXPs = append(c.CopaingXPs, CopaingXP{
+		CopaingID: c.ID,
+		XP:        uint(math.Floor(float64(xp) * c.GetBoost(m))),
+		GuildID:   c.GuildID,
+	})
 	if err = c.Save(); err != nil {
 		utils.SendAlert(
 			"user/xp.go - Saving user",
 			err.Error(),
-			"xp",
-			c.CopaingXPs,
-			"discord_id",
-			c.DiscordID,
-			"guild_id",
-			c.GuildID,
+			"xp", c.CopaingXPs,
+			"discord_id", c.DiscordID,
+			"guild_id", c.GuildID,
 		)
 		return
 	}
@@ -82,6 +84,13 @@ func (c *Copaing) GetXPForDays(n uint) (uint, error) {
 		xp += cxp.XP
 	}
 	return xp, nil
+}
+
+func (c *Copaing) GetBoost(m *discordgo.Member) float64 {
+	if m.PremiumSince != nil {
+		return 2.0
+	}
+	return 1.0
 }
 
 // GetBestXP returns n Copaing with the best XP within d days (d <= cfg.DaysXPRemain; d < 0 <=> d = cfg.DaysXPRemain)
