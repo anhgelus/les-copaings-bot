@@ -7,15 +7,30 @@ import (
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/bwmarrin/discordgo"
+	"strconv"
 	"strings"
+	"time"
 )
 
 const (
-	SelectConfigModify             = "config_modify"
-	SelectOptConfigXpRole          = "xp_role"
-	SelectOptConfigDisChannel      = "disabled_channel"
-	SelectOptConfigFallbackChannel = "fallback_channel"
-	SelectOptConfigTimeReduce      = "time_reduce"
+	ConfigModify                = "config_modify"
+	ConfigModifyXpRole          = "xp_role"
+	ConfigModifyDisChannel      = "disabled_channel"
+	ConfigModifyFallbackChannel = "fallback_channel"
+	ConfigModifyTimeReduce      = "time_reduce"
+	// xp role related
+	XpRoleAdd       = "xp_role_add"
+	XpRoleAddLevel  = "xp_role_add_level"
+	XpRoleAddRole   = "xp_role_add_role"
+	XpRoleDel       = "xp_role_del"
+	XpRoleDelRole   = "xp_role_del_role"
+	XpRoleEdit      = "xp_role_edit"
+	XpRoleEditLevel = "xp_role_edit_level"
+	XpRoleEditRole  = "xp_role_edit_role"
+)
+
+var (
+	configModifyMap = map[string]uint{}
 )
 
 func Config(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {
@@ -80,30 +95,30 @@ func Config(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.O
 	}).AddComponent(discordgo.ActionsRow{Components: []discordgo.MessageComponent{
 		discordgo.SelectMenu{
 			MenuType:    discordgo.StringSelectMenu,
-			CustomID:    SelectConfigModify,
+			CustomID:    ConfigModify,
 			Placeholder: "Modifier...",
 			Options: []discordgo.SelectMenuOption{
 				{
 					Label:       "Rôles liés à l'XP",
-					Value:       SelectOptConfigXpRole,
+					Value:       ConfigModifyXpRole,
 					Description: "Gère les rôles liés à l'XP",
 					Emoji:       &discordgo.ComponentEmoji{Name: "🏅"},
 				},
 				{
 					Label:       "Salons désactivés",
-					Value:       SelectOptConfigDisChannel,
+					Value:       ConfigModifyDisChannel,
 					Description: "Gère les salons désactivés",
 					Emoji:       &discordgo.ComponentEmoji{Name: "❌"},
 				},
 				{
 					Label:       "Salons de repli", // I don't have a better idea for this...
-					Value:       SelectOptConfigFallbackChannel,
+					Value:       ConfigModifyFallbackChannel,
 					Description: "Spécifie le salon de repli",
 					Emoji:       &discordgo.ComponentEmoji{Name: "💾"},
 				},
 				{
 					Label:       "Temps avec la réduction",
-					Value:       SelectOptConfigTimeReduce,
+					Value:       ConfigModifyTimeReduce,
 					Description: "Gère le temps avant la réduction d'XP",
 					Emoji:       &discordgo.ComponentEmoji{Name: "⌛"},
 				},
@@ -117,52 +132,76 @@ func Config(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.O
 }
 
 func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	resp.IsEphemeral()
-	// verify every args
-	t, ok := optMap["type"]
-	if !ok {
-		err := resp.SetMessage("Le type d'action n'a pas été renseigné.").Send()
-		if err != nil {
-			utils.SendAlert("commands/config.go - Action type not set", err.Error())
-		}
+	if i.Type != discordgo.InteractionMessageComponent {
 		return
 	}
-	ts := t.StringValue()
-	lvl, ok := optMap["level"]
-	if !ok {
-		err := resp.SetMessage("Le niveau n'a pas été renseigné.").Send()
-		if err != nil {
-			utils.SendAlert("commands/config.go - Level not set", err.Error())
-		}
-		return
-	}
-	level := lvl.IntValue()
-	if level < 1 {
-		err := resp.SetMessage("Le niveau doit forcément être supérieur à 0.").Send()
-		if err != nil {
-			utils.SendAlert("commands/config.go - Invalid level", err.Error())
-		}
-		return
-	}
-	xp := exp.LevelXP(uint(level))
-	r, ok := optMap["role"]
-	if !ok {
-		err := resp.SetMessage("Le rôle n'a pas été renseigné.").Send()
-		if err != nil {
-			utils.SendAlert("commands/config.go - Role not set", err.Error())
-		}
-		return
-	}
-	role := r.RoleValue(s, i.GuildID)
+
 	cfg := config.GetGuildConfig(i.GuildID)
 
-	// add or delete or edit
-	var err error
-	switch ts {
-	case "add":
+	resp := utils.NewResponseBuilder(s, i)
+
+	msgData := i.MessageComponentData()
+	switch msgData.CustomID {
+	case ConfigModifyXpRole:
+		err := resp.IsEphemeral().
+			SetMessage("Action à réaliser").
+			AddComponent(discordgo.ActionsRow{Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					MenuType:    discordgo.StringSelectMenu,
+					CustomID:    ConfigModify,
+					Placeholder: "Action",
+					Options: []discordgo.SelectMenuOption{
+						{
+							Label:       "Ajouter",
+							Value:       XpRoleAdd,
+							Description: "Ajouter un rôle à XP",
+							Emoji:       &discordgo.ComponentEmoji{Name: "⬆️"},
+						},
+						{
+							Label:       "Supprimer",
+							Value:       XpRoleDel,
+							Description: "Supprimer un rôle à XP",
+							Emoji:       &discordgo.ComponentEmoji{Name: "❌"},
+						},
+						{
+							Label:       "Modifier",
+							Value:       XpRoleEdit,
+							Description: "Modifier un rôle à XP",
+							Emoji:       &discordgo.ComponentEmoji{Name: "📝"},
+						},
+					},
+				},
+			}}).Send()
+		if err != nil {
+			utils.SendAlert("config/guild.go - Sending config", err.Error())
+		}
+	case XpRoleAdd, XpRoleEdit:
+		cID := XpRoleAddLevel
+		if msgData.CustomID == XpRoleEdit {
+			cID = XpRoleEditLevel
+		}
+		err := resp.IsModal().
+			SetTitle("Role").
+			AddComponent(discordgo.ActionsRow{Components: []discordgo.MessageComponent{
+				discordgo.TextInput{
+					CustomID:    cID,
+					Label:       "Niveau",
+					Style:       discordgo.TextInputShort,
+					Placeholder: "5",
+					Required:    true,
+					MinLength:   0,
+					MaxLength:   5,
+				},
+			}}).
+			Send()
+		if err != nil {
+			utils.SendAlert("config/guild.go - Sending modal to add", err.Error())
+		}
+	case XpRoleAddRole:
+		roleId := msgData.Values[0]
 		for _, r := range cfg.XpRoles {
-			if r.RoleID == role.ID {
-				err = resp.SetMessage("Le rôle est déjà présent dans la config").Send()
+			if r.RoleID == roleId {
+				err := resp.SetMessage("Le rôle est déjà présent dans la config").Send()
 				if err != nil {
 					utils.SendAlert("commands/config.go - Role already in config", err.Error())
 				}
@@ -170,82 +209,140 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 		}
 		cfg.XpRoles = append(cfg.XpRoles, config.XpRole{
-			XP:     xp,
-			RoleID: role.ID,
+			XP:     configModifyMap[getKeyConfigRole(i)],
+			RoleID: roleId,
 		})
-		err = cfg.Save()
+		err := cfg.Save()
 		if err != nil {
 			utils.SendAlert(
 				"commands/config.go - Saving config",
 				err.Error(),
-				"guild_id",
-				i.GuildID,
-				"role_id",
-				role.ID,
-				"type",
-				"add",
+				"guild_id", i.GuildID,
+				"role_id", roleId,
+				"type", "add",
 			)
 		}
-	case "del":
-		_, r := cfg.FindXpRole(role.ID)
-		if r == nil {
-			err = resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
-			if err != nil {
-				utils.SendAlert("commands/config.go - Role not found (del)", err.Error())
-			}
-			return
+		if err = resp.IsEphemeral().SetMessage("Rôle ajouté.").Send(); err != nil {
+			utils.SendAlert("commands/config.go - Sending success", err.Error())
 		}
-		err = gokord.DB.Delete(r).Error
-		if err != nil {
-			utils.SendAlert(
-				"commands/config.go - Deleting entry",
-				err.Error(),
-				"guild_id",
-				i.GuildID,
-				"role_id",
-				role.ID,
-				"type",
-				"del",
-			)
-		}
-	case "edit":
-		_, r := cfg.FindXpRole(role.ID)
+	case XpRoleEditRole:
+		roleId := msgData.Values[0]
+		_, r := cfg.FindXpRole(roleId)
 		if r == nil {
-			err = resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
+			err := resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
 			if err != nil {
 				utils.SendAlert("commands/config.go - Role not found (edit)", err.Error())
 			}
 			return
 		}
-		r.XP = xp
-		err = gokord.DB.Save(r).Error
+		r.XP = configModifyMap[getKeyConfigRole(i)]
+		err := gokord.DB.Save(r).Error
 		if err != nil {
 			utils.SendAlert(
 				"commands/config.go - Saving config",
 				err.Error(),
-				"guild_id",
-				i.GuildID,
-				"role_id",
-				role.ID,
-				"type",
-				"edit",
+				"guild_id", i.GuildID,
+				"role_id", roleId,
+				"type", "edit",
 			)
 		}
+		if err = resp.IsEphemeral().SetMessage("Rôle modifié.").Send(); err != nil {
+			utils.SendAlert("commands/config.go - Sending success", err.Error())
+		}
+	case XpRoleDel:
+		err := resp.IsEphemeral().
+			SetMessage("Rôle à supprimer").
+			AddComponent(discordgo.ActionsRow{Components: []discordgo.MessageComponent{discordgo.SelectMenu{
+				MenuType: discordgo.RoleSelectMenu,
+				CustomID: XpRoleDelRole,
+			}}}).
+			Send()
+		if err != nil {
+			utils.SendAlert("config/guild.go - Sending response to del", err.Error())
+		}
+	case XpRoleDelRole:
+		roleId := msgData.Values[0]
+		_, r := cfg.FindXpRole(roleId)
+		if r == nil {
+			err := resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
+			if err != nil {
+				utils.SendAlert("commands/config.go - Role not found (del)", err.Error())
+			}
+			return
+		}
+		err := gokord.DB.Delete(r).Error
+		if err != nil {
+			utils.SendAlert(
+				"commands/config.go - Deleting entry",
+				err.Error(),
+				"guild_id", i.GuildID,
+				"role_id", roleId,
+				"type", "del",
+			)
+		}
+		if err = resp.IsEphemeral().SetMessage("Rôle supprimé.").Send(); err != nil {
+			utils.SendAlert("commands/config.go - Sending success", err.Error())
+		}
 	default:
-		err = resp.SetMessage("Le type d'action n'est pas valide.").Send()
+		err := resp.SetMessage("Le type d'action n'est pas valide.").Send()
 		if err != nil {
 			utils.SendAlert("commands/config.go - Invalid action type", err.Error())
 		}
 		return
 	}
-	if err != nil {
-		err = resp.SetMessage("Il y a eu une erreur lors de la modification de de la base de données.").Send()
-	} else {
-		err = resp.SetMessage("La configuration a bien été mise à jour.").Send()
+}
+
+func ConfigXPModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.Type != discordgo.InteractionModalSubmit {
+		return
 	}
-	if err != nil {
-		utils.SendAlert("commands/config.go - Config updated message", err.Error())
+	resp := utils.NewResponseBuilder(s, i)
+
+	modalData := i.ModalSubmitData()
+
+	if modalData.CustomID != XpRoleAddLevel && modalData.CustomID != XpRoleEditLevel {
+		return
 	}
+
+	input := modalData.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput)
+
+	k := getKeyConfigRole(i)
+	in, err := strconv.Atoi(input.Value)
+	if err != nil || in < 0 {
+		if err = resp.IsEphemeral().
+			SetMessage("Impossible de lire le nombre. Il doit s'agit d'un nombre entier positif.").
+			Send(); err != nil {
+			utils.SendAlert("command/config.go - Sending bad number", err.Error())
+		}
+		return
+	}
+	configModifyMap[k] = uint(in)
+	go func(i *discordgo.InteractionCreate, k string) {
+		time.Sleep(5 * time.Minute)
+		delete(configModifyMap, k)
+	}(i, k)
+
+	cID := XpRoleAddRole
+	resp.SetMessage("Rôle à ajouter")
+	if modalData.CustomID == XpRoleEditLevel {
+		cID = XpRoleEditLevel
+		resp.SetMessage("Rôle à modifier")
+	}
+
+	err = resp.IsEphemeral().
+		SetMessage("Rôle à supprimer").
+		AddComponent(discordgo.ActionsRow{Components: []discordgo.MessageComponent{discordgo.SelectMenu{
+			MenuType: discordgo.RoleSelectMenu,
+			CustomID: cID,
+		}}}).
+		Send()
+	if err != nil {
+		utils.SendAlert("config/guild.go - Sending response to add/edit", err.Error())
+	}
+}
+
+func getKeyConfigRole(i *discordgo.InteractionCreate) string {
+	return fmt.Sprintf("r:%s:%s", i.GuildID, i.User.ID)
 }
 
 func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {

@@ -141,4 +141,5 @@ func afterInit(dg *discordgo.Session) {
 
 	//interaction: /config
 	dg.AddHandler(commands.ConfigXP)
+	dg.AddHandler(commands.ConfigXPModal)
 }
