@@ -8,7 +8,7 @@ Bot for the private server Discord "Les Copaings"
 - Roles management
 - Purge command
 
-### CopaingXPs
+### XPs
 
 Functions:
 - $xp-message(x;y) = 0.025 x^{1.25}\sqrt{y}+1$ where $x$ is the length of the message and $y$ is the diversity of the 
