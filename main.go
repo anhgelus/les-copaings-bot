@@ -60,68 +60,8 @@ func main() {
 		SetHandler(commands.Rank)
 
 	configCmd := gokord.NewCommand("config", "Modifie la config").
-		ContainsSub().
-		AddSub(
-			gokord.NewCommand("show", "Affiche la config").SetHandler(commands.ConfigShow),
-		).
-		AddSub(
-			gokord.NewCommand("xp", "Modifie l'xp").
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionString,
-					"type",
-					"Type d'action à effectuer",
-				).
-					AddChoice(gokord.NewChoice("Ajouter", "add")).
-					AddChoice(gokord.NewChoice("Supprimer", "del")).
-					AddChoice(gokord.NewChoice("Modifier", "edit")).IsRequired(),
-				).
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionInteger,
-					"level",
-					"Niveau du rôle",
-				).IsRequired()).
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionRole,
-					"role",
-					"Rôle",
-				).IsRequired()).
-				SetHandler(commands.ConfigXP),
-		).
-		AddSub(
-			gokord.NewCommand("disabled-channels", "Modifie les salons désactivés").
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionString,
-					"type",
-					"Type d'action à effectuer",
-				).
-					AddChoice(gokord.NewChoice("Désactiver le salon", "add")).
-					AddChoice(gokord.NewChoice("Activer le salon", "del")).IsRequired(),
-				).
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionChannel,
-					"channel",
-					"Salon à modifier",
-				).IsRequired()).
-				SetHandler(commands.ConfigChannel),
-		).
-		AddSub(
-			gokord.NewCommand("period-before-reduce", "Temps avant la perte d'xp (affecte aussi le /top)").
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionInteger,
-					"days",
-					"Nombre de jours avant la perte d'xp (doit être égal ou plus grand que 30)",
-				).IsRequired()).
-				SetHandler(commands.ConfigPeriodBeforeReduce),
-		).
-		AddSub(
-			gokord.NewCommand("fallback-channel", "Modifie le salon textuel par défaut").
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionChannel,
-					"channel",
-					"Salon textuel par défaut",
-				).IsRequired()).
-				SetHandler(commands.ConfigFallbackChannel),
-		).SetPermission(&adm)
+		SetPermission(&adm).
+		SetHandler(commands.Config)
 
 	topCmd := gokord.NewCommand("top", "Copaings les plus actifs").
 		SetHandler(commands.Top)
@@ -198,4 +138,7 @@ func afterInit(dg *discordgo.Session) {
 	stopPeriodicReducer = utils.NewTimer(24*time.Hour, func(stop chan<- interface{}) {
 		user.PeriodicReducer(dg)
 	})
+
+	//interaction: /config
+	dg.AddHandler(commands.ConfigXP)
 }

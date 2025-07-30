@@ -10,7 +10,15 @@ import (
 	"strings"
 )
 
-func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {
+const (
+	SelectConfigModify             = "config_modify"
+	SelectOptConfigXpRole          = "xp_role"
+	SelectOptConfigDisChannel      = "disabled_channel"
+	SelectOptConfigFallbackChannel = "fallback_channel"
+	SelectOptConfigTimeReduce      = "time_reduce"
+)
+
+func Config(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {
 	cfg := config.GetGuildConfig(i.GuildID)
 	roles := ""
 	l := len(cfg.XpRoles) - 1
@@ -69,13 +77,46 @@ func ConfigShow(s *discordgo.Session, i *discordgo.InteractionCreate, optMap uti
 				Inline: false,
 			},
 		},
-	}).Send()
+	}).AddComponent(discordgo.ActionsRow{Components: []discordgo.MessageComponent{
+		discordgo.SelectMenu{
+			MenuType:    discordgo.StringSelectMenu,
+			CustomID:    SelectConfigModify,
+			Placeholder: "Modifier...",
+			Options: []discordgo.SelectMenuOption{
+				{
+					Label:       "Rôles liés à l'XP",
+					Value:       SelectOptConfigXpRole,
+					Description: "Gère les rôles liés à l'XP",
+					Emoji:       &discordgo.ComponentEmoji{Name: "🏅"},
+				},
+				{
+					Label:       "Salons désactivés",
+					Value:       SelectOptConfigDisChannel,
+					Description: "Gère les salons désactivés",
+					Emoji:       &discordgo.ComponentEmoji{Name: "❌"},
+				},
+				{
+					Label:       "Salons de repli", // I don't have a better idea for this...
+					Value:       SelectOptConfigFallbackChannel,
+					Description: "Spécifie le salon de repli",
+					Emoji:       &discordgo.ComponentEmoji{Name: "💾"},
+				},
+				{
+					Label:       "Temps avec la réduction",
+					Value:       SelectOptConfigTimeReduce,
+					Description: "Gère le temps avant la réduction d'XP",
+					Emoji:       &discordgo.ComponentEmoji{Name: "⌛"},
+				},
+			},
+			Disabled: false,
+		},
+	}}).IsEphemeral().Send()
 	if err != nil {
 		utils.SendAlert("config/guild.go - Sending config", err.Error())
 	}
 }
 
-func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {
+func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	resp.IsEphemeral()
 	// verify every args
 	t, ok := optMap["type"]
