@@ -87,10 +87,17 @@ func (c *Copaing) GetXPForDays(n uint) (uint, error) {
 }
 
 func (c *Copaing) GetBoost(m *discordgo.Member) float64 {
+	boost := 1.0
 	if m.PremiumSince != nil {
-		return 2.0
+		boost = max(boost, 2.0)
 	}
-	return 1.0
+	cfg := config.GetGuildConfig(c.GuildID)
+	for _, r := range cfg.BoostXpRoles {
+		if slices.Contains(m.Roles, r.RoleID) {
+			boost = max(boost, r.Boost)
+		}
+	}
+	return boost
 }
 
 // GetBestXP returns n Copaing with the best XP within d days (d <= cfg.DaysXPRemain; d < 0 <=> d = cfg.DaysXPRemain)
