@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/anhgelus/gokord"
 	"math"
+	"regexp"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -56,4 +58,16 @@ func TimeStampNDaysBefore(n uint) string {
 		y, m, d = time.Unix(time.Now().Unix()-int64(n*24*60*60), 0).Date()
 	}
 	return fmt.Sprintf("%d-%d-%d", y, m, d)
+}
+
+func TrimMessage(s string) string {
+	not := regexp.MustCompile("[^a-zA-Z0-9éèêàùûç,;:!.?]")
+	ping := regexp.MustCompile("<(@&?|#)[0-9]{18}>")
+	link := regexp.MustCompile("https?://[a-zA-Z0-9.]+[.][a-z]+.*")
+
+	s = ping.ReplaceAllLiteralString(s, "")
+	s = link.ReplaceAllLiteralString(s, "")
+	s = not.ReplaceAllLiteralString(s, "")
+
+	return strings.Trim(s, " ")
 }
