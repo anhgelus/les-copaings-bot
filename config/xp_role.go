@@ -37,24 +37,20 @@ var (
 func HandleModifyXpRole(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
 	err := resp.IsEphemeral().
 		SetMessage("Action à réaliser").
-		SetComponents(component.New().Add(component.NewActionRow().Add(
-			component.NewStringSelect(ModifyXpRole).SetPlaceholder("Action").
-				AddOption(
-					component.NewSelectOption("Ajouter", XpRoleAdd).
-						SetDescription("Ajouter un rôle à XP").
-						SetEmoji(&discordgo.ComponentEmoji{Name: "⬆️"}),
-				).
-				AddOption(
-					component.NewSelectOption("Modifier", XpRoleEdit).
-						SetDescription("Modifier un rôle à XP").
-						SetEmoji(&discordgo.ComponentEmoji{Name: "📝"}),
-				).
-				AddOption(
-					component.NewSelectOption("Supprimer", XpRoleDel).
-						SetDescription("Supprimer un rôle à XP").
-						SetEmoji(&discordgo.ComponentEmoji{Name: "❌"}),
-				),
-		))).Send()
+		SetComponents(component.New().Add(component.NewActionRow().
+			Add(component.NewButton(XpRoleAdd, discordgo.PrimaryButton).
+				SetLabel("Ajouter").
+				SetEmoji(&discordgo.ComponentEmoji{Name: "⬆️"}),
+			).
+			Add(component.NewButton(XpRoleEdit, discordgo.SecondaryButton).
+				SetLabel("Modifier").
+				SetEmoji(&discordgo.ComponentEmoji{Name: "📝"}),
+			).
+			Add(component.NewButton(XpRoleDel, discordgo.DangerButton).
+				SetLabel("Supprimer").
+				SetEmoji(&discordgo.ComponentEmoji{Name: "❌"}),
+			),
+		)).Send()
 	if err != nil {
 		logger.Alert("config/guild.go - Sending config", err.Error())
 	}
