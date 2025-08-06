@@ -129,15 +129,15 @@ func main() {
 	}
 
 	// interaction: /config
-	bot.HandleMessageComponent(commands.ConfigModifyXPRole, commands.ConfigModifyXpRole)
-	bot.HandleMessageComponent(commands.ConfigXPRoleAddEdit, commands.XpRoleAdd)
-	bot.HandleMessageComponent(commands.ConfigXPRoleAddEdit, commands.XpRoleEdit)
-	bot.HandleMessageComponent(commands.ConfigXPRoleAddRole, commands.XpRoleAddRole)
-	bot.HandleMessageComponent(commands.ConfigXPRoleEditRole, commands.XpRoleEditRole)
-	bot.HandleMessageComponent(commands.ConfigXPRoleDel, commands.XpRoleDel)
-	bot.HandleMessageComponent(commands.ConfigXPRoleDelRole, commands.XpRoleDelRole)
-	bot.HandleModal(commands.ConfigXPRoleLevel, commands.XpRoleAddLevel)
-	bot.HandleModal(commands.ConfigXPRoleLevel, commands.XpRoleEditLevel)
+	bot.HandleMessageComponent(config.HandleModifyXpRole, config.ModifyXpRole)
+	bot.HandleMessageComponent(config.HandleXpRoleAddEdit, config.XpRoleAdd)
+	bot.HandleMessageComponent(config.HandleXpRoleAddEdit, config.XpRoleEdit)
+	bot.HandleMessageComponent(config.HandleXpRoleAddRole, config.XpRoleAddRole)
+	bot.HandleMessageComponent(config.HandleXpRoleEditRole, config.XpRoleEditRole)
+	bot.HandleMessageComponent(config.HandleXpRoleDel, config.XpRoleDel)
+	bot.HandleMessageComponent(config.HandleXpRoleDelRole, config.XpRoleDelRole)
+	bot.HandleModal(config.HandleXpRoleLevel, config.XpRoleAddLevel)
+	bot.HandleModal(config.HandleXpRoleLevel, config.XpRoleEditLevel)
 
 	// xp handlers
 	bot.AddHandler(OnMessage)
