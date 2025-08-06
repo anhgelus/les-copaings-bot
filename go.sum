@@ -8,6 +8,8 @@ github.com/anhgelus/gokord v0.11.1-0.20250806004311-9988b375047f h1:OSTlmWDVRGw3
 github.com/anhgelus/gokord v0.11.1-0.20250806004311-9988b375047f/go.mod h1:4xpwLzIG34/XG9QZiPsnYScQhckiCpQMAI0CjP0Nc2k=
 github.com/anhgelus/gokord v0.11.1-0.20250806122118-84c56722e29d h1:cbhaSdjjipiF5yFijgewtkjE0HyHZ6tJR7zHBpCkkBI=
 github.com/anhgelus/gokord v0.11.1-0.20250806122118-84c56722e29d/go.mod h1:4xpwLzIG34/XG9QZiPsnYScQhckiCpQMAI0CjP0Nc2k=
+github.com/anhgelus/gokord v0.11.1-0.20250806143823-567c33f63688 h1:0ngeLQxHr80Xup9UnPSjpdRH3ZpIH1mpf0ig3sEFVJk=
+github.com/anhgelus/gokord v0.11.1-0.20250806143823-567c33f63688/go.mod h1:4xpwLzIG34/XG9QZiPsnYScQhckiCpQMAI0CjP0Nc2k=
 github.com/bsm/ginkgo/v2 v2.12.0 h1:Ny8MWAHyOepLGlLKYmXG4IEkioBysk6GpaRTLC8zwWs=
 github.com/bsm/ginkgo/v2 v2.12.0/go.mod h1:SwYbGRRDovPVboqFv0tPTcG1sN61LM1Z4ARdbAV9g4c=
 github.com/bsm/gomega v1.27.10 h1:yeMWxP2pV2fG3FgAODIY8EiRE3dy0aeFYt4l7wh6yKA=
