@@ -123,164 +123,148 @@ func Config(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMa
 	}
 }
 
-func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	if i.Type != discordgo.InteractionMessageComponent {
-		return
-	}
-
-	cfg := config.GetGuildConfig(i.GuildID)
-
-	resp := cmd.NewResponseBuilder(s, i)
-
-	msgData := i.MessageComponentData()
-	switch msgData.CustomID {
-	case ConfigModifyXpRole:
-		err := resp.IsEphemeral().
-			SetMessage("Action à réaliser").
-			SetComponents(component.New().Add(component.NewActionRow().Add(
-				component.NewStringSelect(ConfigModify).SetPlaceholder("Action").
-					AddOption(
-						component.NewSelectOption("Ajouter", XpRoleAdd).
-							SetDescription("Ajouter un rôle à XP").
-							SetEmoji(&discordgo.ComponentEmoji{Name: "⬆️"}),
-					).
-					AddOption(
-						component.NewSelectOption("Modifier", XpRoleEdit).
-							SetDescription("Modifier un rôle à XP").
-							SetEmoji(&discordgo.ComponentEmoji{Name: "📝"}),
-					).
-					AddOption(
-						component.NewSelectOption("Supprimer", XpRoleDel).
-							SetDescription("Supprimer un rôle à XP").
-							SetEmoji(&discordgo.ComponentEmoji{Name: "❌"}),
-					),
-			))).Send()
-		if err != nil {
-			logger.Alert("config/guild.go - Sending config", err.Error())
-		}
-	case XpRoleAdd, XpRoleEdit:
-		cID := XpRoleAddLevel
-		if msgData.CustomID == XpRoleEdit {
-			cID = XpRoleEditLevel
-		}
-		err := resp.IsModal().
-			SetTitle("Role").
-			SetComponents(component.New().ForModal().Add(component.NewActionRow().Add(
-				component.NewTextInput(cID, "Niveau", discordgo.TextInputShort).
-					SetPlaceholder("5").
-					IsRequired().
-					SetMinLength(0).
-					SetMaxLength(5),
-			))).
-			Send()
-		if err != nil {
-			logger.Alert("config/guild.go - Sending modal to add", err.Error())
-		}
-	case XpRoleAddRole:
-		roleId := msgData.Values[0]
-		for _, r := range cfg.XpRoles {
-			if r.RoleID == roleId {
-				err := resp.SetMessage("Le rôle est déjà présent dans la config").Send()
-				if err != nil {
-					logger.Alert("commands/config.go - Role already in config", err.Error())
-				}
-				return
-			}
-		}
-		cfg.XpRoles = append(cfg.XpRoles, config.XpRole{
-			XP:     configModifyMap[getKeyConfigRole(i)],
-			RoleID: roleId,
-		})
-		err := cfg.Save()
-		if err != nil {
-			logger.Alert(
-				"commands/config.go - Saving config",
-				err.Error(),
-				"guild_id", i.GuildID,
-				"role_id", roleId,
-				"type", "add",
-			)
-		}
-		if err = resp.IsEphemeral().SetMessage("Rôle ajouté.").Send(); err != nil {
-			logger.Alert("commands/config.go - Sending success", err.Error())
-		}
-	case XpRoleEditRole:
-		roleId := msgData.Values[0]
-		_, r := cfg.FindXpRole(roleId)
-		if r == nil {
-			err := resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
-			if err != nil {
-				logger.Alert("commands/config.go - Role not found (edit)", err.Error())
-			}
-			return
-		}
-		r.XP = configModifyMap[getKeyConfigRole(i)]
-		err := gokord.DB.Save(r).Error
-		if err != nil {
-			logger.Alert(
-				"commands/config.go - Saving config",
-				err.Error(),
-				"guild_id", i.GuildID,
-				"role_id", roleId,
-				"type", "edit",
-			)
-		}
-		if err = resp.IsEphemeral().SetMessage("Rôle modifié.").Send(); err != nil {
-			logger.Alert("commands/config.go - Sending success", err.Error())
-		}
-	case XpRoleDel:
-		err := resp.IsEphemeral().
-			SetMessage("Rôle à supprimer").
-			SetComponents(component.New().Add(component.NewActionRow().Add(component.NewRoleSelect(XpRoleDelRole)))).
-			Send()
-		if err != nil {
-			logger.Alert("config/guild.go - Sending response to del", err.Error())
-		}
-	case XpRoleDelRole:
-		roleId := msgData.Values[0]
-		_, r := cfg.FindXpRole(roleId)
-		if r == nil {
-			err := resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
-			if err != nil {
-				logger.Alert("commands/config.go - Role not found (del)", err.Error())
-			}
-			return
-		}
-		err := gokord.DB.Delete(r).Error
-		if err != nil {
-			logger.Alert(
-				"commands/config.go - Deleting entry",
-				err.Error(),
-				"guild_id", i.GuildID,
-				"role_id", roleId,
-				"type", "del",
-			)
-		}
-		if err = resp.IsEphemeral().SetMessage("Rôle supprimé.").Send(); err != nil {
-			logger.Alert("commands/config.go - Sending success", err.Error())
-		}
-	default:
-		err := resp.SetMessage("Le type d'action n'est pas valide.").Send()
-		if err != nil {
-			logger.Alert("commands/config.go - Invalid action type", err.Error())
-		}
-		return
+func ConfigModifyXPRole(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+	err := resp.IsEphemeral().
+		SetMessage("Action à réaliser").
+		SetComponents(component.New().Add(component.NewActionRow().Add(
+			component.NewStringSelect(ConfigModify).SetPlaceholder("Action").
+				AddOption(
+					component.NewSelectOption("Ajouter", XpRoleAdd).
+						SetDescription("Ajouter un rôle à XP").
+						SetEmoji(&discordgo.ComponentEmoji{Name: "⬆️"}),
+				).
+				AddOption(
+					component.NewSelectOption("Modifier", XpRoleEdit).
+						SetDescription("Modifier un rôle à XP").
+						SetEmoji(&discordgo.ComponentEmoji{Name: "📝"}),
+				).
+				AddOption(
+					component.NewSelectOption("Supprimer", XpRoleDel).
+						SetDescription("Supprimer un rôle à XP").
+						SetEmoji(&discordgo.ComponentEmoji{Name: "❌"}),
+				),
+		))).Send()
+	if err != nil {
+		logger.Alert("config/guild.go - Sending config", err.Error())
 	}
 }
 
-func ConfigXPModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	if i.Type != discordgo.InteractionModalSubmit {
+func ConfigXPRoleAddEdit(_ *discordgo.Session, _ *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+	cID := XpRoleAddLevel
+	if data.CustomID == XpRoleEdit {
+		cID = XpRoleEditLevel
+	}
+	err := resp.IsModal().
+		SetTitle("Role").
+		SetComponents(component.New().ForModal().Add(component.NewActionRow().Add(
+			component.NewTextInput(cID, "Niveau", discordgo.TextInputShort).
+				SetPlaceholder("5").
+				IsRequired().
+				SetMinLength(0).
+				SetMaxLength(5),
+		))).
+		Send()
+	if err != nil {
+		logger.Alert("config/guild.go - Sending modal to add/edit", err.Error())
+	}
+}
+
+func ConfigXPRoleAddRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+	cfg := config.GetGuildConfig(i.GuildID)
+	roleId := data.Values[0]
+	for _, r := range cfg.XpRoles {
+		if r.RoleID == roleId {
+			err := resp.SetMessage("Le rôle est déjà présent dans la config").Send()
+			if err != nil {
+				logger.Alert("commands/config.go - Role already in config", err.Error())
+			}
+			return
+		}
+	}
+	cfg.XpRoles = append(cfg.XpRoles, config.XpRole{
+		XP:     configModifyMap[getKeyConfigRole(i)],
+		RoleID: roleId,
+	})
+	err := cfg.Save()
+	if err != nil {
+		logger.Alert(
+			"commands/config.go - Saving config",
+			err.Error(),
+			"guild_id", i.GuildID,
+			"role_id", roleId,
+			"type", "add",
+		)
+	}
+	if err = resp.IsEphemeral().SetMessage("Rôle ajouté.").Send(); err != nil {
+		logger.Alert("commands/config.go - Sending success", err.Error())
+	}
+}
+
+func ConfigXPRoleEditRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+	cfg := config.GetGuildConfig(i.GuildID)
+	roleId := data.Values[0]
+	_, r := cfg.FindXpRole(roleId)
+	if r == nil {
+		err := resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
+		if err != nil {
+			logger.Alert("commands/config.go - Role not found (edit)", err.Error())
+		}
 		return
 	}
-	resp := cmd.NewResponseBuilder(s, i)
+	r.XP = configModifyMap[getKeyConfigRole(i)]
+	err := gokord.DB.Save(r).Error
+	if err != nil {
+		logger.Alert(
+			"commands/config.go - Saving config",
+			err.Error(),
+			"guild_id", i.GuildID,
+			"role_id", roleId,
+			"type", "edit",
+		)
+	}
+	if err = resp.IsEphemeral().SetMessage("Rôle modifié.").Send(); err != nil {
+		logger.Alert("commands/config.go - Sending success", err.Error())
+	}
+}
 
-	modalData := i.ModalSubmitData()
+func ConfigXPRoleDel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+	err := resp.IsEphemeral().
+		SetMessage("Rôle à supprimer").
+		SetComponents(component.New().Add(component.NewActionRow().Add(component.NewRoleSelect(XpRoleDelRole)))).
+		Send()
+	if err != nil {
+		logger.Alert("config/guild.go - Sending response to del", err.Error())
+	}
+}
 
-	if modalData.CustomID != XpRoleAddLevel && modalData.CustomID != XpRoleEditLevel {
+func ConfigXPRoleDelRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+	cfg := config.GetGuildConfig(i.GuildID)
+	roleId := data.Values[0]
+	_, r := cfg.FindXpRole(roleId)
+	if r == nil {
+		err := resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
+		if err != nil {
+			logger.Alert("commands/config.go - Sending role not found (del)", err.Error())
+		}
 		return
 	}
+	err := gokord.DB.Delete(r).Error
+	if err != nil {
+		logger.Alert(
+			"commands/config.go - Deleting entry",
+			err.Error(),
+			"guild_id", i.GuildID,
+			"role_id", roleId,
+			"type", "del",
+		)
+	}
+	if err = resp.IsEphemeral().SetMessage("Rôle supprimé.").Send(); err != nil {
+		logger.Alert("commands/config.go - Sending success", err.Error())
+	}
+}
 
-	input := modalData.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput)
+func ConfigXPRoleLevel(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.ModalSubmitInteractionData, resp *cmd.ResponseBuilder) {
+	input := data.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput)
 
 	k := getKeyConfigRole(i)
 	in, err := strconv.Atoi(input.Value)
@@ -300,7 +284,7 @@ func ConfigXPModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	cID := XpRoleAddRole
 	resp.SetMessage("Rôle à ajouter")
-	if modalData.CustomID == XpRoleEditLevel {
+	if data.CustomID == XpRoleEditLevel {
 		cID = XpRoleEditLevel
 		resp.SetMessage("Rôle à modifier")
 	}

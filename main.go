@@ -116,31 +116,37 @@ func main() {
 			resetUserCmd,
 			creditsCmd,
 		},
-		AfterInit:   afterInit,
+		AfterInit: func(dg *discordgo.Session) {
+			stopPeriodicReducer = gokord.NewTimer(24*time.Hour, func(stop chan<- interface{}) {
+				user.PeriodicReducer(dg)
+			})
+		},
 		Innovations: innovations,
 		Version:     &Version,
 		Intents: discordgo.IntentsAllWithoutPrivileged |
 			discordgo.IntentsMessageContent |
 			discordgo.IntentGuildMembers,
 	}
+
+	// interaction: /config
+	bot.HandleMessageComponent(commands.ConfigModifyXPRole, commands.ConfigModifyXpRole)
+	bot.HandleMessageComponent(commands.ConfigXPRoleAddEdit, commands.XpRoleAdd)
+	bot.HandleMessageComponent(commands.ConfigXPRoleAddEdit, commands.XpRoleEdit)
+	bot.HandleMessageComponent(commands.ConfigXPRoleAddRole, commands.XpRoleAddRole)
+	bot.HandleMessageComponent(commands.ConfigXPRoleEditRole, commands.XpRoleEditRole)
+	bot.HandleMessageComponent(commands.ConfigXPRoleDel, commands.XpRoleDel)
+	bot.HandleMessageComponent(commands.ConfigXPRoleDelRole, commands.XpRoleDelRole)
+	bot.HandleModal(commands.ConfigXPRoleLevel, commands.XpRoleAddLevel)
+	bot.HandleModal(commands.ConfigXPRoleLevel, commands.XpRoleEditLevel)
+
+	// xp handlers
+	bot.AddHandler(OnMessage)
+	bot.AddHandler(OnVoiceUpdate)
+	bot.AddHandler(OnLeave)
+
 	bot.Start()
 
 	if stopPeriodicReducer != nil {
 		stopPeriodicReducer <- true
 	}
-}
-
-func afterInit(dg *discordgo.Session) {
-	// handlers
-	dg.AddHandler(OnMessage)
-	dg.AddHandler(OnVoiceUpdate)
-	dg.AddHandler(OnLeave)
-
-	stopPeriodicReducer = gokord.NewTimer(24*time.Hour, func(stop chan<- interface{}) {
-		user.PeriodicReducer(dg)
-	})
-
-	//interaction: /config
-	dg.AddHandler(commands.ConfigXP)
-	dg.AddHandler(commands.ConfigXPModal)
 }
