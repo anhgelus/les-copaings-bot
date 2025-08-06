@@ -2,7 +2,7 @@ package user
 
 import (
 	"github.com/anhgelus/gokord"
-	"github.com/anhgelus/gokord/utils"
+	"github.com/anhgelus/gokord/logger"
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/bwmarrin/discordgo"
@@ -26,14 +26,14 @@ func (c *cXP) GetXP() uint {
 func (c *Copaing) AddXP(s *discordgo.Session, m *discordgo.Member, xp uint, fn func(uint, uint)) {
 	old, err := c.GetXP()
 	if err != nil {
-		utils.SendAlert("user/xp.go - Getting xp", err.Error(), "discord_id", c.DiscordID, "guild_id", c.GuildID)
+		logger.Alert("user/xp.go - Getting xp", err.Error(), "discord_id", c.DiscordID, "guild_id", c.GuildID)
 		return
 	}
 	pastLevel := exp.Level(old)
-	utils.SendDebug("Adding xp", "member", m.DisplayName(), "old xp", old, "xp to add", xp, "old level", pastLevel)
+	logger.Debug("Adding xp", "member", m.DisplayName(), "old xp", old, "xp to add", xp, "old level", pastLevel)
 	c.CopaingXPs = append(c.CopaingXPs, CopaingXP{CopaingID: c.ID, XP: xp, GuildID: c.GuildID})
 	if err = c.Save(); err != nil {
-		utils.SendAlert(
+		logger.Alert(
 			"user/xp.go - Saving user",
 			err.Error(),
 			"xp",
@@ -76,7 +76,7 @@ func (c *Copaing) GetXPForDays(n uint) (uint, error) {
 		var cxp CopaingXP
 		err = gokord.DB.ScanRows(rows, &cxp)
 		if err != nil {
-			utils.SendAlert("user/xp.go - Scanning rows", err.Error(), "copaing_id", c.ID, "guild_id", c.GuildID)
+			logger.Alert("user/xp.go - Scanning rows", err.Error(), "copaing_id", c.ID, "guild_id", c.GuildID)
 			continue
 		}
 		xp += cxp.XP
@@ -103,7 +103,7 @@ func GetBestXP(guildId string, n uint, d int) ([]CopaingAccess, error) {
 		var c Copaing
 		err = gokord.DB.ScanRows(rows, &c)
 		if err != nil {
-			utils.SendAlert("user/xp.go - Scanning rows", err.Error(), "guild_id", guildId)
+			logger.Alert("user/xp.go - Scanning rows", err.Error(), "guild_id", guildId)
 			continue
 		}
 		wg.Add(1)
@@ -111,7 +111,7 @@ func GetBestXP(guildId string, n uint, d int) ([]CopaingAccess, error) {
 			defer wg.Done()
 			xp, err := c.GetXPForDays(uint(d))
 			if err != nil {
-				utils.SendAlert("user/xp.go - Fetching xp", err.Error(), "discord_id", c.DiscordID, "guild_id", guildId)
+				logger.Alert("user/xp.go - Fetching xp", err.Error(), "discord_id", c.DiscordID, "guild_id", guildId)
 				return
 			}
 			l = append(l, &cXP{Cxp: xp, Copaing: &c})

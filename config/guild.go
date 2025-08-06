@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/anhgelus/gokord"
-	"github.com/anhgelus/gokord/utils"
+	"github.com/anhgelus/gokord/logger"
 	"strings"
 )
 
@@ -15,17 +15,10 @@ type GuildConfig struct {
 	DaysXPRemains    uint `gorm:"default:90"` // 30 * 3 = 90 (three months)
 }
 
-type XpRole struct {
-	ID            uint `gorm:"primarykey"`
-	XP            uint
-	RoleID        string
-	GuildConfigID uint
-}
-
 func GetGuildConfig(guildID string) *GuildConfig {
 	cfg := GuildConfig{GuildID: guildID}
 	if err := cfg.Load(); err != nil {
-		utils.SendAlert("config/guild.go - Loading guild config", err.Error(), "guild_id", guildID)
+		logger.Alert("config/guild.go - Loading guild config", err.Error(), "guild_id", guildID)
 		return nil
 	}
 	return &cfg

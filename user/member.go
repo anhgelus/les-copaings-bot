@@ -2,7 +2,7 @@ package user
 
 import (
 	"github.com/anhgelus/gokord"
-	"github.com/anhgelus/gokord/utils"
+	"github.com/anhgelus/gokord/logger"
 	"time"
 )
 
@@ -34,7 +34,7 @@ const (
 func GetCopaing(discordID string, guildID string) *Copaing {
 	c := Copaing{DiscordID: discordID, GuildID: guildID}
 	if err := c.Load(); err != nil {
-		utils.SendAlert(
+		logger.Alert(
 			"user/member.go - Loading user",
 			err.Error(),
 			"discord_id",

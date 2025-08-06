@@ -2,7 +2,8 @@ package commands
 
 import (
 	"fmt"
-	"github.com/anhgelus/gokord/utils"
+	"github.com/anhgelus/gokord/cmd"
+	"github.com/anhgelus/gokord/logger"
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/les-copaings-bot/user"
@@ -10,10 +11,10 @@ import (
 	"sync"
 )
 
-func Top(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {
+func Top(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	err := resp.IsDeferred().Send()
 	if err != nil {
-		utils.SendAlert("commands/top.go - Sending deferred", err.Error())
+		logger.Alert("commands/top.go - Sending deferred", err.Error())
 		return
 	}
 	embeds := make([]*discordgo.MessageEmbed, 3)
@@ -23,18 +24,18 @@ func Top(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.Opti
 		defer wg.Done()
 		tops, err := user.GetBestXP(i.GuildID, n, d)
 		if err != nil {
-			utils.SendAlert("commands/top.go - Fetching best xp", err.Error(), "n", n, "d", d, "id", id, "guild_id", i.GuildID)
+			logger.Alert("commands/top.go - Fetching best xp", err.Error(), "n", n, "d", d, "id", id, "guild_id", i.GuildID)
 			embeds[id] = &discordgo.MessageEmbed{
 				Title:       s,
 				Description: "Erreur : impossible de récupérer la liste",
-				Color:       utils.Error,
+				Color:       0x831010,
 			}
 			return
 		}
 		embeds[id] = &discordgo.MessageEmbed{
 			Title:       s,
 			Description: genTopsMessage(tops),
-			Color:       utils.Success,
+			Color:       0x10E6AD,
 		}
 	}
 	cfg := config.GetGuildConfig(i.GuildID)
@@ -57,7 +58,7 @@ func Top(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.Opti
 		}
 		err = resp.Send()
 		if err != nil {
-			utils.SendAlert("commands/top.go - Sending response top", err.Error())
+			logger.Alert("commands/top.go - Sending response top", err.Error())
 		}
 	}()
 }
