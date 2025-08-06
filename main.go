@@ -142,6 +142,11 @@ func main() {
 	// channel related
 	bot.HandleMessageComponent(config.HandleModifyFallbackChannel, config.ModifyFallbackChannel)
 	bot.HandleMessageComponent(config.HandleFallbackChannelSet, config.FallbackChannelSet)
+	bot.HandleMessageComponent(config.HandleModifyDisChannel, config.ModifyDisChannel)
+	bot.HandleMessageComponent(config.HandleDisChannel, config.DisChannelAdd)
+	bot.HandleMessageComponent(config.HandleDisChannel, config.DisChannelDel)
+	bot.HandleMessageComponent(config.HandleDisChannelAddSet, config.DisChannelAddSet)
+	bot.HandleMessageComponent(config.HandleDisChannelDelSet, config.DisChannelDelSet)
 	// reduce related
 	bot.HandleMessageComponent(config.HandleModifyPeriodicReduce, config.ModifyTimeReduce)
 	bot.HandleModal(config.HandleTimeReduceSet, config.TimeReduceSet)
