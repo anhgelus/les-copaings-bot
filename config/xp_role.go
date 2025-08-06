@@ -87,7 +87,7 @@ func HandleXpRoleAddRole(_ *discordgo.Session, i *discordgo.InteractionCreate, d
 		if r.RoleID == roleId {
 			err := resp.SetMessage("Le rôle est déjà présent dans la config").Send()
 			if err != nil {
-				logger.Alert("commands/config.go - Role already in config", err.Error())
+				logger.Alert("config/xp_role.go - Role already in config", err.Error())
 			}
 			return
 		}
@@ -99,7 +99,7 @@ func HandleXpRoleAddRole(_ *discordgo.Session, i *discordgo.InteractionCreate, d
 	err := cfg.Save()
 	if err != nil {
 		logger.Alert(
-			"commands/config.go - Saving config",
+			"config/xp_role.go - Saving config",
 			err.Error(),
 			"guild_id", i.GuildID,
 			"role_id", roleId,
@@ -107,7 +107,7 @@ func HandleXpRoleAddRole(_ *discordgo.Session, i *discordgo.InteractionCreate, d
 		)
 	}
 	if err = resp.IsEphemeral().SetMessage("Rôle ajouté.").Send(); err != nil {
-		logger.Alert("commands/config.go - Sending success", err.Error())
+		logger.Alert("config/xp_role.go - Sending success", err.Error())
 	}
 }
 
@@ -118,7 +118,7 @@ func HandleXpRoleEditRole(_ *discordgo.Session, i *discordgo.InteractionCreate, 
 	if r == nil {
 		err := resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
 		if err != nil {
-			logger.Alert("commands/config.go - Role not found (edit)", err.Error())
+			logger.Alert("config/xp_role.go - Role not found (edit)", err.Error())
 		}
 		return
 	}
@@ -126,7 +126,7 @@ func HandleXpRoleEditRole(_ *discordgo.Session, i *discordgo.InteractionCreate, 
 	err := gokord.DB.Save(r).Error
 	if err != nil {
 		logger.Alert(
-			"commands/config.go - Saving config",
+			"config/xp_role.go - Saving config",
 			err.Error(),
 			"guild_id", i.GuildID,
 			"role_id", roleId,
@@ -134,7 +134,7 @@ func HandleXpRoleEditRole(_ *discordgo.Session, i *discordgo.InteractionCreate, 
 		)
 	}
 	if err = resp.IsEphemeral().SetMessage("Rôle modifié.").Send(); err != nil {
-		logger.Alert("commands/config.go - Sending success", err.Error())
+		logger.Alert("config/xp_role.go - Sending success", err.Error())
 	}
 }
 
@@ -155,14 +155,14 @@ func HandleXpRoleDelRole(_ *discordgo.Session, i *discordgo.InteractionCreate, d
 	if r == nil {
 		err := resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
 		if err != nil {
-			logger.Alert("commands/config.go - Sending role not found (del)", err.Error())
+			logger.Alert("config/xp_role.go - Sending role not found (del)", err.Error())
 		}
 		return
 	}
 	err := gokord.DB.Delete(r).Error
 	if err != nil {
 		logger.Alert(
-			"commands/config.go - Deleting entry",
+			"config/xp_role.go - Deleting entry",
 			err.Error(),
 			"guild_id", i.GuildID,
 			"role_id", roleId,
@@ -170,7 +170,7 @@ func HandleXpRoleDelRole(_ *discordgo.Session, i *discordgo.InteractionCreate, d
 		)
 	}
 	if err = resp.IsEphemeral().SetMessage("Rôle supprimé.").Send(); err != nil {
-		logger.Alert("commands/config.go - Sending success", err.Error())
+		logger.Alert("config/xp_role.go - Sending success", err.Error())
 	}
 }
 
