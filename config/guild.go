@@ -10,6 +10,7 @@ type GuildConfig struct {
 	ID               uint   `gorm:"primarykey"`
 	GuildID          string `gorm:"not null;unique"`
 	XpRoles          []XpRole
+	BoostXpRoles     []BoostXpRole
 	DisabledChannels string
 	FallbackChannel  string
 	DaysXPRemains    uint `gorm:"default:90"` // 30 * 3 = 90 (three months)
@@ -18,6 +19,13 @@ type GuildConfig struct {
 type XpRole struct {
 	ID            uint `gorm:"primarykey"`
 	XP            uint
+	RoleID        string
+	GuildConfigID uint
+}
+
+type BoostXpRole struct {
+	ID            uint `gorm:"primarykey"`
+	Boost         float64
 	RoleID        string
 	GuildConfigID uint
 }
