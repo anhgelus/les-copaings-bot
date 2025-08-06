@@ -1,17 +1,18 @@
 package commands
 
 import (
-	"github.com/anhgelus/gokord/utils"
+	"github.com/anhgelus/gokord/cmd"
+	"github.com/anhgelus/gokord/logger"
 	"github.com/bwmarrin/discordgo"
 )
 
-func Credits(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {
+func Credits(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	err := resp.AddEmbed(&discordgo.MessageEmbed{
 
 		Type:        discordgo.EmbedTypeRich,
 		Title:       "Crédits",
 		Description: "Auteur du bot : @anhgelus (https://github.com/anhgelus)\nLangage : Go 1.24\nLicence : AGPLv3",
-		Color:       utils.Success,
+		Color:       0x10E6AD,
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "anhgelus/gokord",
@@ -31,6 +32,6 @@ func Credits(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.
 		},
 	}).Send()
 	if err != nil {
-		utils.SendAlert("commands/credits.go - Sending credits", err.Error(), "guild_id", i.GuildID)
+		logger.Alert("commands/credits.go - Sending credits", err.Error(), "guild_id", i.GuildID)
 	}
 }

@@ -5,7 +5,8 @@ import (
 	"errors"
 	"flag"
 	"github.com/anhgelus/gokord"
-	"github.com/anhgelus/gokord/utils"
+	cmd "github.com/anhgelus/gokord/cmd"
+	"github.com/anhgelus/gokord/logger"
 	"github.com/anhgelus/les-copaings-bot/commands"
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/user"
@@ -31,7 +32,7 @@ var (
 func init() {
 	err := godotenv.Load()
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		utils.SendWarn("Error while loading .env file", "error", err.Error())
+		logger.Warn("Error while loading .env file", "error", err.Error())
 	}
 	flag.StringVar(&token, "token", os.Getenv("TOKEN"), "token of the bot")
 }
@@ -51,27 +52,27 @@ func main() {
 
 	adm := gokord.AdminPermission
 
-	rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'un copaing").
-		AddOption(gokord.NewOption(
+	rankCmd := cmd.New("rank", "Affiche le niveau d'un copaing").
+		AddOption(cmd.NewOption(
 			discordgo.ApplicationCommandOptionUser,
 			"copaing",
 			"Le niveau du Copaing que vous souhaitez obtenir",
 		)).
 		SetHandler(commands.Rank)
 
-	configCmd := gokord.NewCommand("config", "Modifie la config").
+	configCmd := cmd.New("config", "Modifie la config").
 		SetPermission(&adm).
 		SetHandler(commands.Config)
 
-	topCmd := gokord.NewCommand("top", "Copaings les plus actifs").
+	topCmd := cmd.New("top", "Copaings les plus actifs").
 		SetHandler(commands.Top)
 
-	resetCmd := gokord.NewCommand("reset", "Reset l'xp").
+	resetCmd := cmd.New("reset", "Reset l'xp").
 		SetHandler(commands.Reset).
 		SetPermission(&adm)
 
-	resetUserCmd := gokord.NewCommand("reset-user", "Reset l'xp d'un utilisation").
-		AddOption(gokord.NewOption(
+	resetUserCmd := cmd.New("reset-user", "Reset l'xp d'un utilisation").
+		AddOption(cmd.NewOption(
 			discordgo.ApplicationCommandOptionUser,
 			"user",
 			"Copaing a reset",
@@ -79,7 +80,7 @@ func main() {
 		SetHandler(commands.ResetUser).
 		SetPermission(&adm)
 
-	creditsCmd := gokord.NewCommand("credits", "Crédits").
+	creditsCmd := cmd.New("credits", "Crédits").
 		SetHandler(commands.Credits)
 
 	innovations, err := gokord.LoadInnovationFromJson(updatesData)
@@ -107,7 +108,7 @@ func main() {
 				Content: "Les Copaings Bot " + Version.String(),
 			},
 		},
-		Commands: []gokord.CommandBuilder{
+		Commands: []cmd.CommandBuilder{
 			rankCmd,
 			configCmd,
 			topCmd,
@@ -135,7 +136,7 @@ func afterInit(dg *discordgo.Session) {
 	dg.AddHandler(OnVoiceUpdate)
 	dg.AddHandler(OnLeave)
 
-	stopPeriodicReducer = utils.NewTimer(24*time.Hour, func(stop chan<- interface{}) {
+	stopPeriodicReducer = gokord.NewTimer(24*time.Hour, func(stop chan<- interface{}) {
 		user.PeriodicReducer(dg)
 	})
 
