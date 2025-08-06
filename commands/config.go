@@ -94,8 +94,8 @@ func Config(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMa
 				Inline: false,
 			},
 		},
-	}).SetComponents(component.New().Add(new(component.ActionRow).Add(
-		new(component.StringSelect).SetPlaceholder("Modifier...").
+	}).SetComponents(component.New().Add(component.NewActionRow().Add(
+		component.NewStringSelect(ConfigModify).SetPlaceholder("Modifier...").
 			AddOption(
 				component.NewSelectOption("Rôles liés à l'XP", ConfigModifyXpRole).
 					SetDescription("Gère les rôles liés à l'XP").
@@ -107,7 +107,8 @@ func Config(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMa
 					SetEmoji(&discordgo.ComponentEmoji{Name: "❌"}),
 			).
 			AddOption(
-				component.NewSelectOption("Salons de repli", ConfigModifyFallbackChannel). // I don't have a better idea for this...
+				// I don't have a better idea for this...
+				component.NewSelectOption("Salons de repli", ConfigModifyFallbackChannel).
 					SetDescription("Spécifie le salon de repli").
 					SetEmoji(&discordgo.ComponentEmoji{Name: "💾"}),
 			).
@@ -115,8 +116,7 @@ func Config(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMa
 				component.NewSelectOption("Temps avec la réduction", ConfigModifyTimeReduce).
 					SetDescription("Gère le temps avant la réduction d'XP").
 					SetEmoji(&discordgo.ComponentEmoji{Name: "⌛"}),
-			).
-			SetCustomID(ConfigModify),
+			),
 	))).IsEphemeral().Send()
 	if err != nil {
 		logger.Alert("config/guild.go - Sending config", err.Error())
@@ -137,8 +137,8 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case ConfigModifyXpRole:
 		err := resp.IsEphemeral().
 			SetMessage("Action à réaliser").
-			SetComponents(component.New().Add(new(component.ActionRow).Add(
-				new(component.StringSelect).SetPlaceholder("Action").
+			SetComponents(component.New().Add(component.NewActionRow().Add(
+				component.NewStringSelect(ConfigModify).SetPlaceholder("Action").
 					AddOption(
 						component.NewSelectOption("Ajouter", XpRoleAdd).
 							SetDescription("Ajouter un rôle à XP").
@@ -153,8 +153,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 						component.NewSelectOption("Supprimer", XpRoleDel).
 							SetDescription("Supprimer un rôle à XP").
 							SetEmoji(&discordgo.ComponentEmoji{Name: "❌"}),
-					).
-					SetCustomID(ConfigModify),
+					),
 			))).Send()
 		if err != nil {
 			logger.Alert("config/guild.go - Sending config", err.Error())
@@ -164,27 +163,14 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if msgData.CustomID == XpRoleEdit {
 			cID = XpRoleEditLevel
 		}
-		component.New().ForModal().Add(new(component.ActionRow).Add(
-			new(component.TextInput).
-				SetLabel("Niveau").
-				SetPlaceholder("5").
-				IsRequired().
-				SetMinLength(0).
-				SetMaxLength(5).
-				SetStyle(discordgo.TextInputShort).
-				SetCustomID(cID),
-		))
 		err := resp.IsModal().
 			SetTitle("Role").
-			SetComponents(component.New().ForModal().Add(new(component.ActionRow).Add(
-				new(component.TextInput).
-					SetLabel("Niveau").
+			SetComponents(component.New().ForModal().Add(component.NewActionRow().Add(
+				component.NewTextInput(cID, "Niveau", discordgo.TextInputShort).
 					SetPlaceholder("5").
 					IsRequired().
 					SetMinLength(0).
-					SetMaxLength(5).
-					SetStyle(discordgo.TextInputShort).
-					SetCustomID(cID),
+					SetMaxLength(5),
 			))).
 			Send()
 		if err != nil {
@@ -245,7 +231,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case XpRoleDel:
 		err := resp.IsEphemeral().
 			SetMessage("Rôle à supprimer").
-			SetComponents(component.New().Add(new(component.ActionRow).Add(new(component.RoleSelect).SetCustomID(XpRoleDelRole)))).
+			SetComponents(component.New().Add(component.NewActionRow().Add(component.NewRoleSelect(XpRoleDelRole)))).
 			Send()
 		if err != nil {
 			logger.Alert("config/guild.go - Sending response to del", err.Error())
@@ -321,7 +307,7 @@ func ConfigXPModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	err = resp.IsEphemeral().
 		SetMessage("Rôle à supprimer").
-		SetComponents(component.New().Add(new(component.ActionRow).Add(new(component.RoleSelect).SetCustomID(cID)))).
+		SetComponents(component.New().Add(component.NewActionRow().Add(component.NewRoleSelect(cID)))).
 		Send()
 	if err != nil {
 		logger.Alert("config/guild.go - Sending response to add/edit", err.Error())
