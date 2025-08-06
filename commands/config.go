@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	ConfigModify           = "config_modify"
-	ConfigModifyTimeReduce = "time_reduce"
+	ConfigModify = "config_modify"
 )
 
 func Config(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
@@ -94,7 +93,7 @@ func Config(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMa
 					SetEmoji(&discordgo.ComponentEmoji{Name: "💾"}),
 			).
 			AddOption(
-				component.NewSelectOption("Temps avec la réduction", ConfigModifyTimeReduce).
+				component.NewSelectOption("Temps avec la réduction", config.ModifyTimeReduce).
 					SetDescription("Gère le temps avant la réduction d'XP").
 					SetEmoji(&discordgo.ComponentEmoji{Name: "⌛"}),
 			),
@@ -171,46 +170,5 @@ func ConfigChannel(s *discordgo.Session, i *discordgo.InteractionCreate, optMap 
 	}
 	if err != nil {
 		logger.Alert("commands/config.go - Modification saved message", err.Error())
-	}
-}
-
-func ConfigPeriodBeforeReduce(s *discordgo.Session, i *discordgo.InteractionCreate, optMap cmd.OptionMap, resp *cmd.ResponseBuilder) {
-	resp.IsEphemeral()
-	// verify every args
-	days, ok := optMap["days"]
-	if !ok {
-		err := resp.SetMessage("Le nombre de jours n'a pas été renseigné.").Send()
-		if err != nil {
-			logger.Alert("commands/config.go - Days not set (fallback)", err.Error())
-		}
-		return
-	}
-	d := days.IntValue()
-	if d < 30 {
-		err := resp.SetMessage("Le nombre de jours est inférieur à 30.").Send()
-		if err != nil {
-			logger.Alert("commands/config.go - Days < 30 (fallback)", err.Error())
-		}
-		return
-	}
-	// save
-	cfg := config.GetGuildConfig(i.GuildID)
-	cfg.DaysXPRemains = uint(d)
-	err := cfg.Save()
-	if err != nil {
-		logger.Alert(
-			"commands/config.go - Saving config",
-			err.Error(),
-			"guild_id",
-			i.GuildID,
-			"days",
-			d,
-		)
-		err = resp.SetMessage("Il y a eu une erreur lors de la modification de de la base de données.").Send()
-	} else {
-		err = resp.SetMessage("Nombre de jours enregistré.").Send()
-	}
-	if err != nil {
-		logger.Alert("commands/config.go - Days saved message", err.Error())
 	}
 }

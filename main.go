@@ -129,7 +129,7 @@ func main() {
 	}
 
 	// interaction: /config
-	// xp related
+	// xp role related
 	bot.HandleMessageComponent(config.HandleModifyXpRole, config.ModifyXpRole)
 	bot.HandleMessageComponent(config.HandleXpRoleAddEdit, config.XpRoleAdd)
 	bot.HandleMessageComponent(config.HandleXpRoleAddEdit, config.XpRoleEdit)
@@ -142,6 +142,9 @@ func main() {
 	// channel related
 	bot.HandleMessageComponent(config.HandleModifyFallbackChannel, config.ModifyFallbackChannel)
 	bot.HandleMessageComponent(config.HandleFallbackChannelSet, config.FallbackChannelSet)
+	// reduce related
+	bot.HandleMessageComponent(config.HandleModifyPeriodicReduce, config.ModifyTimeReduce)
+	bot.HandleModal(config.HandleTimeReduceSet, config.TimeReduceSet)
 
 	// xp handlers
 	bot.AddHandler(OnMessage)

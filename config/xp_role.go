@@ -192,7 +192,7 @@ func HandleXpRoleLevel(_ *discordgo.Session, i *discordgo.InteractionCreate, dat
 	cID := XpRoleAddRole
 	resp.SetMessage("Rôle à ajouter")
 	if data.CustomID == XpRoleEditLevel {
-		cID = XpRoleEditLevel
+		cID = XpRoleEditRole
 		resp.SetMessage("Rôle à modifier")
 	}
 
