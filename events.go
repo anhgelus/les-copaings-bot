@@ -31,7 +31,7 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	c := user.GetCopaing(m.Author.ID, m.GuildID)
 	// add exp
-	trimmed := utils.TrimMessage(strings.ToLower(m.Content))
+	trimmed := exp.TrimMessage(strings.ToLower(m.Content))
 	m.Member.User = m.Author
 	m.Member.GuildID = m.GuildID
 	xp := min(exp.MessageXP(uint(len(trimmed)), exp.CalcDiversity(trimmed)), MaxXpPerMessage)
