@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
+	"github.com/anhgelus/gokord/component"
 	"github.com/anhgelus/gokord/logger"
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/exp"
@@ -34,7 +35,7 @@ var (
 	configModifyMap = map[string]uint{}
 )
 
-func Config(s *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
+func Config(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	cfg := config.GetGuildConfig(i.GuildID)
 	roles := ""
 	l := len(cfg.XpRoles) - 1
@@ -93,40 +94,30 @@ func Config(s *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMa
 				Inline: false,
 			},
 		},
-	}).AddComponent(discordgo.ActionsRow{Components: []discordgo.MessageComponent{
-		discordgo.SelectMenu{
-			MenuType:    discordgo.StringSelectMenu,
-			CustomID:    ConfigModify,
-			Placeholder: "Modifier...",
-			Options: []discordgo.SelectMenuOption{
-				{
-					Label:       "Rôles liés à l'XP",
-					Value:       ConfigModifyXpRole,
-					Description: "Gère les rôles liés à l'XP",
-					Emoji:       &discordgo.ComponentEmoji{Name: "🏅"},
-				},
-				{
-					Label:       "Salons désactivés",
-					Value:       ConfigModifyDisChannel,
-					Description: "Gère les salons désactivés",
-					Emoji:       &discordgo.ComponentEmoji{Name: "❌"},
-				},
-				{
-					Label:       "Salons de repli", // I don't have a better idea for this...
-					Value:       ConfigModifyFallbackChannel,
-					Description: "Spécifie le salon de repli",
-					Emoji:       &discordgo.ComponentEmoji{Name: "💾"},
-				},
-				{
-					Label:       "Temps avec la réduction",
-					Value:       ConfigModifyTimeReduce,
-					Description: "Gère le temps avant la réduction d'XP",
-					Emoji:       &discordgo.ComponentEmoji{Name: "⌛"},
-				},
-			},
-			Disabled: false,
-		},
-	}}).IsEphemeral().Send()
+	}).SetComponents(component.New().Add(new(component.ActionRow).Add(
+		new(component.StringSelect).SetPlaceholder("Modifier...").
+			AddOption(
+				component.NewSelectOption("Rôles liés à l'XP", ConfigModifyXpRole).
+					SetDescription("Gère les rôles liés à l'XP").
+					SetEmoji(&discordgo.ComponentEmoji{Name: "🏅"}),
+			).
+			AddOption(
+				component.NewSelectOption("Salons désactivés", ConfigModifyDisChannel).
+					SetDescription("Gère les salons désactivés").
+					SetEmoji(&discordgo.ComponentEmoji{Name: "❌"}),
+			).
+			AddOption(
+				component.NewSelectOption("Salons de repli", ConfigModifyFallbackChannel). // I don't have a better idea for this...
+					SetDescription("Spécifie le salon de repli").
+					SetEmoji(&discordgo.ComponentEmoji{Name: "💾"}),
+			).
+			AddOption(
+				component.NewSelectOption("Temps avec la réduction", ConfigModifyTimeReduce).
+					SetDescription("Gère le temps avant la réduction d'XP").
+					SetEmoji(&discordgo.ComponentEmoji{Name: "⌛"}),
+			).
+			SetCustomID(ConfigModify),
+	))).IsEphemeral().Send()
 	if err != nil {
 		logger.Alert("config/guild.go - Sending config", err.Error())
 	}
@@ -146,33 +137,25 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case ConfigModifyXpRole:
 		err := resp.IsEphemeral().
 			SetMessage("Action à réaliser").
-			AddComponent(discordgo.ActionsRow{Components: []discordgo.MessageComponent{
-				discordgo.SelectMenu{
-					MenuType:    discordgo.StringSelectMenu,
-					CustomID:    ConfigModify,
-					Placeholder: "Action",
-					Options: []discordgo.SelectMenuOption{
-						{
-							Label:       "Ajouter",
-							Value:       XpRoleAdd,
-							Description: "Ajouter un rôle à XP",
-							Emoji:       &discordgo.ComponentEmoji{Name: "⬆️"},
-						},
-						{
-							Label:       "Supprimer",
-							Value:       XpRoleDel,
-							Description: "Supprimer un rôle à XP",
-							Emoji:       &discordgo.ComponentEmoji{Name: "❌"},
-						},
-						{
-							Label:       "Modifier",
-							Value:       XpRoleEdit,
-							Description: "Modifier un rôle à XP",
-							Emoji:       &discordgo.ComponentEmoji{Name: "📝"},
-						},
-					},
-				},
-			}}).Send()
+			SetComponents(component.New().Add(new(component.ActionRow).Add(
+				new(component.StringSelect).SetPlaceholder("Action").
+					AddOption(
+						component.NewSelectOption("Ajouter", XpRoleAdd).
+							SetDescription("Ajouter un rôle à XP").
+							SetEmoji(&discordgo.ComponentEmoji{Name: "⬆️"}),
+					).
+					AddOption(
+						component.NewSelectOption("Modifier", XpRoleEdit).
+							SetDescription("Modifier un rôle à XP").
+							SetEmoji(&discordgo.ComponentEmoji{Name: "📝"}),
+					).
+					AddOption(
+						component.NewSelectOption("Supprimer", XpRoleDel).
+							SetDescription("Supprimer un rôle à XP").
+							SetEmoji(&discordgo.ComponentEmoji{Name: "❌"}),
+					).
+					SetCustomID(ConfigModify),
+			))).Send()
 		if err != nil {
 			logger.Alert("config/guild.go - Sending config", err.Error())
 		}
@@ -181,19 +164,28 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if msgData.CustomID == XpRoleEdit {
 			cID = XpRoleEditLevel
 		}
+		component.New().ForModal().Add(new(component.ActionRow).Add(
+			new(component.TextInput).
+				SetLabel("Niveau").
+				SetPlaceholder("5").
+				IsRequired().
+				SetMinLength(0).
+				SetMaxLength(5).
+				SetStyle(discordgo.TextInputShort).
+				SetCustomID(cID),
+		))
 		err := resp.IsModal().
 			SetTitle("Role").
-			AddComponent(discordgo.ActionsRow{Components: []discordgo.MessageComponent{
-				discordgo.TextInput{
-					CustomID:    cID,
-					Label:       "Niveau",
-					Style:       discordgo.TextInputShort,
-					Placeholder: "5",
-					Required:    true,
-					MinLength:   0,
-					MaxLength:   5,
-				},
-			}}).
+			SetComponents(component.New().ForModal().Add(new(component.ActionRow).Add(
+				new(component.TextInput).
+					SetLabel("Niveau").
+					SetPlaceholder("5").
+					IsRequired().
+					SetMinLength(0).
+					SetMaxLength(5).
+					SetStyle(discordgo.TextInputShort).
+					SetCustomID(cID),
+			))).
 			Send()
 		if err != nil {
 			logger.Alert("config/guild.go - Sending modal to add", err.Error())
@@ -253,10 +245,7 @@ func ConfigXP(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case XpRoleDel:
 		err := resp.IsEphemeral().
 			SetMessage("Rôle à supprimer").
-			AddComponent(discordgo.ActionsRow{Components: []discordgo.MessageComponent{discordgo.SelectMenu{
-				MenuType: discordgo.RoleSelectMenu,
-				CustomID: XpRoleDelRole,
-			}}}).
+			SetComponents(component.New().Add(new(component.ActionRow).Add(new(component.RoleSelect).SetCustomID(XpRoleDelRole)))).
 			Send()
 		if err != nil {
 			logger.Alert("config/guild.go - Sending response to del", err.Error())
@@ -332,10 +321,7 @@ func ConfigXPModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	err = resp.IsEphemeral().
 		SetMessage("Rôle à supprimer").
-		AddComponent(discordgo.ActionsRow{Components: []discordgo.MessageComponent{discordgo.SelectMenu{
-			MenuType: discordgo.RoleSelectMenu,
-			CustomID: cID,
-		}}}).
+		SetComponents(component.New().Add(new(component.ActionRow).Add(new(component.RoleSelect).SetCustomID(cID)))).
 		Send()
 	if err != nil {
 		logger.Alert("config/guild.go - Sending response to add/edit", err.Error())
