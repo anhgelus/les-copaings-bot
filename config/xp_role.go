@@ -77,6 +77,7 @@ func HandleXpRoleAddEdit(_ *discordgo.Session, _ *discordgo.InteractionCreate, d
 }
 
 func HandleXpRoleAddRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	roleId := data.Values[0]
 	for _, r := range cfg.XpRoles {
@@ -102,12 +103,13 @@ func HandleXpRoleAddRole(_ *discordgo.Session, i *discordgo.InteractionCreate, d
 			"type", "add",
 		)
 	}
-	if err = resp.IsEphemeral().SetMessage("Rôle ajouté.").Send(); err != nil {
+	if err = resp.SetMessage("Rôle ajouté.").Send(); err != nil {
 		logger.Alert("config/xp_role.go - Sending success", err.Error())
 	}
 }
 
 func HandleXpRoleEditRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	roleId := data.Values[0]
 	_, r := cfg.FindXpRole(roleId)
@@ -129,7 +131,7 @@ func HandleXpRoleEditRole(_ *discordgo.Session, i *discordgo.InteractionCreate, 
 			"type", "edit",
 		)
 	}
-	if err = resp.IsEphemeral().SetMessage("Rôle modifié.").Send(); err != nil {
+	if err = resp.SetMessage("Rôle modifié.").Send(); err != nil {
 		logger.Alert("config/xp_role.go - Sending success", err.Error())
 	}
 }
@@ -145,6 +147,7 @@ func HandleXpRoleDel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ dis
 }
 
 func HandleXpRoleDelRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	roleId := data.Values[0]
 	_, r := cfg.FindXpRole(roleId)
@@ -165,18 +168,19 @@ func HandleXpRoleDelRole(_ *discordgo.Session, i *discordgo.InteractionCreate, d
 			"type", "del",
 		)
 	}
-	if err = resp.IsEphemeral().SetMessage("Rôle supprimé.").Send(); err != nil {
+	if err = resp.SetMessage("Rôle supprimé.").Send(); err != nil {
 		logger.Alert("config/xp_role.go - Sending success", err.Error())
 	}
 }
 
 func HandleXpRoleLevel(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.ModalSubmitInteractionData, resp *cmd.ResponseBuilder) {
+	resp.IsEphemeral()
 	input := data.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput)
 
 	k := getKeyConfigRole(i)
 	in, err := strconv.Atoi(input.Value)
 	if err != nil || in < 0 {
-		if err = resp.IsEphemeral().
+		if err = resp.
 			SetMessage("Impossible de lire le nombre. Il doit s'agit d'un nombre entier positif.").
 			Send(); err != nil {
 			logger.Alert("command/config.go - Sending bad number", err.Error())
@@ -196,8 +200,7 @@ func HandleXpRoleLevel(_ *discordgo.Session, i *discordgo.InteractionCreate, dat
 		resp.SetMessage("Rôle à modifier")
 	}
 
-	err = resp.IsEphemeral().
-		SetMessage("Rôle à supprimer").
+	err = resp.
 		SetComponents(component.New().Add(component.NewActionRow().Add(component.NewRoleSelect(cID)))).
 		Send()
 	if err != nil {

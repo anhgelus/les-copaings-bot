@@ -75,8 +75,8 @@ func Config(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMa
 		).
 		AddOption(
 			// I don't have a better idea for this...
-			component.NewSelectOption("Salons de repli", config.ModifyFallbackChannel).
-				SetDescription("Spécifie le salon de repli").
+			component.NewSelectOption("Salons par défaut", config.ModifyFallbackChannel).
+				SetDescription("Spécifie le salon par défaut").
 				SetEmoji(&discordgo.ComponentEmoji{Name: "💾"}),
 		).
 		AddOption(

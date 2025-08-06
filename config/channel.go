@@ -20,7 +20,7 @@ const (
 )
 
 func HandleModifyFallbackChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
-	err := resp.SetMessage("Salon de repli...").SetComponents(component.New().Add(component.NewActionRow().Add(
+	err := resp.IsEphemeral().SetComponents(component.New().Add(component.NewActionRow().Add(
 		component.NewChannelSelect(FallbackChannelSet).AddChannelType(discordgo.ChannelTypeGuildText),
 	))).Send()
 	if err != nil {
@@ -49,7 +49,7 @@ func HandleFallbackChannelSet(_ *discordgo.Session, i *discordgo.InteractionCrea
 }
 
 func HandleModifyDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
-	err := resp.SetMessage("Salon de repli...").SetComponents(component.New().Add(component.NewActionRow().
+	err := resp.IsEphemeral().SetComponents(component.New().Add(component.NewActionRow().
 		Add(
 			component.NewButton(DisChannelAdd, discordgo.PrimaryButton).
 				SetLabel("Désactiver un salon").
@@ -67,7 +67,7 @@ func HandleModifyDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate
 }
 
 func HandleDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
-	resp.SetMessage("Salon à désactiver...")
+	resp.IsEphemeral().SetMessage("Salon à désactiver...")
 	cID := DisChannelAddSet
 	if data.CustomID == DisChannelDel {
 		resp.SetMessage("Salon à réactiver...")
@@ -80,6 +80,7 @@ func HandleDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, data
 }
 
 func HandleDisChannelAddSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	id := data.Values[0]
 	if strings.Contains(cfg.DisabledChannels, id) {
@@ -102,6 +103,7 @@ func HandleDisChannelAddSet(_ *discordgo.Session, i *discordgo.InteractionCreate
 }
 
 func HandleDisChannelDelSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	id := data.Values[0]
 	if !strings.Contains(cfg.DisabledChannels, id) {
