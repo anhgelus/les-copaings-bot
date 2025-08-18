@@ -86,14 +86,14 @@ func PeriodicReducer(dg *discordgo.Session) {
 		go func() {
 			defer wg.Done()
 			cfg := config.GetGuildConfig(g.ID)
-			err := gokord.DB.
+			res := gokord.DB.
 				Model(&CopaingXP{}).
 				Where("guild_id = ? and created_at < ?", g.ID, exp.TimeStampNDaysBefore(cfg.DaysXPRemains)).
-				Delete(&CopaingXP{}).
-				Error
-			if err != nil {
-				utils.SendAlert("user/level.go - Removing old XP", err.Error(), "guild_id", g.ID)
+				Delete(&CopaingXP{})
+			if res.Error != nil {
+				utils.SendAlert("user/level.go - Removing old XP", res.Error.Error(), "guild_id", g.ID)
 			}
+			utils.SendDebug("Guild cleaned", "guild", g.Name, "rows affected", res.RowsAffected)
 		}()
 	}
 	wg.Wait()

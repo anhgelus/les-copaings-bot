@@ -195,7 +195,15 @@ func afterInit(dg *discordgo.Session) {
 	dg.AddHandler(OnVoiceUpdate)
 	dg.AddHandler(OnLeave)
 
-	stopPeriodicReducer = utils.NewTimer(24*time.Hour, func(stop chan<- interface{}) {
+	d := 24 * time.Hour
+	if gokord.Debug {
+		d = 24 * time.Second
+	}
+
+	user.PeriodicReducer(dg)
+
+	stopPeriodicReducer = utils.NewTimer(d, func(stop chan<- interface{}) {
+		utils.SendDebug("Periodic reducer")
 		user.PeriodicReducer(dg)
 	})
 }
