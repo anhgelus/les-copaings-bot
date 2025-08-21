@@ -9,6 +9,7 @@ import (
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/component"
 	"github.com/anhgelus/gokord/logger"
+	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -189,7 +190,7 @@ func HandleXpRoleLevel(_ *discordgo.Session, i *discordgo.InteractionCreate, dat
 		}
 		return
 	}
-	configModifyMap[k] = uint(in)
+	configModifyMap[k] = exp.LevelXP(uint(in))
 	go func(i *discordgo.InteractionCreate, k string) {
 		time.Sleep(5 * time.Minute)
 		delete(configModifyMap, k)
