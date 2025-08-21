@@ -1,36 +1,18 @@
 package commands
 
 import (
+	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/logger"
 	"github.com/bwmarrin/discordgo"
 )
 
 func Credits(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
-	err := resp.AddEmbed(&discordgo.MessageEmbed{
-
-		Type:        discordgo.EmbedTypeRich,
-		Title:       "Crédits",
-		Description: "Auteur du bot : @anhgelus (https://github.com/anhgelus)\nLangage : Go 1.24\nLicence : AGPLv3",
-		Color:       0x10E6AD,
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "anhgelus/gokord",
-				Value:  "v0.10.0 - MPL 2.0",
-				Inline: true,
-			},
-			{
-				Name:   "bwmarrin/discordgo",
-				Value:  "v0.29.0 - BSD-3-Clause",
-				Inline: true,
-			},
-			{
-				Name:   "gorm",
-				Value:  "v1.30.0 - MIT",
-				Inline: true,
-			},
-		},
-	}).Send()
+	msg := "**Les Copaings**, le bot gérant les serveurs privés de [anhgelus](<https://anhgelus.world/>).\n"
+	msg += "Code source : <https://git.anhgelus.world/anhgelus/les-copaings-bot>\n\n"
+	msg += "Host du bot : " + gokord.BaseCfg.GetAuthor() + "\n\n"
+	msg += "Utilise :\n- [anhgelus/gokord](<https://github.com/anhgelus/gokord>)"
+	err := resp.SetMessage(msg).Send()
 	if err != nil {
 		logger.Alert("commands/credits.go - Sending credits", err.Error(), "guild_id", i.GuildID)
 	}
