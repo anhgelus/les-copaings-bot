@@ -2,13 +2,14 @@ package config
 
 import (
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/component"
 	"github.com/anhgelus/gokord/logger"
 	"github.com/bwmarrin/discordgo"
-	"strconv"
-	"time"
 )
 
 type XpRole struct {
@@ -52,7 +53,7 @@ func HandleModifyXpRole(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ 
 			),
 		)).Send()
 	if err != nil {
-		logger.Alert("config/guild.go - Sending config", err.Error())
+		logger.Alert("config/xp_reduce.go - Sending config", err.Error())
 	}
 }
 
@@ -63,7 +64,8 @@ func HandleXpRoleAddEdit(_ *discordgo.Session, _ *discordgo.InteractionCreate, d
 	}
 	err := resp.IsModal().
 		SetTitle("Role").
-		SetComponents(component.New().ForModal().Add(component.NewActionRow().Add(
+		SetCustomID(cID).
+		SetComponents(component.New().ForModal().Add(component.NewActionRow().ForModal().Add(
 			component.NewTextInput(cID, "Niveau", discordgo.TextInputShort).
 				SetPlaceholder("5").
 				IsRequired().
@@ -72,7 +74,7 @@ func HandleXpRoleAddEdit(_ *discordgo.Session, _ *discordgo.InteractionCreate, d
 		))).
 		Send()
 	if err != nil {
-		logger.Alert("config/guild.go - Sending modal to add/edit", err.Error())
+		logger.Alert("config/xp_reduce.go - Sending modal to add/edit", err.Error())
 	}
 }
 
@@ -142,7 +144,7 @@ func HandleXpRoleDel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ dis
 		SetComponents(component.New().Add(component.NewActionRow().Add(component.NewRoleSelect(XpRoleDelRole)))).
 		Send()
 	if err != nil {
-		logger.Alert("config/guild.go - Sending response to del", err.Error())
+		logger.Alert("config/xp_reduce.go - Sending response to del", err.Error())
 	}
 }
 
@@ -204,10 +206,10 @@ func HandleXpRoleLevel(_ *discordgo.Session, i *discordgo.InteractionCreate, dat
 		SetComponents(component.New().Add(component.NewActionRow().Add(component.NewRoleSelect(cID)))).
 		Send()
 	if err != nil {
-		logger.Alert("config/guild.go - Sending response to add/edit", err.Error())
+		logger.Alert("config/xp_reduce.go - Sending response to add/edit", err.Error())
 	}
 }
 
 func getKeyConfigRole(i *discordgo.InteractionCreate) string {
-	return fmt.Sprintf("r:%s:%s", i.GuildID, i.User.ID)
+	return fmt.Sprintf("r:%s:%s", i.GuildID, i.Member.User.ID)
 }
