@@ -84,6 +84,9 @@ func main() {
 	creditsCmd := cmd.New("credits", "Crédits").
 		SetHandler(commands.Credits)
 
+	statsCmd := cmd.New("stats", "Affiche des stats :D").
+		SetHandler(commands.Stats)
+
 	innovations, err := gokord.LoadInnovationFromJson(updatesData)
 	if err != nil {
 		panic(err)
@@ -116,6 +119,7 @@ func main() {
 			resetCmd,
 			resetUserCmd,
 			creditsCmd,
+			statsCmd,
 		},
 		AfterInit: func(dg *discordgo.Session) {
 			d := 24 * time.Hour
