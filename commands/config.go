@@ -2,13 +2,14 @@ package commands
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/component"
 	"github.com/anhgelus/gokord/logger"
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/bwmarrin/discordgo"
-	"strings"
 )
 
 const (
@@ -48,15 +49,40 @@ func Config(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMa
 	} else {
 		defaultChan = fmt.Sprintf("<#%s>", cfg.FallbackChannel)
 	}
+	//comp := component.New().
+	//	Add(component.NewTextDisplay("# Config")).
+	//	Add(component.NewTextDisplay("**Salon par défaut**\n" + defaultChan)).
+	//	Add(component.NewSeparator()).
+	//	Add(component.NewTextDisplay("**Rôles liés aux niveaux**\n" + roles)).
+	//	Add(component.NewSeparator()).
+	//	Add(component.NewTextDisplay("**Salons désactivés**\n" + chans)).
+	//	Add(component.NewSeparator()).
+	//	Add(component.NewTextDisplay(fmt.Sprintf("**%s**\n%d", "Jours avant la réduction", cfg.DaysXPRemains))).
+	//	Add(component.NewActionRow().Add(component.NewStringSelect(ConfigModify).
+	//		SetPlaceholder("Modifier...").
+	//		AddOption(
+	//			component.NewSelectOption("Rôles liés à l'XP", config.ModifyXpRole).
+	//				SetDescription("Gère les rôles liés à l'XP").
+	//				SetEmoji(&discordgo.ComponentEmoji{Name: "🏅"}),
+	//		).
+	//		AddOption(
+	//			component.NewSelectOption("Salons désactivés", config.ModifyDisChannel).
+	//				SetDescription("Gère les salons désactivés").
+	//				SetEmoji(&discordgo.ComponentEmoji{Name: "❌"}),
+	//		).
+	//		AddOption(
+	//			// I don't have a better idea for this...
+	//			component.NewSelectOption("Salons par défaut", config.ModifyFallbackChannel).
+	//				SetDescription("Spécifie le salon par défaut").
+	//				SetEmoji(&discordgo.ComponentEmoji{Name: "💾"}),
+	//		).
+	//		AddOption(
+	//			component.NewSelectOption("Temps avec la réduction", config.ModifyTimeReduce).
+	//				SetDescription("Gère le temps avant la réduction d'XP").
+	//				SetEmoji(&discordgo.ComponentEmoji{Name: "⌛"}),
+	//		),
+	//	))
 	comp := component.New().
-		Add(component.NewTextDisplay("# Config")).
-		Add(component.NewTextDisplay("**Salon par défaut**\n" + defaultChan)).
-		Add(component.NewSeparator()).
-		Add(component.NewTextDisplay("**Rôles liés aux niveaux**\n" + roles)).
-		Add(component.NewSeparator()).
-		Add(component.NewTextDisplay("**Salons désactivés**\n" + chans)).
-		Add(component.NewSeparator()).
-		Add(component.NewTextDisplay(fmt.Sprintf("**%s**\n%d", "Jours avant la réduction", cfg.DaysXPRemains))).
 		Add(component.NewActionRow().Add(component.NewStringSelect(ConfigModify).
 			SetPlaceholder("Modifier...").
 			AddOption(
@@ -81,7 +107,14 @@ func Config(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMa
 					SetEmoji(&discordgo.ComponentEmoji{Name: "⌛"}),
 			),
 		))
-	err := resp.SetComponents(comp).IsEphemeral().Send()
+	msg := fmt.Sprintf(
+		"# Config\n**Salon par défaut**\n%s\n\n**Rôles liés aux niveaux**\n%s\n\n**Salons désactivés**\n%s\n\n**Jours avant la réduction**\n%d",
+		defaultChan,
+		roles,
+		chans,
+		cfg.DaysXPRemains,
+	)
+	err := resp.SetComponents(comp).SetMessage(msg).IsEphemeral().Send()
 	if err != nil {
 		logger.Alert("config/guild.go - Sending config", err.Error())
 	}

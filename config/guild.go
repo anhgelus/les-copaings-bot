@@ -1,9 +1,9 @@
 package config
 
 import (
-	"github.com/anhgelus/gokord"
-	"github.com/anhgelus/gokord/logger"
 	"strings"
+
+	"github.com/anhgelus/gokord"
 )
 
 type GuildConfig struct {
@@ -18,8 +18,7 @@ type GuildConfig struct {
 func GetGuildConfig(guildID string) *GuildConfig {
 	cfg := GuildConfig{GuildID: guildID}
 	if err := cfg.Load(); err != nil {
-		logger.Alert("config/guild.go - Loading guild config", err.Error(), "guild_id", guildID)
-		return nil
+		panic(err)
 	}
 	return &cfg
 }
