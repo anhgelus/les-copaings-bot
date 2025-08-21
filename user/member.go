@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/anhgelus/gokord"
-	"github.com/anhgelus/gokord/logger"
 )
 
 type Copaing struct {
@@ -35,15 +34,7 @@ const (
 func GetCopaing(discordID string, guildID string) *Copaing {
 	c := Copaing{DiscordID: discordID, GuildID: guildID}
 	if err := c.Load(); err != nil {
-		logger.Alert(
-			"user/member.go - Loading user",
-			err.Error(),
-			"discord_id",
-			discordID,
-			"guild_id",
-			guildID,
-		)
-		return nil
+		panic(err)
 	}
 	return &c
 }

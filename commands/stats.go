@@ -47,7 +47,13 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 		}
 		days = uint(in)
 	}
-	w, err := statsAll(s, i, days)
+	var w io.WriterTo
+	var err error
+	if v, ok := opt["user"]; ok {
+		w, err = statsMember(s, i, days, v.UserValue(s).ID)
+	} else {
+		w, err = statsAll(s, i, days)
+	}
 	if err != nil {
 		if err = resp.IsEphemeral().SetMessage("Il y a eu une erreur...").Send(); err != nil {
 			logger.Alert("commands/stats.go - Sending error occurred", err.Error())
@@ -120,6 +126,72 @@ func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days uint) (
 			}
 			copaings[raw.CopaingID] = &cp
 		}
+		pts, ok := stats[raw.CopaingID]
+		if !ok {
+			pts = &[]plotter.XY{}
+			stats[raw.CopaingID] = pts
+		}
+		t := float64(raw.CreatedAt.Unix() - time.Now().Unix())
+		if !gokord.Debug {
+			t = math.Ceil(t / (24 * 60 * 60))
+		}
+		*pts = append(*pts, plotter.XY{
+			X: t,
+			Y: float64(raw.XP),
+		})
+	}
+
+	return generatePlot(s, i, days, copaings, stats)
+}
+
+func statsMember(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, discordID string) (io.WriterTo, error) {
+	cp := user.GetCopaing(discordID, i.GuildID)
+	var rawData []*data
+	if gokord.Debug {
+		var rawCopaingData []*user.CopaingXP
+		err := gokord.DB.
+			Where(
+				"guild_id = ? and created_at > ? and copaing_id = ?",
+				i.GuildID, exp.TimeStampNDaysBefore(days), discordID,
+			).
+			Find(&rawCopaingData).
+			Error
+		if err != nil {
+			logger.Alert("commands/stats.go - Fetching result", err.Error())
+			return nil, err
+		}
+		rawData = make([]*data, len(rawCopaingData))
+		for in, d := range rawCopaingData {
+			rawData[in] = &data{
+				CreatedAt: d.CreatedAt,
+				XP:        int(d.XP),
+				CopaingID: int(d.CopaingID),
+			}
+		}
+	} else {
+		sql := `SELECT "created_at"::date::text, sum("xp") as xp, "copaing_id" FROM copaing_xps WHERE "guild_id" = ? and "created_at" > ? and "copaing_id" = ? GROUP BY "created_at"::date, "copaing_id"`
+		var rawDbData []dbData
+		res := gokord.DB.Raw(sql, i.GuildID, exp.TimeStampNDaysBefore(days), discordID)
+		if err := res.Scan(&rawDbData).Error; err != nil {
+			logger.Alert("commands/stats.go - Fetching result", err.Error())
+			return nil, err
+		}
+		rawData = make([]*data, len(rawDbData))
+		for in, d := range rawDbData {
+			rawData[in] = &data{
+				CreatedAt: d.CreatedAt.Time,
+				XP:        d.XP,
+				CopaingID: d.CopaingID,
+			}
+		}
+	}
+
+	copaings := map[int]*user.Copaing{
+		int(cp.ID): cp,
+	}
+	stats := map[int]*[]plotter.XY{}
+
+	for _, raw := range rawData {
 		pts, ok := stats[raw.CopaingID]
 		if !ok {
 			pts = &[]plotter.XY{}
