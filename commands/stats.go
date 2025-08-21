@@ -2,6 +2,10 @@ package commands
 
 import (
 	"bytes"
+	"image/color"
+	"math"
+	"math/rand/v2"
+	"slices"
 	"time"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
@@ -14,11 +18,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
 )
 
 type data struct {
+	CreatedAt time.Time
+	XP        int
+	CopaingID int
+}
+
+type dbData struct {
 	CreatedAt *pgtype.Date
 	XP        int
 	CopaingID int
@@ -38,13 +47,40 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 		days = uint(in)
 	}
 	var rawData []*data
-	res := gokord.DB.Raw(
-		`SELECT "created_at"::date::text, sum("xp") as xp, "copaing_id" FROM copaing_xps WHERE "guild_id" = ? and "created_at" > ? GROUP BY "created_at"::date, "copaing_id"`,
-		i.GuildID, exp.TimeStampNDaysBefore(days),
-	)
-	if err := res.Scan(&rawData).Error; err != nil {
-		logger.Alert("commands/stats.go - Fetching result", err.Error())
-		return
+	if gokord.Debug {
+		var rawCopaingData []*user.CopaingXP
+		err := gokord.DB.
+			Where("guild_id = ? and created_at > ?", i.GuildID, exp.TimeStampNDaysBefore(days)).
+			Find(&rawCopaingData).
+			Error
+		if err != nil {
+			logger.Alert("commands/stats.go - Fetching result", err.Error())
+			return
+		}
+		rawData = make([]*data, len(rawCopaingData))
+		for in, d := range rawCopaingData {
+			rawData[in] = &data{
+				CreatedAt: d.CreatedAt,
+				XP:        int(d.XP),
+				CopaingID: int(d.CopaingID),
+			}
+		}
+	} else {
+		sql := `SELECT "created_at"::date::text, sum("xp") as xp, "copaing_id" FROM copaing_xps WHERE "guild_id" = ? and "created_at" > ? GROUP BY "created_at"::date, "copaing_id"`
+		var rawDbData []dbData
+		res := gokord.DB.Raw(sql, i.GuildID, exp.TimeStampNDaysBefore(days))
+		if err := res.Scan(&rawDbData).Error; err != nil {
+			logger.Alert("commands/stats.go - Fetching result", err.Error())
+			return
+		}
+		rawData = make([]*data, len(rawDbData))
+		for in, d := range rawDbData {
+			rawData[in] = &data{
+				CreatedAt: d.CreatedAt.Time,
+				XP:        d.XP,
+				CopaingID: d.CopaingID,
+			}
+		}
 	}
 
 	copaings := map[int]*user.Copaing{}
@@ -65,7 +101,10 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 			pts = &[]plotter.XY{}
 			stats[raw.CopaingID] = pts
 		}
-		t := float64(raw.CreatedAt.Time.Unix()-time.Now().Unix()) / (24 * 60 * 60)
+		t := float64(raw.CreatedAt.Unix() - time.Now().Unix())
+		if !gokord.Debug {
+			t = math.Ceil(t / (24 * 60 * 60))
+		}
 		*pts = append(*pts, plotter.XY{
 			X: t,
 			Y: float64(raw.XP),
@@ -77,19 +116,48 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 	p.X.Label.Text = "Jours"
 	p.Y.Label.Text = "XP"
 
+	p.Add(plotter.NewGrid())
+
+	r := rand.New(rand.NewPCG(uint64(time.Now().Unix()), uint64(time.Now().Unix())))
 	for in, c := range copaings {
 		m, err := s.GuildMember(i.GuildID, c.DiscordID)
 		if err != nil {
 			logger.Alert("commands/stats.go - Fetching guild member", err.Error())
 			return
 		}
-		err = plotutil.AddLinePoints(p, m.DisplayName(), plotter.XYs(*stats[in]))
+		slices.SortFunc(*stats[in], func(a, b plotter.XY) int {
+			if a.X < b.X {
+				return -1
+			}
+			if a.X > b.X {
+				return 1
+			}
+			return 0
+		})
+		first := (*stats[in])[0]
+		if first.X > float64(-days) {
+			*stats[in] = append([]plotter.XY{{
+				X: first.X - 1, Y: 0,
+			}}, *stats[in]...)
+		}
+		last := (*stats[in])[len(*stats[in])-1]
+		if last.X <= -1 {
+			*stats[in] = append(*stats[in], plotter.XY{
+				X: last.X + 1, Y: 0,
+			})
+		}
+		l, err := plotter.NewLine(plotter.XYs(*stats[in]))
 		if err != nil {
 			logger.Alert("commands/stats.go - Adding line points", err.Error())
 			return
 		}
+		l.LineStyle.Width = vg.Points(1)
+		l.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(5)}
+		l.LineStyle.Color = color.RGBA{R: uint8(r.UintN(255)), G: uint8(r.UintN(255)), B: uint8(r.UintN(255)), A: 255}
+		p.Add(l)
+		p.Legend.Add(m.DisplayName(), l)
 	}
-	w, err := p.WriterTo(4*vg.Inch, 4*vg.Inch, "png")
+	w, err := p.WriterTo(8*vg.Inch, 6*vg.Inch, "png")
 	if err != nil {
 		logger.Alert("commands/stats.go - Generating png", err.Error())
 		return
