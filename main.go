@@ -138,8 +138,26 @@ func main() {
 	}
 
 	// interaction: /config
+	bot.HandleMessageComponent(func(s *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+		if len(data.Values) != 1 {
+			logger.Alert("main.go - Handle config modify", "invalid data values", "values", data.Values)
+			return
+		}
+		switch data.Values[0] {
+		case config.ModifyXpRole:
+			config.HandleModifyXpRole(s, i, data, resp)
+		case config.ModifyFallbackChannel:
+			config.HandleModifyFallbackChannel(s, i, data, resp)
+		case config.ModifyDisChannel:
+			config.HandleModifyDisChannel(s, i, data, resp)
+		case config.ModifyTimeReduce:
+			config.HandleModifyPeriodicReduce(s, i, data, resp)
+		default:
+			logger.Alert("main.go - Detecting value", "unkown value", "value", data.Values[0])
+			return
+		}
+	}, commands.ConfigModify)
 	// xp role related
-	bot.HandleMessageComponent(config.HandleModifyXpRole, config.ModifyXpRole)
 	bot.HandleMessageComponent(config.HandleXpRoleAddEdit, config.XpRoleAdd)
 	bot.HandleMessageComponent(config.HandleXpRoleAddEdit, config.XpRoleEdit)
 	bot.HandleMessageComponent(config.HandleXpRoleAddRole, config.XpRoleAddRole)
@@ -149,15 +167,12 @@ func main() {
 	bot.HandleModal(config.HandleXpRoleLevel, config.XpRoleAddLevel)
 	bot.HandleModal(config.HandleXpRoleLevel, config.XpRoleEditLevel)
 	// channel related
-	bot.HandleMessageComponent(config.HandleModifyFallbackChannel, config.ModifyFallbackChannel)
 	bot.HandleMessageComponent(config.HandleFallbackChannelSet, config.FallbackChannelSet)
-	bot.HandleMessageComponent(config.HandleModifyDisChannel, config.ModifyDisChannel)
 	bot.HandleMessageComponent(config.HandleDisChannel, config.DisChannelAdd)
 	bot.HandleMessageComponent(config.HandleDisChannel, config.DisChannelDel)
 	bot.HandleMessageComponent(config.HandleDisChannelAddSet, config.DisChannelAddSet)
 	bot.HandleMessageComponent(config.HandleDisChannelDelSet, config.DisChannelDelSet)
 	// reduce related
-	bot.HandleMessageComponent(config.HandleModifyPeriodicReduce, config.ModifyTimeReduce)
 	bot.HandleModal(config.HandleTimeReduceSet, config.TimeReduceSet)
 
 	// xp handlers

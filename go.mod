@@ -3,7 +3,7 @@ module github.com/anhgelus/les-copaings-bot
 go 1.24
 
 require (
-	github.com/anhgelus/gokord v0.11.1-0.20250807111049-5de23912c524
+	github.com/anhgelus/gokord v0.11.1-0.20250821115246-50e5f7d17717
 	github.com/bwmarrin/discordgo v0.29.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pelletier/go-toml/v2 v2.2.4
