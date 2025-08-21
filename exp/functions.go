@@ -2,12 +2,13 @@ package exp
 
 import (
 	"fmt"
-	"github.com/anhgelus/gokord"
 	"math"
 	"regexp"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/anhgelus/gokord"
 )
 
 func MessageXP(length uint, diversity uint) uint {
@@ -50,14 +51,14 @@ func LevelXP(level uint) uint {
 
 // TimeStampNDaysBefore returns the timestamp (year-month-day) n days before today
 func TimeStampNDaysBefore(n uint) string {
-	var y, d int
-	var m time.Month
+	var unix time.Time
 	if gokord.Debug {
-		y, m, d = time.Unix(time.Now().Unix()-int64(24*60*60), 0).Date() // reduce time for debug
+		unix = time.Unix(time.Now().Unix()-int64(n), 0) // reduce time for debug
 	} else {
-		y, m, d = time.Unix(time.Now().Unix()-int64(n*24*60*60), 0).Date()
+		unix = time.Unix(time.Now().Unix()-int64(n*24*60*60), 0)
 	}
-	return fmt.Sprintf("%d-%d-%d", y, m, d)
+	unix = unix.UTC()
+	return fmt.Sprintf("%d-%d-%d %d:%d:%d UTC", unix.Year(), unix.Month(), unix.Day(), unix.Hour(), unix.Minute(), unix.Second())
 }
 
 func TrimMessage(s string) string {

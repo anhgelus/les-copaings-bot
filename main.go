@@ -4,16 +4,17 @@ import (
 	_ "embed"
 	"errors"
 	"flag"
+	"os"
+	"time"
+
 	"github.com/anhgelus/gokord"
-	cmd "github.com/anhgelus/gokord/cmd"
+	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/logger"
 	"github.com/anhgelus/les-copaings-bot/commands"
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
-	"os"
-	"time"
 )
 
 var (
@@ -117,7 +118,15 @@ func main() {
 			creditsCmd,
 		},
 		AfterInit: func(dg *discordgo.Session) {
-			stopPeriodicReducer = gokord.NewTimer(24*time.Hour, func(stop chan<- interface{}) {
+			d := 24 * time.Hour
+			if gokord.Debug {
+				d = 24 * time.Second
+			}
+
+			user.PeriodicReducer(dg)
+
+			stopPeriodicReducer = gokord.NewTimer(d, func(stop chan<- interface{}) {
+				logger.Debug("Periodic reducer")
 				user.PeriodicReducer(dg)
 			})
 		},
