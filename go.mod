@@ -3,11 +3,11 @@ module github.com/anhgelus/les-copaings-bot
 go 1.24
 
 require (
-	github.com/anhgelus/gokord v0.11.1-0.20250806143823-567c33f63688
+	github.com/anhgelus/gokord v0.11.1-0.20250807111049-5de23912c524
 	github.com/bwmarrin/discordgo v0.29.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pelletier/go-toml/v2 v2.2.4
-	gorm.io/driver/postgres v1.5.11
+	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.30.1
 )
 
@@ -21,9 +21,9 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/redis/go-redis/v9 v9.12.0 // indirect
-	golang.org/x/crypto v0.40.0 // indirect
+	github.com/redis/go-redis/v9 v9.12.1 // indirect
+	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
-	golang.org/x/text v0.27.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/text v0.28.0 // indirect
 )
