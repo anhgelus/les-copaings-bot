@@ -2,13 +2,14 @@ package commands
 
 import (
 	"fmt"
-	"github.com/anhgelus/gokord/utils"
+	"github.com/anhgelus/gokord/cmd"
+	"github.com/anhgelus/gokord/logger"
 	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
 )
 
-func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.OptionMap, resp *utils.ResponseBuilder) {
+func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	c := user.GetCopaing(i.Member.User.ID, i.GuildID) // current user = member who used /rank
 	msg := "Votre niveau"
 	m := i.Member
@@ -18,12 +19,12 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.Opt
 		if u.Bot {
 			err = resp.SetMessage("Imagine si les bots avaient un niveau :rolling_eyes:").IsEphemeral().Send()
 			if err != nil {
-				utils.SendAlert("commands/rank.go - Reply error user is a bot", err.Error())
+				logger.Alert("commands/rank.go - Reply error user is a bot", err.Error())
 			}
 		}
 		m, err = s.GuildMember(i.GuildID, u.ID)
 		if err != nil {
-			utils.SendAlert(
+			logger.Alert(
 				"commands/rank.go - Fetching guild member",
 				err.Error(),
 				"discord_id",
@@ -33,7 +34,7 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.Opt
 			)
 			err = resp.SetMessage("Erreur : impossible de récupérer le membre").IsEphemeral().Send()
 			if err != nil {
-				utils.SendAlert("commands/rank.go - Reply error fetching guild member", err.Error())
+				logger.Alert("commands/rank.go - Reply error fetching guild member", err.Error())
 			}
 			return
 		}
@@ -42,7 +43,7 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.Opt
 	}
 	xp, err := c.GetXP()
 	if err != nil {
-		utils.SendAlert(
+		logger.Alert(
 			"commands/rank.go - Fetching xp",
 			err.Error(),
 			"discord_id",
@@ -52,7 +53,7 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.Opt
 		)
 		err = resp.SetMessage("Erreur : impossible de récupérer l'XP").IsEphemeral().Send()
 		if err != nil {
-			utils.SendAlert("commands/rank.go - Reply error fetching xp", err.Error())
+			logger.Alert("commands/rank.go - Reply error fetching xp", err.Error())
 		}
 		return
 	}
@@ -66,6 +67,6 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap utils.Opt
 		nxtLvlXP-xp,
 	)).Send()
 	if err != nil {
-		utils.SendAlert("commands/rank.go - Sending rank", err.Error())
+		logger.Alert("commands/rank.go - Sending rank", err.Error())
 	}
 }

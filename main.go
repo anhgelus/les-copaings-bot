@@ -4,15 +4,17 @@ import (
 	_ "embed"
 	"errors"
 	"flag"
+	"os"
+	"time"
+
 	"github.com/anhgelus/gokord"
-	"github.com/anhgelus/gokord/utils"
+	"github.com/anhgelus/gokord/cmd"
+	"github.com/anhgelus/gokord/logger"
 	"github.com/anhgelus/les-copaings-bot/commands"
 	"github.com/anhgelus/les-copaings-bot/config"
 	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
-	"os"
-	"time"
 )
 
 var (
@@ -21,8 +23,8 @@ var (
 	updatesData []byte
 	Version     = gokord.Version{
 		Major: 3,
-		Minor: 1,
-		Patch: 3,
+		Minor: 2,
+		Patch: 0,
 	}
 
 	stopPeriodicReducer chan<- interface{}
@@ -31,7 +33,7 @@ var (
 func init() {
 	err := godotenv.Load()
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		utils.SendWarn("Error while loading .env file", "error", err.Error())
+		logger.Warn("Error while loading .env file", "error", err.Error())
 	}
 	flag.StringVar(&token, "token", os.Getenv("TOKEN"), "token of the bot")
 }
@@ -51,87 +53,27 @@ func main() {
 
 	adm := gokord.AdminPermission
 
-	rankCmd := gokord.NewCommand("rank", "Affiche le niveau d'un copaing").
-		AddOption(gokord.NewOption(
+	rankCmd := cmd.New("rank", "Affiche le niveau d'un copaing").
+		AddOption(cmd.NewOption(
 			discordgo.ApplicationCommandOptionUser,
 			"copaing",
 			"Le niveau du Copaing que vous souhaitez obtenir",
 		)).
 		SetHandler(commands.Rank)
 
-	configCmd := gokord.NewCommand("config", "Modifie la config").
-		ContainsSub().
-		AddSub(
-			gokord.NewCommand("show", "Affiche la config").SetHandler(commands.ConfigShow),
-		).
-		AddSub(
-			gokord.NewCommand("xp", "Modifie l'xp").
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionString,
-					"type",
-					"Type d'action à effectuer",
-				).
-					AddChoice(gokord.NewChoice("Ajouter", "add")).
-					AddChoice(gokord.NewChoice("Supprimer", "del")).
-					AddChoice(gokord.NewChoice("Modifier", "edit")).IsRequired(),
-				).
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionInteger,
-					"level",
-					"Niveau du rôle",
-				).IsRequired()).
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionRole,
-					"role",
-					"Rôle",
-				).IsRequired()).
-				SetHandler(commands.ConfigXP),
-		).
-		AddSub(
-			gokord.NewCommand("disabled-channels", "Modifie les salons désactivés").
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionString,
-					"type",
-					"Type d'action à effectuer",
-				).
-					AddChoice(gokord.NewChoice("Désactiver le salon", "add")).
-					AddChoice(gokord.NewChoice("Activer le salon", "del")).IsRequired(),
-				).
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionChannel,
-					"channel",
-					"Salon à modifier",
-				).IsRequired()).
-				SetHandler(commands.ConfigChannel),
-		).
-		AddSub(
-			gokord.NewCommand("period-before-reduce", "Temps avant la perte d'xp (affecte aussi le /top)").
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionInteger,
-					"days",
-					"Nombre de jours avant la perte d'xp (doit être égal ou plus grand que 30)",
-				).IsRequired()).
-				SetHandler(commands.ConfigPeriodBeforeReduce),
-		).
-		AddSub(
-			gokord.NewCommand("fallback-channel", "Modifie le salon textuel par défaut").
-				AddOption(gokord.NewOption(
-					discordgo.ApplicationCommandOptionChannel,
-					"channel",
-					"Salon textuel par défaut",
-				).IsRequired()).
-				SetHandler(commands.ConfigFallbackChannel),
-		).SetPermission(&adm)
+	configCmd := cmd.New("config", "Modifie la config").
+		SetPermission(&adm).
+		SetHandler(commands.Config)
 
-	topCmd := gokord.NewCommand("top", "Copaings les plus actifs").
+	topCmd := cmd.New("top", "Copaings les plus actifs").
 		SetHandler(commands.Top)
 
-	resetCmd := gokord.NewCommand("reset", "Reset l'xp").
+	resetCmd := cmd.New("reset", "Reset l'xp").
 		SetHandler(commands.Reset).
 		SetPermission(&adm)
 
-	resetUserCmd := gokord.NewCommand("reset-user", "Reset l'xp d'un utilisation").
-		AddOption(gokord.NewOption(
+	resetUserCmd := cmd.New("reset-user", "Reset l'xp d'un utilisation").
+		AddOption(cmd.NewOption(
 			discordgo.ApplicationCommandOptionUser,
 			"user",
 			"Copaing a reset",
@@ -139,7 +81,7 @@ func main() {
 		SetHandler(commands.ResetUser).
 		SetPermission(&adm)
 
-	creditsCmd := gokord.NewCommand("credits", "Crédits").
+	creditsCmd := cmd.New("credits", "Crédits").
 		SetHandler(commands.Credits)
 
 	innovations, err := gokord.LoadInnovationFromJson(updatesData)
@@ -167,7 +109,7 @@ func main() {
 				Content: "Les Copaings Bot " + Version.String(),
 			},
 		},
-		Commands: []gokord.CommandBuilder{
+		Commands: []cmd.CommandBuilder{
 			rankCmd,
 			configCmd,
 			topCmd,
@@ -175,35 +117,72 @@ func main() {
 			resetUserCmd,
 			creditsCmd,
 		},
-		AfterInit:   afterInit,
+		AfterInit: func(dg *discordgo.Session) {
+			d := 24 * time.Hour
+			if gokord.Debug {
+				d = 24 * time.Second
+			}
+
+			user.PeriodicReducer(dg)
+
+			stopPeriodicReducer = gokord.NewTimer(d, func(stop chan<- interface{}) {
+				logger.Debug("Periodic reducer")
+				user.PeriodicReducer(dg)
+			})
+		},
 		Innovations: innovations,
 		Version:     &Version,
 		Intents: discordgo.IntentsAllWithoutPrivileged |
 			discordgo.IntentsMessageContent |
 			discordgo.IntentGuildMembers,
 	}
+
+	// interaction: /config
+	bot.HandleMessageComponent(func(s *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+		if len(data.Values) != 1 {
+			logger.Alert("main.go - Handle config modify", "invalid data values", "values", data.Values)
+			return
+		}
+		switch data.Values[0] {
+		case config.ModifyXpRole:
+			config.HandleModifyXpRole(s, i, data, resp)
+		case config.ModifyFallbackChannel:
+			config.HandleModifyFallbackChannel(s, i, data, resp)
+		case config.ModifyDisChannel:
+			config.HandleModifyDisChannel(s, i, data, resp)
+		case config.ModifyTimeReduce:
+			config.HandleModifyPeriodicReduce(s, i, data, resp)
+		default:
+			logger.Alert("main.go - Detecting value", "unkown value", "value", data.Values[0])
+			return
+		}
+	}, commands.ConfigModify)
+	// xp role related
+	bot.HandleMessageComponent(config.HandleXpRoleAddEdit, config.XpRoleAdd)
+	bot.HandleMessageComponent(config.HandleXpRoleAddEdit, config.XpRoleEdit)
+	bot.HandleMessageComponent(config.HandleXpRoleAddRole, config.XpRoleAddRole)
+	bot.HandleMessageComponent(config.HandleXpRoleEditRole, config.XpRoleEditRole)
+	bot.HandleMessageComponent(config.HandleXpRoleDel, config.XpRoleDel)
+	bot.HandleMessageComponent(config.HandleXpRoleDelRole, config.XpRoleDelRole)
+	bot.HandleModal(config.HandleXpRoleLevel, config.XpRoleAddLevel)
+	bot.HandleModal(config.HandleXpRoleLevel, config.XpRoleEditLevel)
+	// channel related
+	bot.HandleMessageComponent(config.HandleFallbackChannelSet, config.FallbackChannelSet)
+	bot.HandleMessageComponent(config.HandleDisChannel, config.DisChannelAdd)
+	bot.HandleMessageComponent(config.HandleDisChannel, config.DisChannelDel)
+	bot.HandleMessageComponent(config.HandleDisChannelAddSet, config.DisChannelAddSet)
+	bot.HandleMessageComponent(config.HandleDisChannelDelSet, config.DisChannelDelSet)
+	// reduce related
+	bot.HandleModal(config.HandleTimeReduceSet, config.TimeReduceSet)
+
+	// xp handlers
+	bot.AddHandler(OnMessage)
+	bot.AddHandler(OnVoiceUpdate)
+	bot.AddHandler(OnLeave)
+
 	bot.Start()
 
 	if stopPeriodicReducer != nil {
 		stopPeriodicReducer <- true
 	}
-}
-
-func afterInit(dg *discordgo.Session) {
-	// handlers
-	dg.AddHandler(OnMessage)
-	dg.AddHandler(OnVoiceUpdate)
-	dg.AddHandler(OnLeave)
-
-	d := 24 * time.Hour
-	if gokord.Debug {
-		d = 24 * time.Second
-	}
-
-	user.PeriodicReducer(dg)
-
-	stopPeriodicReducer = utils.NewTimer(d, func(stop chan<- interface{}) {
-		utils.SendDebug("Periodic reducer")
-		user.PeriodicReducer(dg)
-	})
 }

@@ -2,12 +2,13 @@ package exp
 
 import (
 	"fmt"
-	"github.com/anhgelus/gokord"
 	"math"
 	"regexp"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/anhgelus/gokord"
 )
 
 func MessageXP(length uint, diversity uint) uint {
@@ -52,7 +53,7 @@ func LevelXP(level uint) uint {
 func TimeStampNDaysBefore(n uint) string {
 	var unix time.Time
 	if gokord.Debug {
-		unix = time.Unix(time.Now().Unix()-int64(n), 0) // reduce time for debug
+		unix = time.Unix(time.Now().Unix()-int64(n)*6, 0) // reduce time for debug
 	} else {
 		unix = time.Unix(time.Now().Unix()-int64(n*24*60*60), 0)
 	}
