@@ -2,10 +2,11 @@ package commands
 
 import (
 	"fmt"
+
+	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/logger"
-	"github.com/anhgelus/les-copaings-bot/exp"
-	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
 )
 

@@ -1,11 +1,12 @@
 package config
 
 import (
+	"strings"
+
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/component"
 	"github.com/anhgelus/gokord/logger"
 	"github.com/bwmarrin/discordgo"
-	"strings"
 )
 
 const (

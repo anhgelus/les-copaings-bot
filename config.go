@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/anhgelus/gokord"
 	"github.com/pelletier/go-toml/v2"
 	"gorm.io/driver/postgres"

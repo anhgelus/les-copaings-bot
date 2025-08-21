@@ -1,4 +1,4 @@
-module github.com/anhgelus/les-copaings-bot
+module git.anhgelus.world/anhgelus/les-copaings-bot
 
 go 1.24
 

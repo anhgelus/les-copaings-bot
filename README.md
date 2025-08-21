@@ -25,14 +25,11 @@ There are two ways to install the bot: docker and build.
 
 1. Clone the repository
 ```bash
-$ git clone https://github.com/anhgelus/les-copaings-bot.git
+$ git clone https://git.anhgelus.world/anhgelus/les-copaings-bot.git
 ```
 2. Go into the repository, rename `.env.example` into `.env` and customize it: add your token, change the user and the 
 password of the database
-3. Start the compose file
-```bash
-$ docker compose up -d --build
-```
+3. Build the image and start it
 
 Now you have to edit `config/config.toml`.
 You can understand how this config file works below.
@@ -45,7 +42,7 @@ You can stop the compose file with `docker compose down`
 
 1. Clone the repository
 ```bash
-$ git clone https://github.com/anhgelus/les-copaings-bot.git
+$ git clone https://git.anhgelus.world/anhgelus/les-copaings-bot.git
 ```
 2. Install Go 1.24+
 3. Go into the repository and build the program

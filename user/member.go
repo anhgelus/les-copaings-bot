@@ -1,9 +1,10 @@
 package user
 
 import (
+	"time"
+
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/logger"
-	"time"
 )
 
 type Copaing struct {

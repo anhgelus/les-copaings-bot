@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"time"
 
+	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/component"
 	"github.com/anhgelus/gokord/logger"
-	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/bwmarrin/discordgo"
 )
 

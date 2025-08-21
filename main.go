@@ -7,12 +7,12 @@ import (
 	"os"
 	"time"
 
+	"git.anhgelus.world/anhgelus/les-copaings-bot/commands"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/logger"
-	"github.com/anhgelus/les-copaings-bot/commands"
-	"github.com/anhgelus/les-copaings-bot/config"
-	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 )

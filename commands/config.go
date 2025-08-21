@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/component"
 	"github.com/anhgelus/gokord/logger"
-	"github.com/anhgelus/les-copaings-bot/config"
-	"github.com/anhgelus/les-copaings-bot/exp"
 	"github.com/bwmarrin/discordgo"
 )
 

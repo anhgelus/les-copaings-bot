@@ -2,13 +2,14 @@ package commands
 
 import (
 	"fmt"
+	"sync"
+
+	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/logger"
-	"github.com/anhgelus/les-copaings-bot/config"
-	"github.com/anhgelus/les-copaings-bot/exp"
-	"github.com/anhgelus/les-copaings-bot/user"
 	"github.com/bwmarrin/discordgo"
-	"sync"
 )
 
 func Top(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
