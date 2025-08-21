@@ -3,6 +3,7 @@ package commands
 import (
 	"bytes"
 	"image/color"
+	"io"
 	"math"
 	"math/rand/v2"
 	"slices"
@@ -46,6 +47,29 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 		}
 		days = uint(in)
 	}
+	w, err := statsAll(s, i, days)
+	if err != nil {
+		if err = resp.IsEphemeral().SetMessage("Il y a eu une erreur...").Send(); err != nil {
+			logger.Alert("commands/stats.go - Sending error occurred", err.Error())
+		}
+		return
+	}
+	b := new(bytes.Buffer)
+	_, err = w.WriteTo(b)
+	if err != nil {
+		logger.Alert("commands/stats.go - Writing png", err.Error())
+	}
+	err = resp.AddFile(&discordgo.File{
+		Name:        "plot.png",
+		ContentType: "image/png",
+		Reader:      b,
+	}).Send()
+	if err != nil {
+		logger.Alert("commands/stats.go - Sending response", err.Error())
+	}
+}
+
+func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days uint) (io.WriterTo, error) {
 	var rawData []*data
 	if gokord.Debug {
 		var rawCopaingData []*user.CopaingXP
@@ -55,7 +79,7 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 			Error
 		if err != nil {
 			logger.Alert("commands/stats.go - Fetching result", err.Error())
-			return
+			return nil, err
 		}
 		rawData = make([]*data, len(rawCopaingData))
 		for in, d := range rawCopaingData {
@@ -71,7 +95,7 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 		res := gokord.DB.Raw(sql, i.GuildID, exp.TimeStampNDaysBefore(days))
 		if err := res.Scan(&rawDbData).Error; err != nil {
 			logger.Alert("commands/stats.go - Fetching result", err.Error())
-			return
+			return nil, err
 		}
 		rawData = make([]*data, len(rawDbData))
 		for in, d := range rawDbData {
@@ -92,7 +116,7 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 			var cp user.Copaing
 			if err := gokord.DB.First(&cp, raw.CopaingID).Error; err != nil {
 				logger.Alert("commands/stats.go - Finding copaing", err.Error(), "id", raw.CopaingID)
-				return
+				return nil, err
 			}
 			copaings[raw.CopaingID] = &cp
 		}
@@ -111,6 +135,10 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 		})
 	}
 
+	return generatePlot(s, i, days, copaings, stats)
+}
+
+func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, copaings map[int]*user.Copaing, stats map[int]*[]plotter.XY) (io.WriterTo, error) {
 	p := plot.New()
 	p.Title.Text = "Évolution de l'XP"
 	p.X.Label.Text = "Jours"
@@ -123,7 +151,7 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 		m, err := s.GuildMember(i.GuildID, c.DiscordID)
 		if err != nil {
 			logger.Alert("commands/stats.go - Fetching guild member", err.Error())
-			return
+			return nil, err
 		}
 		slices.SortFunc(*stats[in], func(a, b plotter.XY) int {
 			if a.X < b.X {
@@ -149,7 +177,7 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 		l, err := plotter.NewLine(plotter.XYs(*stats[in]))
 		if err != nil {
 			logger.Alert("commands/stats.go - Adding line points", err.Error())
-			return
+			return nil, err
 		}
 		l.LineStyle.Width = vg.Points(1)
 		l.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(5)}
@@ -160,19 +188,7 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 	w, err := p.WriterTo(8*vg.Inch, 6*vg.Inch, "png")
 	if err != nil {
 		logger.Alert("commands/stats.go - Generating png", err.Error())
-		return
+		return nil, err
 	}
-	b := new(bytes.Buffer)
-	_, err = w.WriteTo(b)
-	if err != nil {
-		logger.Alert("commands/stats.go - Writing png", err.Error())
-	}
-	err = resp.AddFile(&discordgo.File{
-		Name:        "plot.png",
-		ContentType: "image/png",
-		Reader:      b,
-	}).Send()
-	if err != nil {
-		logger.Alert("commands/stats.go - Sending response", err.Error())
-	}
+	return w, nil
 }

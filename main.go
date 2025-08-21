@@ -85,6 +85,16 @@ func main() {
 		SetHandler(commands.Credits)
 
 	statsCmd := cmd.New("stats", "Affiche des stats :D").
+		AddOption(cmd.NewOption(
+			discordgo.ApplicationCommandOptionInteger,
+			"days",
+			"Nombre de jours à afficher dans le graphique",
+		)).
+		AddOption(cmd.NewOption(
+			discordgo.ApplicationCommandOptionUser,
+			"user",
+			"Utilisateur à inspecter",
+		)).
 		SetHandler(commands.Stats)
 
 	innovations, err := gokord.LoadInnovationFromJson(updatesData)
