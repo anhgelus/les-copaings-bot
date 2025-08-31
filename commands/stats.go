@@ -128,17 +128,20 @@ func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days uint) (
 		}
 		pts, ok := stats[raw.CopaingID]
 		if !ok {
-			pts = &[]plotter.XY{}
+			t := make([]plotter.XY, days)
+			pts = &t
 			stats[raw.CopaingID] = pts
 		}
-		t := float64(raw.CreatedAt.Unix() - time.Now().Unix())
+		t := raw.CreatedAt.Unix() - time.Now().Unix()
 		if !gokord.Debug {
-			t = math.Ceil(t / (24 * 60 * 60))
+			t = int64(math.Ceil(float64(t) / (24 * 60 * 60)))
+		} else {
+			t = int64(math.Ceil(float64(t) / 6))
 		}
-		*pts = append(*pts, plotter.XY{
-			X: t,
+		(*pts)[t] = plotter.XY{
+			X: float64(t),
 			Y: float64(raw.XP),
-		})
+		}
 	}
 
 	return generatePlot(s, i, days, copaings, stats)
@@ -194,17 +197,20 @@ func statsMember(s *discordgo.Session, i *discordgo.InteractionCreate, days uint
 	for _, raw := range rawData {
 		pts, ok := stats[raw.CopaingID]
 		if !ok {
-			pts = &[]plotter.XY{}
+			t := make([]plotter.XY, days)
+			pts = &t
 			stats[raw.CopaingID] = pts
 		}
-		t := float64(raw.CreatedAt.Unix() - time.Now().Unix())
+		t := raw.CreatedAt.Unix() - time.Now().Unix()
 		if !gokord.Debug {
-			t = math.Ceil(t / (24 * 60 * 60))
+			t = int64(math.Ceil(float64(t) / (24 * 60 * 60)))
+		} else {
+			t = int64(math.Ceil(float64(t) / 6))
 		}
-		*pts = append(*pts, plotter.XY{
-			X: t,
+		(*pts)[t] = plotter.XY{
+			X: float64(t),
 			Y: float64(raw.XP),
-		})
+		}
 	}
 
 	return generatePlot(s, i, days, copaings, stats)
