@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"gorm.io/gorm"
 	"image/color"
 	"io"
 	"math"
@@ -76,14 +77,26 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 }
 
 func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days uint) (io.WriterTo, error) {
+	return stats(s, i, days, func(before, after string) *gorm.DB {
+		return gokord.DB.Raw(before+"WHERE guild_id = ? and created_at > ?"+after, i.GuildID, exp.TimeStampNDaysBefore(days))
+	})
+}
+
+func statsMember(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, discordID string) (io.WriterTo, error) {
+	_, err := s.GuildMember(i.GuildID, i.Member.User.ID)
+	if err != nil {
+		return nil, err
+	}
+	return stats(s, i, days, func(before, after string) *gorm.DB {
+		return gokord.DB.Raw(before+"WHERE guild_id = ? and created_at > ? and copaing_id = ?"+after, i.GuildID, exp.TimeStampNDaysBefore(days), discordID)
+	})
+}
+
+func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, execSql func(before, after string) *gorm.DB) (io.WriterTo, error) {
 	var rawData []*data
 	if gokord.Debug {
 		var rawCopaingData []*user.CopaingXP
-		err := gokord.DB.
-			Where("guild_id = ? and created_at > ?", i.GuildID, exp.TimeStampNDaysBefore(days)).
-			Find(&rawCopaingData).
-			Error
-		if err != nil {
+		if err := execSql("SELECT * FROM copaings_xps ", "").Scan(&rawCopaingData).Error; err != nil {
 			logger.Alert("commands/stats.go - Fetching result", err.Error())
 			return nil, err
 		}
@@ -96,10 +109,10 @@ func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days uint) (
 			}
 		}
 	} else {
-		sql := `SELECT "created_at"::date::text, sum("xp") as xp, "copaing_id" FROM copaing_xps WHERE "guild_id" = ? and "created_at" > ? GROUP BY "created_at"::date, "copaing_id"`
 		var rawDbData []dbData
-		res := gokord.DB.Raw(sql, i.GuildID, exp.TimeStampNDaysBefore(days))
-		if err := res.Scan(&rawDbData).Error; err != nil {
+		if err := execSql(
+			`SELECT "created_at"::date::text, sum("xp") as xp, "copaing_id" FROM copaing_xps `, ` GROUP BY "created_at"::date, "copaing_id"`,
+		).Scan(&rawDbData).Error; err != nil {
 			logger.Alert("commands/stats.go - Fetching result", err.Error())
 			return nil, err
 		}
@@ -114,7 +127,7 @@ func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days uint) (
 	}
 
 	copaings := map[int]*user.Copaing{}
-	stats := map[int]*[]plotter.XY{}
+	stats := map[int][]plotter.XY{}
 
 	for _, raw := range rawData {
 		_, ok := copaings[raw.CopaingID]
@@ -128,8 +141,7 @@ func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days uint) (
 		}
 		pts, ok := stats[raw.CopaingID]
 		if !ok {
-			t := make([]plotter.XY, days)
-			pts = &t
+			pts = make([]plotter.XY, days)
 			stats[raw.CopaingID] = pts
 		}
 		t := raw.CreatedAt.Unix() - time.Now().Unix()
@@ -138,85 +150,15 @@ func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days uint) (
 		} else {
 			t = int64(math.Ceil(float64(t) / 6))
 		}
-		(*pts)[t] = plotter.XY{
+		pts[t] = plotter.XY{
 			X: float64(t),
 			Y: float64(raw.XP),
 		}
 	}
-
 	return generatePlot(s, i, days, copaings, stats)
 }
 
-func statsMember(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, discordID string) (io.WriterTo, error) {
-	cp := user.GetCopaing(discordID, i.GuildID)
-	var rawData []*data
-	if gokord.Debug {
-		var rawCopaingData []*user.CopaingXP
-		err := gokord.DB.
-			Where(
-				"guild_id = ? and created_at > ? and copaing_id = ?",
-				i.GuildID, exp.TimeStampNDaysBefore(days), discordID,
-			).
-			Find(&rawCopaingData).
-			Error
-		if err != nil {
-			logger.Alert("commands/stats.go - Fetching result", err.Error())
-			return nil, err
-		}
-		rawData = make([]*data, len(rawCopaingData))
-		for in, d := range rawCopaingData {
-			rawData[in] = &data{
-				CreatedAt: d.CreatedAt,
-				XP:        int(d.XP),
-				CopaingID: int(d.CopaingID),
-			}
-		}
-	} else {
-		sql := `SELECT "created_at"::date::text, sum("xp") as xp, "copaing_id" FROM copaing_xps WHERE "guild_id" = ? and "created_at" > ? and "copaing_id" = ? GROUP BY "created_at"::date, "copaing_id"`
-		var rawDbData []dbData
-		res := gokord.DB.Raw(sql, i.GuildID, exp.TimeStampNDaysBefore(days), discordID)
-		if err := res.Scan(&rawDbData).Error; err != nil {
-			logger.Alert("commands/stats.go - Fetching result", err.Error())
-			return nil, err
-		}
-		rawData = make([]*data, len(rawDbData))
-		for in, d := range rawDbData {
-			rawData[in] = &data{
-				CreatedAt: d.CreatedAt.Time,
-				XP:        d.XP,
-				CopaingID: d.CopaingID,
-			}
-		}
-	}
-
-	copaings := map[int]*user.Copaing{
-		int(cp.ID): cp,
-	}
-	stats := map[int]*[]plotter.XY{}
-
-	for _, raw := range rawData {
-		pts, ok := stats[raw.CopaingID]
-		if !ok {
-			t := make([]plotter.XY, days)
-			pts = &t
-			stats[raw.CopaingID] = pts
-		}
-		t := raw.CreatedAt.Unix() - time.Now().Unix()
-		if !gokord.Debug {
-			t = int64(math.Ceil(float64(t) / (24 * 60 * 60)))
-		} else {
-			t = int64(math.Ceil(float64(t) / 6))
-		}
-		(*pts)[t] = plotter.XY{
-			X: float64(t),
-			Y: float64(raw.XP),
-		}
-	}
-
-	return generatePlot(s, i, days, copaings, stats)
-}
-
-func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, copaings map[int]*user.Copaing, stats map[int]*[]plotter.XY) (io.WriterTo, error) {
+func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, copaings map[int]*user.Copaing, stats map[int][]plotter.XY) (io.WriterTo, error) {
 	p := plot.New()
 	p.Title.Text = "Évolution de l'XP"
 	p.X.Label.Text = "Jours"
@@ -231,7 +173,7 @@ func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, days uin
 			logger.Alert("commands/stats.go - Fetching guild member", err.Error())
 			return nil, err
 		}
-		slices.SortFunc(*stats[in], func(a, b plotter.XY) int {
+		slices.SortFunc(stats[in], func(a, b plotter.XY) int {
 			if a.X < b.X {
 				return -1
 			}
@@ -240,19 +182,19 @@ func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, days uin
 			}
 			return 0
 		})
-		first := (*stats[in])[0]
-		if first.X > float64(-days) {
-			*stats[in] = append([]plotter.XY{{
-				X: first.X - 1, Y: 0,
-			}}, *stats[in]...)
-		}
-		last := (*stats[in])[len(*stats[in])-1]
-		if last.X <= -1 {
-			*stats[in] = append(*stats[in], plotter.XY{
-				X: last.X + 1, Y: 0,
-			})
-		}
-		l, err := plotter.NewLine(plotter.XYs(*stats[in]))
+		//first := stats[in][0]
+		//if first.X > float64(-days) {
+		//	stats[in] = append([]plotter.XY{{
+		//		X: first.X - 1, Y: 0,
+		//	}}, stats[in]...)
+		//}
+		//last := stats[in][len(stats[in])-1]
+		//if last.X <= -1 {
+		//	stats[in] = append(stats[in], plotter.XY{
+		//		X: last.X + 1, Y: 0,
+		//	})
+		//}
+		l, err := plotter.NewLine(plotter.XYs(stats[in]))
 		if err != nil {
 			logger.Alert("commands/stats.go - Adding line points", err.Error())
 			return nil, err
