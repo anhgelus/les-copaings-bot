@@ -169,10 +169,10 @@ func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, exec
 			Y: float64(raw.XP),
 		}
 	}
-	return generatePlot(s, i, days, copaings, stats)
+	return generatePlot(s, i, copaings, stats)
 }
 
-func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, copaings map[int]*user.Copaing, stats map[int][]plotter.XY) (io.WriterTo, error) {
+func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, copaings map[int]*user.Copaing, stats map[int][]plotter.XY) (io.WriterTo, error) {
 	p := plot.New()
 	p.Title.Text = "Évolution de l'XP"
 	p.X.Label.Text = "Jours"
@@ -199,18 +199,6 @@ func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, days uin
 			}
 			return 0
 		})
-		//first := stats[in][0]
-		//if first.X > float64(-days) {
-		//	stats[in] = append([]plotter.XY{{
-		//		X: first.X - 1, Y: 0,
-		//	}}, stats[in]...)
-		//}
-		//last := stats[in][len(stats[in])-1]
-		//if last.X <= -1 {
-		//	stats[in] = append(stats[in], plotter.XY{
-		//		X: last.X + 1, Y: 0,
-		//	})
-		//}
 		l, err := plotter.NewLine(plotter.XYs(stats[in]))
 		if err != nil {
 			logger.Alert("commands/stats.go - Adding line points", err.Error())
