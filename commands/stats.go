@@ -144,17 +144,24 @@ func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, exec
 			copaings[raw.CopaingID] = &cp
 		}
 		pts, ok := stats[raw.CopaingID]
+		now := time.Now().Unix()
 		if !ok {
 			pts = make([]plotter.XY, days)
+			for i := 0; i < int(days); i++ {
+				pts[i] = plotter.XY{
+					X: float64(i - int(days)),
+					Y: 0,
+				}
+			}
 			stats[raw.CopaingID] = pts
 		}
-		t := raw.CreatedAt.Unix() - time.Now().Unix()
+		t := raw.CreatedAt.Unix() - now
 		if !gokord.Debug {
 			t = int64(math.Ceil(float64(t) / (24 * 60 * 60)))
 		} else {
 			t = int64(math.Ceil(float64(t) / 6))
 		}
-		pts[t] = plotter.XY{
+		pts[int64(days)-t] = plotter.XY{
 			X: float64(t),
 			Y: float64(raw.XP),
 		}
