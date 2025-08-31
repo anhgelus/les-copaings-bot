@@ -87,12 +87,15 @@ func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days uint) (
 }
 
 func statsMember(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, discordID string) (io.WriterTo, error) {
-	_, err := s.GuildMember(i.GuildID, i.Member.User.ID)
+	_, err := s.GuildMember(i.GuildID, discordID)
 	if err != nil {
 		return nil, err
 	}
 	return stats(s, i, days, func(before, after string) *gorm.DB {
-		return gokord.DB.Raw(before+"WHERE guild_id = ? and created_at > ? and copaing_id = ?"+after, i.GuildID, exp.TimeStampNDaysBefore(days), discordID)
+		return gokord.DB.Raw(
+			before+"WHERE guild_id = ? and created_at > ? and copaing_id = ?"+after,
+			i.GuildID, exp.TimeStampNDaysBefore(days), user.GetCopaing(discordID, i.GuildID).ID,
+		)
 	})
 }
 
@@ -171,6 +174,9 @@ func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, days uin
 	p := plot.New()
 	p.Title.Text = "Évolution de l'XP"
 	p.X.Label.Text = "Jours"
+	if gokord.Debug {
+		p.X.Label.Text = "Secondes"
+	}
 	p.Y.Label.Text = "XP"
 
 	p.Add(plotter.NewGrid())
