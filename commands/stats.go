@@ -48,8 +48,12 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 		}
 		days = uint(in)
 	}
+	err := resp.IsDeferred().Send()
+	if err != nil {
+		logger.Alert("commands/stats.go - Sending deferred", err.Error())
+		return
+	}
 	var w io.WriterTo
-	var err error
 	if v, ok := opt["user"]; ok {
 		w, err = statsMember(s, i, days, v.UserValue(s).ID)
 	} else {
