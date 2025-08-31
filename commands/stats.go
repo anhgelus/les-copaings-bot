@@ -158,8 +158,6 @@ func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, exec
 		t := raw.CreatedAt.Unix() - now
 		if !gokord.Debug {
 			t = int64(math.Ceil(float64(t) / (24 * 60 * 60)))
-		} else {
-			t = int64(math.Ceil(float64(t) / 6))
 		}
 		pts[int64(days)-t] = plotter.XY{
 			X: float64(t),
