@@ -53,31 +53,33 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 		logger.Alert("commands/stats.go - Sending deferred", err.Error())
 		return
 	}
-	var w io.WriterTo
-	if v, ok := opt["user"]; ok {
-		w, err = statsMember(s, i, days, v.UserValue(s).ID)
-	} else {
-		w, err = statsAll(s, i, days)
-	}
-	if err != nil {
-		if err = resp.IsEphemeral().SetMessage("Il y a eu une erreur...").Send(); err != nil {
-			logger.Alert("commands/stats.go - Sending error occurred", err.Error())
+	go func() {
+		var w io.WriterTo
+		if v, ok := opt["user"]; ok {
+			w, err = statsMember(s, i, days, v.UserValue(s).ID)
+		} else {
+			w, err = statsAll(s, i, days)
 		}
-		return
-	}
-	b := new(bytes.Buffer)
-	_, err = w.WriteTo(b)
-	if err != nil {
-		logger.Alert("commands/stats.go - Writing png", err.Error())
-	}
-	err = resp.AddFile(&discordgo.File{
-		Name:        "plot.png",
-		ContentType: "image/png",
-		Reader:      b,
-	}).Send()
-	if err != nil {
-		logger.Alert("commands/stats.go - Sending response", err.Error())
-	}
+		if err != nil {
+			if err = resp.IsEphemeral().SetMessage("Il y a eu une erreur...").Send(); err != nil {
+				logger.Alert("commands/stats.go - Sending error occurred", err.Error())
+			}
+			return
+		}
+		b := new(bytes.Buffer)
+		_, err = w.WriteTo(b)
+		if err != nil {
+			logger.Alert("commands/stats.go - Writing png", err.Error())
+		}
+		err = resp.AddFile(&discordgo.File{
+			Name:        "plot.png",
+			ContentType: "image/png",
+			Reader:      b,
+		}).Send()
+		if err != nil {
+			logger.Alert("commands/stats.go - Sending response", err.Error())
+		}
+	}()
 }
 
 func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days uint) (io.WriterTo, error) {
