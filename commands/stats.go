@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"errors"
 	"gorm.io/gorm"
 	"image/color"
 	"io"
@@ -143,8 +144,12 @@ func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, exec
 		if !ok {
 			var cp user.Copaing
 			if err := gokord.DB.First(&cp, raw.CopaingID).Error; err != nil {
-				logger.Alert("commands/stats.go - Finding copaing", err.Error(), "id", raw.CopaingID)
-				return nil, err
+				if !errors.Is(err, gorm.ErrRecordNotFound) {
+					logger.Alert("commands/stats.go - Finding copaing", err.Error(), "id", raw.CopaingID)
+					return nil, err
+				}
+				logger.Warn("Copaing not found, skipping entry", "old_id", raw.CopaingID)
+				continue
 			}
 			copaings[raw.CopaingID] = &cp
 		}
