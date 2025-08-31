@@ -100,7 +100,7 @@ func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, exec
 	var rawData []*data
 	if gokord.Debug {
 		var rawCopaingData []*user.CopaingXP
-		if err := execSql("SELECT * FROM copaings_xps ", "").Scan(&rawCopaingData).Error; err != nil {
+		if err := execSql("SELECT * FROM copaing_xps ", "").Scan(&rawCopaingData).Error; err != nil {
 			logger.Alert("commands/stats.go - Fetching result", err.Error())
 			return nil, err
 		}
