@@ -13,8 +13,8 @@ import (
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/logger"
-	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	discordgo "github.com/nyttikord/gokord"
 )
 
 var (

@@ -9,7 +9,7 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/logger"
-	"github.com/bwmarrin/discordgo"
+	discordgo "github.com/nyttikord/gokord"
 )
 
 func Top(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {

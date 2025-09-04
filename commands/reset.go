@@ -5,7 +5,7 @@ import (
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/logger"
-	"github.com/bwmarrin/discordgo"
+	discordgo "github.com/nyttikord/gokord"
 )
 
 func Reset(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {

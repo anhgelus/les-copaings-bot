@@ -8,7 +8,7 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/logger"
-	"github.com/bwmarrin/discordgo"
+	discordgo "github.com/nyttikord/gokord"
 )
 
 type cXP struct {

@@ -7,7 +7,7 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/logger"
-	"github.com/bwmarrin/discordgo"
+	discordgo "github.com/nyttikord/gokord"
 )
 
 func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap cmd.OptionMap, resp *cmd.ResponseBuilder) {

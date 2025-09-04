@@ -3,12 +3,12 @@ module git.anhgelus.world/anhgelus/les-copaings-bot
 go 1.24
 
 require (
-	github.com/anhgelus/gokord v0.11.1-0.20250821122244-0aee6c37eef6
-	github.com/bwmarrin/discordgo v0.29.0
+	github.com/anhgelus/gokord v0.11.1-0.20250904142107-2d0e3c982bc3
+	github.com/nyttikord/gokord v0.30.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pelletier/go-toml/v2 v2.2.4
 	gorm.io/driver/postgres v1.6.0
-	gorm.io/gorm v1.30.1
+	gorm.io/gorm v1.30.3
 )
 
 require (
@@ -29,7 +29,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/redis/go-redis/v9 v9.12.1 // indirect
+	github.com/redis/go-redis/v9 v9.13.0 // indirect
 	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/image v0.30.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
