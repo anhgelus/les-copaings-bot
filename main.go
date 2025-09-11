@@ -90,7 +90,7 @@ func main() {
 	topCmd := cmd.New("top", "Copaings les plus actifs").
 		SetHandler(commands.Top)
 
-	/*resetCmd := cmd.New("reset", "Reset l'xp").
+	resetCmd := cmd.New("reset", "Reset l'xp").
 		SetHandler(commands.Reset).
 		SetPermission(&adm)
 
@@ -104,7 +104,7 @@ func main() {
 		SetPermission(&adm)
 
 	creditsCmd := cmd.New("credits", "Crédits").
-		SetHandler(commands.Credits)*/
+		SetHandler(commands.Credits)
 
 	statsCmd := cmd.New("stats", "Affiche des stats :D").
 		AddOption(cmd.NewOption(
@@ -148,9 +148,9 @@ func main() {
 			rankCmd,
 			configCmd,
 			topCmd,
-			/*resetCmd,
+			resetCmd,
 			resetUserCmd,
-			creditsCmd,*/
+			creditsCmd,
 			statsCmd,
 		},
 		AfterInit: func(dg *discordgo.Session) {
