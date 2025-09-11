@@ -15,6 +15,9 @@ import (
 	"github.com/anhgelus/gokord/logger"
 	"github.com/joho/godotenv"
 	discordgo "github.com/nyttikord/gokord"
+	"golang.org/x/image/font/opentype"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/font"
 )
 
 var (
@@ -30,12 +33,31 @@ var (
 	stopPeriodicReducer chan<- interface{}
 )
 
+//go:embed assets/inter-variable.ttf
+var interTTF []byte
+
 func init() {
 	err := godotenv.Load()
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		logger.Warn("Error while loading .env file", "error", err.Error())
 	}
 	flag.StringVar(&token, "token", os.Getenv("TOKEN"), "token of the bot")
+
+	// Use a nicer font
+	fontTTF, parseErr := opentype.Parse(interTTF)
+	if parseErr != nil {
+		panic(err)
+	}
+	inter := font.Font{Typeface: "Inter"}
+	font.DefaultCache.Add(
+		[]font.Face{
+			{
+				Font: inter,
+				Face: fontTTF,
+			},
+		})
+	plot.DefaultFont = inter
+
 }
 
 func main() {
