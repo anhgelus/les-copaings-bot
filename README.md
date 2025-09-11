@@ -87,3 +87,8 @@ in `.env`)
 
 - Go 1.24
 - anhgelus/gokord
+
+## License
+
+This project uses [Inter](https://github.com/rsms/inter), an open font.
+Check its license [here](https://github.com/rsms/inter/blob/master/LICENSE.txt) (SIL OPEN FONT LICENSE Version 1.1).
