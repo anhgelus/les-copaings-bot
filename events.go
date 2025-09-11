@@ -8,6 +8,7 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
+	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/logger"
 	discordgo "github.com/nyttikord/gokord"
 )
@@ -122,7 +123,18 @@ func OnLeave(_ *discordgo.Session, e *discordgo.GuildMemberRemove) {
 		return
 	}
 	c := user.GetCopaing(e.User.ID, e.GuildID)
-	if err := c.Delete(); err != nil {
+	err := gokord.DB.
+		Where("copaing_id = ? and guild_id = ?", c.ID, e.GuildID).
+		Delete(&user.CopaingXP{}).
+		Error
+	if err != nil {
+		logger.Alert(
+			"events.go - deleting user xp from db", err.Error(),
+			"user_id", e.User.ID,
+			"guild_id", e.GuildID,
+		)
+	}
+	if err = c.Delete(); err != nil {
 		logger.Alert(
 			"events.go - deleting user from db", err.Error(),
 			"user_id", e.User.ID,

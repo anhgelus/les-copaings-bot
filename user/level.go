@@ -64,7 +64,7 @@ func PeriodicReducer(dg *discordgo.Session) {
 	}
 	cxps := make([]*cXP, len(cs))
 	for i, c := range cs {
-		if i%10 == 9 {
+		if i%25 == 24 {
 			wg.Wait() // prevents spamming the DB
 		}
 		wg.Add(1)

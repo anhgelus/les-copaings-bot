@@ -26,11 +26,6 @@ type CopaingAccess interface {
 	GetXP() uint
 }
 
-const (
-	LastEvent      = "last_event"
-	AlreadyRemoved = "already_removed"
-)
-
 func GetCopaing(discordID string, guildID string) *Copaing {
 	c := Copaing{DiscordID: discordID, GuildID: guildID}
 	if err := c.Load(); err != nil {
