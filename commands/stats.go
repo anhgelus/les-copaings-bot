@@ -3,11 +3,10 @@ package commands
 import (
 	"bytes"
 	"errors"
-	"gorm.io/gorm"
+	"fmt"
 	"image/color"
 	"io"
 	"math"
-	"math/rand/v2"
 	"slices"
 	"time"
 
@@ -22,6 +21,7 @@ import (
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
+	"gorm.io/gorm"
 )
 
 type data struct {
@@ -36,18 +36,27 @@ type dbData struct {
 	CopaingID int
 }
 
+var colors = []color.RGBA{
+	{38, 70, 83, 255},
+	{42, 157, 143, 255},
+	{244, 162, 97, 255},
+	{231, 111, 81, 255},
+	{193, 18, 31, 255},
+}
+
 func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	cfg := config.GetGuildConfig(i.GuildID)
-	days := cfg.DaysXPRemains
+	days := 15
 	if v, ok := opt["days"]; ok {
 		in := v.IntValue()
-		if in < 0 || uint(in) > days {
-			if err := resp.SetMessage("Nombre de jours invalide").IsEphemeral().Send(); err != nil {
+		if in < 1 || uint(in) > cfg.DaysXPRemains {
+			msg := fmt.Sprintf("Nombre de jours invalide. Il doit être strictement positif et inférieur à %d", cfg.DaysXPRemains)
+			if err := resp.SetMessage(msg).IsEphemeral().Send(); err != nil {
 				logger.Alert("commands/stats.go - Sending invalid days", err.Error())
 			}
 			return
 		}
-		days = uint(in)
+		days = int(in)
 	}
 	err := resp.IsDeferred().Send()
 	if err != nil {
@@ -83,13 +92,13 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 	}()
 }
 
-func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days uint) (io.WriterTo, error) {
+func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days int) (io.WriterTo, error) {
 	return stats(s, i, days, func(before, after string) *gorm.DB {
-		return gokord.DB.Raw(before+"WHERE guild_id = ? and created_at > ?"+after, i.GuildID, exp.TimeStampNDaysBefore(days))
+		return gokord.DB.Raw(before+"WHERE guild_id = ? and created_at > ?"+after, i.GuildID, exp.TimeStampNDaysBefore(uint(days)))
 	})
 }
 
-func statsMember(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, discordID string) (io.WriterTo, error) {
+func statsMember(s *discordgo.Session, i *discordgo.InteractionCreate, days int, discordID string) (io.WriterTo, error) {
 	_, err := s.GuildMember(i.GuildID, discordID)
 	if err != nil {
 		return nil, err
@@ -97,12 +106,12 @@ func statsMember(s *discordgo.Session, i *discordgo.InteractionCreate, days uint
 	return stats(s, i, days, func(before, after string) *gorm.DB {
 		return gokord.DB.Raw(
 			before+"WHERE guild_id = ? and created_at > ? and copaing_id = ?"+after,
-			i.GuildID, exp.TimeStampNDaysBefore(days), user.GetCopaing(discordID, i.GuildID).ID,
+			i.GuildID, exp.TimeStampNDaysBefore(uint(days)), user.GetCopaing(discordID, i.GuildID).ID,
 		)
 	})
 }
 
-func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days uint, execSql func(before, after string) *gorm.DB) (io.WriterTo, error) {
+func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days int, execSql func(before, after string) *gorm.DB) (io.WriterTo, error) {
 	var rawData []*data
 	if gokord.Debug {
 		var rawCopaingData []*user.CopaingXP
@@ -188,7 +197,7 @@ func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, copaings
 
 	p.Add(plotter.NewGrid())
 
-	r := rand.New(rand.NewPCG(uint64(time.Now().Unix()), uint64(time.Now().Unix())))
+	cnt := 0
 	for in, c := range copaings {
 		m, err := s.GuildMember(i.GuildID, c.DiscordID)
 		if err != nil {
@@ -204,16 +213,15 @@ func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, copaings
 			}
 			return 0
 		})
-		l, err := plotter.NewLine(plotter.XYs(stats[in]))
+		l, _, err := plotter.NewLinePoints(plotter.XYs(stats[in]))
 		if err != nil {
 			logger.Alert("commands/stats.go - Adding line points", err.Error())
 			return nil, err
 		}
-		l.LineStyle.Width = vg.Points(1)
-		l.LineStyle.Dashes = []vg.Length{vg.Points(5), vg.Points(5)}
-		l.LineStyle.Color = color.RGBA{R: uint8(r.UintN(255)), G: uint8(r.UintN(255)), B: uint8(r.UintN(255)), A: 255}
+		l.Color = colors[cnt%len(colors)]
 		p.Add(l)
 		p.Legend.Add(m.DisplayName(), l)
+		cnt++
 	}
 	w, err := p.WriterTo(8*vg.Inch, 6*vg.Inch, "png")
 	if err != nil {
