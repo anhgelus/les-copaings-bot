@@ -2,9 +2,11 @@ package main
 
 import (
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"flag"
 	"os"
+	"regexp"
 	"time"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/commands"
@@ -63,6 +65,61 @@ func init() {
 
 }
 
+func handleDynamicMessageComponent(
+	b *gokord.Bot,
+	handler func(
+		*discordgo.Session,
+		*discordgo.InteractionCreate,
+		interaction.MessageComponentData,
+		[]string, *cmd.ResponseBuilder,
+	),
+	pattern string,
+) {
+	compiledPattern := regexp.MustCompile(pattern)
+	b.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		if i.Type != types.InteractionMessageComponent {
+			return
+		}
+
+		data := i.MessageComponentData()
+		parameters := compiledPattern.FindStringSubmatch(data.CustomID)
+		if parameters == nil {
+			return
+		}
+		parameters = parameters[1:]
+		handler(s, i, data, parameters, cmd.NewResponseBuilder(s, i))
+	})
+}
+
+func handleDynamicModalComponent(
+	b *gokord.Bot,
+	handler func(
+		*discordgo.Session,
+		*discordgo.InteractionCreate,
+		interaction.ModalSubmitData,
+		[]string,
+		*cmd.ResponseBuilder,
+	),
+	pattern string,
+) {
+	compiledPattern := regexp.MustCompile(pattern)
+	b.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		if i.Type != types.InteractionModalSubmit {
+			return
+		}
+
+		data := i.ModalSubmitData()
+		content, _ := json.Marshal(data)
+		s.LogDebug(string(content))
+		parameters := compiledPattern.FindStringSubmatch(data.CustomID)
+		if parameters == nil {
+			return
+		}
+		parameters = parameters[1:]
+		handler(s, i, data, parameters, cmd.NewResponseBuilder(s, i))
+	})
+}
+
 func main() {
 	flag.Parse()
 	gokord.UseRedis = false
@@ -88,7 +145,7 @@ func main() {
 
 	configCmd := cmd.New("config", "Modifie la config").
 		SetPermission(&adm).
-		SetHandler(commands.Config)
+		SetHandler(commands.ConfigCommand)
 
 	topCmd := cmd.New("top", "Copaings les plus actifs").
 		SetHandler(commands.Top)
@@ -184,7 +241,7 @@ func main() {
 		}
 		switch data.Values[0] {
 		case config.ModifyXpRole:
-			config.HandleModifyXpRole(s, i, data, resp)
+			config.HandleXpRole(s, i, data, resp)
 		case config.ModifyFallbackChannel:
 			config.HandleModifyFallbackChannel(s, i, data, resp)
 		case config.ModifyDisChannel:
@@ -196,15 +253,16 @@ func main() {
 			return
 		}
 	}, commands.ConfigModify)
+	bot.HandleMessageComponent(commands.ConfigMessageComponent, commands.OpenConfig)
 	// xp role related
-	bot.HandleMessageComponent(config.HandleXpRoleAddEdit, config.XpRoleAdd)
-	bot.HandleMessageComponent(config.HandleXpRoleAddEdit, config.XpRoleEdit)
-	bot.HandleMessageComponent(config.HandleXpRoleAddRole, config.XpRoleAddRole)
-	bot.HandleMessageComponent(config.HandleXpRoleEditRole, config.XpRoleEditRole)
-	bot.HandleMessageComponent(config.HandleXpRoleDel, config.XpRoleDel)
-	bot.HandleMessageComponent(config.HandleXpRoleDelRole, config.XpRoleDelRole)
-	bot.HandleModal(config.HandleXpRoleLevel, config.XpRoleAddLevel)
-	bot.HandleModal(config.HandleXpRoleLevel, config.XpRoleEditLevel)
+	bot.HandleMessageComponent(config.HandleXpRole, config.ModifyXpRole)
+	bot.HandleMessageComponent(config.HandleXpRoleNew, config.XpRoleNew)
+	bot.HandleModal(config.HandleXpRoleAdd, config.XpRoleAdd)
+	handleDynamicMessageComponent(&bot, config.HandleXpRoleEdit, config.XpRoleEditPattern)
+	handleDynamicMessageComponent(&bot, config.HandleXpRoleEditRole, config.XpRoleEditRolePattern)
+	handleDynamicMessageComponent(&bot, config.HandleXpRoleEditLevelStart, config.XpRoleEditLevelStartPattern)
+	handleDynamicModalComponent(&bot, config.HandleXpRoleEditLevel, config.XpRoleEditLevelPattern)
+	handleDynamicMessageComponent(&bot, config.HandleXpRoleDel, config.XpRoleDel)
 	// channel related
 	bot.HandleMessageComponent(config.HandleFallbackChannelSet, config.FallbackChannelSet)
 	bot.HandleMessageComponent(config.HandleDisChannel, config.DisChannelAdd)

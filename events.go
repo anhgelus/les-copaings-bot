@@ -9,7 +9,6 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord"
-	"github.com/anhgelus/gokord/logger"
 	discordgo "github.com/nyttikord/gokord"
 )
 
@@ -39,11 +38,7 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	xp := min(exp.MessageXP(uint(len(trimmed)), exp.CalcDiversity(trimmed)), MaxXpPerMessage)
 	c.AddXP(s, m.Member, xp, func(_ uint, _ uint) {
 		if err := s.ChannelAPI().MessageReactionAdd(m.ChannelID, m.Message.ID, "⬆"); err != nil {
-			logger.Alert(
-				"events.go - add reaction for new level", err.Error(),
-				"channel id", m.ChannelID,
-				"message id", m.Message.ID,
-			)
+			s.LogError(err, "add reaction for new level channel id %s, message id %s", m.ChannelID, m.Message.ID)
 		}
 	})
 }
@@ -70,8 +65,8 @@ func genMapKey(guildID string, userID string) string {
 	return fmt.Sprintf("%s:%s", guildID, userID)
 }
 
-func onConnection(_ *discordgo.Session, e *discordgo.VoiceStateUpdate) {
-	logger.Debug("User connected", "username", e.Member.DisplayName())
+func onConnection(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
+	s.LogDebug("User connected username %s", e.Member.DisplayName())
 	connectedSince[genMapKey(e.GuildID, e.UserID)] = time.Now().Unix()
 }
 
@@ -81,25 +76,19 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	// check the validity of user
 	con, ok := connectedSince[genMapKey(e.GuildID, e.UserID)]
 	if !ok || con == NotConnected {
-		logger.Warn(fmt.Sprintf(
-			"User %s diconnect from a vocal but was registered as not connected", e.Member.DisplayName(),
-		))
+		s.LogWarn("User %s disconnect from a vocal but was registered as not connected", e.Member.DisplayName())
 		return
 	}
 	timeInVocal := now - con
-	logger.Debug("User disconnected", "username", e.Member.DisplayName(), "time in vocal", timeInVocal)
+	s.LogDebug("User disconnected username %s, time in vocal %d", e.Member.DisplayName(), timeInVocal)
 	connectedSince[genMapKey(e.GuildID, e.UserID)] = NotConnected
 	// add exp
 	if timeInVocal < 0 {
-		logger.Alert(
-			"events.go - Calculating time spent in vocal", "the time is negative",
-			"discord_id", e.UserID,
-			"guild_id", e.GuildID,
-		)
+		s.LogWarn("Time spent in vocal negative discord_id %s, guild_id %s", e.UserID, e.GuildID)
 		return
 	}
 	if timeInVocal > MaxTimeInVocal {
-		logger.Warn(fmt.Sprintf("User %s spent more than 6 hours in vocal", e.Member.DisplayName()))
+		s.LogWarn("User %s spent more than 6 hours in vocal", e.Member.DisplayName())
 		timeInVocal = MaxTimeInVocal
 	}
 	e.Member.GuildID = e.GuildID
@@ -112,13 +101,13 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 			"%s est maintenant niveau %d", e.Member.Mention(), newLevel,
 		))
 		if err != nil {
-			logger.Alert("events.go - Sending new level in fallback channel", err.Error())
+			s.LogError(err, "Sending new level in fallback channel")
 		}
 	})
 }
 
-func OnLeave(_ *discordgo.Session, e *discordgo.GuildMemberRemove) {
-	logger.Debug("Leave event", "user_id", e.User.ID)
+func OnLeave(s *discordgo.Session, e *discordgo.GuildMemberRemove) {
+	s.LogDebug("Leave event user_id %s", e.User.ID)
 	if e.User.Bot {
 		return
 	}
@@ -128,17 +117,9 @@ func OnLeave(_ *discordgo.Session, e *discordgo.GuildMemberRemove) {
 		Delete(&user.CopaingXP{}).
 		Error
 	if err != nil {
-		logger.Alert(
-			"events.go - deleting user xp from db", err.Error(),
-			"user_id", e.User.ID,
-			"guild_id", e.GuildID,
-		)
+		s.LogError(err, "Deleting user xp from db user_id %s, guild_id %s", e.User.ID, e.GuildID)
 	}
 	if err = c.Delete(); err != nil {
-		logger.Alert(
-			"events.go - deleting user from db", err.Error(),
-			"user_id", e.User.ID,
-			"guild_id", e.GuildID,
-		)
+		s.LogError(err, "Deleting user from DB user_id %s, guild_id %s", e.User.ID, e.GuildID)
 	}
 }

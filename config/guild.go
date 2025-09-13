@@ -43,3 +43,12 @@ func (cfg *GuildConfig) FindXpRole(roleID string) (int, *XpRole) {
 	}
 	return 0, nil
 }
+
+func (cfg *GuildConfig) FindXpRoleID(ID uint) (int, *XpRole) {
+	for i, r := range cfg.XpRoles {
+		if r.ID == ID {
+			return i, &r
+		}
+	}
+	return -1, nil
+}

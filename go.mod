@@ -7,7 +7,7 @@ toolchain go1.24.6
 require (
 	github.com/anhgelus/gokord v0.11.1-0.20250913175430-bf95758b4d3b
 	github.com/joho/godotenv v1.5.1
-	github.com/nyttikord/gokord v0.30.1-0.20250913173431-8e43619c03fa
+	github.com/nyttikord/gokord v0.30.1-0.20250914224716-68c5eb8c8ab2
 	github.com/pelletier/go-toml/v2 v2.2.4
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.0
