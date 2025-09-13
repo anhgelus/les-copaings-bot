@@ -9,6 +9,7 @@ import (
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/logger"
 	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/user"
 )
 
 type cXP struct {
@@ -24,7 +25,7 @@ func (c *cXP) GetXP() uint {
 	return c.Cxp
 }
 
-func (c *Copaing) AddXP(s *discordgo.Session, m *discordgo.Member, xp uint, fn func(uint, uint)) {
+func (c *Copaing) AddXP(s *discordgo.Session, m *user.Member, xp uint, fn func(uint, uint)) {
 	old, err := c.GetXP()
 	if err != nil {
 		logger.Alert("user/xp.go - Getting xp", err.Error(), "discord_id", c.DiscordID, "guild_id", c.GuildID)

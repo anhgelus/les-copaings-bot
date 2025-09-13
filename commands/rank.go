@@ -16,14 +16,14 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap cmd.Optio
 	m := i.Member
 	var err error
 	if v, ok := optMap["copaing"]; ok {
-		u := v.UserValue(s)
+		u := v.UserValue(s.UserAPI())
 		if u.Bot {
 			err = resp.SetMessage("Imagine si les bots avaient un niveau :rolling_eyes:").IsEphemeral().Send()
 			if err != nil {
 				logger.Alert("commands/rank.go - Reply error user is a bot", err.Error())
 			}
 		}
-		m, err = s.GuildMember(i.GuildID, u.ID)
+		m, err = s.GuildAPI().Member(i.GuildID, u.ID)
 		if err != nil {
 			logger.Alert(
 				"commands/rank.go - Fetching guild member",

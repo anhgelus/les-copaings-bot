@@ -33,6 +33,8 @@ github.com/anhgelus/gokord v0.11.1-0.20250904142107-2d0e3c982bc3 h1:j7Im8+Vd7BIh
 github.com/anhgelus/gokord v0.11.1-0.20250904142107-2d0e3c982bc3/go.mod h1:Tw1djmUOTFCIRhEUI7eG2onnreJbVGA40EWYQgj20bE=
 github.com/anhgelus/gokord v0.11.1-0.20250911112818-b436d35950ae h1:7UFLx1EybWFZ5wW+x2PLZyJqwSjiO7kLMIaisX4pUxk=
 github.com/anhgelus/gokord v0.11.1-0.20250911112818-b436d35950ae/go.mod h1:Tw1djmUOTFCIRhEUI7eG2onnreJbVGA40EWYQgj20bE=
+github.com/anhgelus/gokord v0.11.1-0.20250913111909-19135e5d37be h1:D7bFu20Qr2P+hLgv/bWVhscuQ2tt0y0km8fTVZ5ThmY=
+github.com/anhgelus/gokord v0.11.1-0.20250913111909-19135e5d37be/go.mod h1:J/Ja3EIKFOxxy5lx09kjsxyrwv4ardc015cMtmM8XPg=
 github.com/bsm/ginkgo/v2 v2.12.0 h1:Ny8MWAHyOepLGlLKYmXG4IEkioBysk6GpaRTLC8zwWs=
 github.com/bsm/ginkgo/v2 v2.12.0/go.mod h1:SwYbGRRDovPVboqFv0tPTcG1sN61LM1Z4ARdbAV9g4c=
 github.com/bsm/gomega v1.27.10 h1:yeMWxP2pV2fG3FgAODIY8EiRE3dy0aeFYt4l7wh6yKA=
@@ -70,6 +72,8 @@ github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwA
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/nyttikord/gokord v0.30.0 h1:O4LhpCMyfWcgLqziPXQgMCopb9VO7kwcZG3phblOaTA=
 github.com/nyttikord/gokord v0.30.0/go.mod h1:Lhk268VlZ1W6Pb3kYnlU9bIuTCioaumedjHdtw1sxck=
+github.com/nyttikord/gokord v0.30.1-0.20250913111646-475b917cccfb h1:HUL4CikIHguqjKrAqzXYghkzlaZi8+54BBObxBUgeos=
+github.com/nyttikord/gokord v0.30.1-0.20250913111646-475b917cccfb/go.mod h1:Lhk268VlZ1W6Pb3kYnlU9bIuTCioaumedjHdtw1sxck=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
 github.com/pelletier/go-toml/v2 v2.2.4/go.mod h1:2gIqNv+qfxSVS7cM2xJQKtLSTLUE9V8t9Stt+h56mCY=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
@@ -153,4 +157,6 @@ gorm.io/gorm v1.30.3 h1:QiG8upl0Sg9ba2Zatfjy0fy4It2iNBL2/eMdvEkdXNs=
 gorm.io/gorm v1.30.3/go.mod h1:8Z33v652h4//uMA76KjeDH8mJXPm1QNCYrMeatR0DOE=
 gorm.io/gorm v1.30.5 h1:dvEfYwxL+i+xgCNSGGBT1lDjCzfELK8fHZxL3Ee9X0s=
 gorm.io/gorm v1.30.5/go.mod h1:8Z33v652h4//uMA76KjeDH8mJXPm1QNCYrMeatR0DOE=
+gorm.io/gorm v1.31.0 h1:0VlycGreVhK7RF/Bwt51Fk8v0xLiiiFdbGDPIZQ7mJY=
+gorm.io/gorm v1.31.0/go.mod h1:XyQVbO2k6YkOis7C2437jSit3SsDK72s7n7rsSHd+Gs=
 honnef.co/go/tools v0.1.3/go.mod h1:NgwopIslSNH47DimFoV78dnkksY2EFtX0ajyb3K/las=

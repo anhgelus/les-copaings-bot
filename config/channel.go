@@ -4,9 +4,9 @@ import (
 	"strings"
 
 	"github.com/anhgelus/gokord/cmd"
-	"github.com/anhgelus/gokord/component"
 	"github.com/anhgelus/gokord/logger"
 	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/interaction"
 )
 
 const (
@@ -20,16 +20,16 @@ const (
 	DisChannelDelSet = "disabled_channel_del_set"
 )
 
-func HandleModifyFallbackChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
-	err := resp.IsEphemeral().SetComponents(component.New().Add(component.NewActionRow().Add(
-		component.NewChannelSelect(FallbackChannelSet).AddChannelType(discordgo.ChannelTypeGuildText),
-	))).Send()
-	if err != nil {
-		logger.Alert("config/channel.go - Sending channel list for fallback", err.Error())
-	}
+func HandleModifyFallbackChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+	//err := resp.IsEphemeral().SetComponents(component.New().Add(component.NewActionRow().Add(
+	//	component.NewChannelSelect(FallbackChannelSet).AddChannelType(discordgo.ChannelTypeGuildText),
+	//))).Send()
+	//if err != nil {
+	//	logger.Alert("config/channel.go - Sending channel list for fallback", err.Error())
+	//}
 }
 
-func HandleFallbackChannelSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+func HandleFallbackChannelSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 
 	cfg := GetGuildConfig(i.GuildID)
@@ -49,61 +49,61 @@ func HandleFallbackChannelSet(_ *discordgo.Session, i *discordgo.InteractionCrea
 	}
 }
 
-func HandleModifyDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
-	err := resp.IsEphemeral().SetComponents(component.New().Add(component.NewActionRow().
-		Add(
-			component.NewButton(DisChannelAdd, discordgo.PrimaryButton).
-				SetLabel("Désactiver un salon").
-				SetEmoji(&discordgo.ComponentEmoji{Name: "⬇️"}),
-		).
-		Add(
-			component.NewButton(DisChannelDel, discordgo.DangerButton).
-				SetLabel("Réactiver un salon").
-				SetEmoji(&discordgo.ComponentEmoji{Name: "⬆️"}),
-		),
-	)).Send()
-	if err != nil {
-		logger.Alert("config/channel.go - Sending action type", err.Error())
-	}
+func HandleModifyDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+	//err := resp.IsEphemeral().SetComponents(component.New().Add(component.NewActionRow().
+	//	Add(
+	//		component.NewButton(DisChannelAdd, discordgo.PrimaryButton).
+	//			SetLabel("Désactiver un salon").
+	//			SetEmoji(&discordgo.ComponentEmoji{Name: "⬇️"}),
+	//	).
+	//	Add(
+	//		component.NewButton(DisChannelDel, discordgo.DangerButton).
+	//			SetLabel("Réactiver un salon").
+	//			SetEmoji(&discordgo.ComponentEmoji{Name: "⬆️"}),
+	//	),
+	//)).Send()
+	//if err != nil {
+	//	logger.Alert("config/channel.go - Sending action type", err.Error())
+	//}
 }
 
-func HandleDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
-	resp.IsEphemeral().SetMessage("Salon à désactiver...")
-	cID := DisChannelAddSet
-	if data.CustomID == DisChannelDel {
-		resp.SetMessage("Salon à réactiver...")
-		cID = DisChannelDelSet
-	}
-	err := resp.SetComponents(component.New().Add(component.NewActionRow().Add(component.NewChannelSelect(cID)))).Send()
-	if err != nil {
-		logger.Alert("config/channel.go - Sending channel list for disable", err.Error())
-	}
+func HandleDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+	//resp.IsEphemeral().SetMessage("Salon à désactiver...")
+	//cID := DisChannelAddSet
+	//if data.CustomID == DisChannelDel {
+	//	resp.SetMessage("Salon à réactiver...")
+	//	cID = DisChannelDelSet
+	//}
+	//err := resp.SetComponents(component.New().Add(component.NewActionRow().Add(component.NewChannelSelect(cID)))).Send()
+	//if err != nil {
+	//	logger.Alert("config/channel.go - Sending channel list for disable", err.Error())
+	//}
 }
 
-func HandleDisChannelAddSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
-	resp.IsEphemeral()
-	cfg := GetGuildConfig(i.GuildID)
-	id := data.Values[0]
-	if strings.Contains(cfg.DisabledChannels, id) {
-		err := resp.SetMessage("Le salon est déjà dans la liste des salons désactivés").Send()
-		if err != nil {
-			logger.Alert("commands/config.go - Channel already disabled", err.Error())
-		}
-		return
-	}
-	cfg.DisabledChannels += id + ";"
-	if err := cfg.Save(); err != nil {
-		logger.Alert("commands/config.go - Saving config disable add", err.Error())
-		if err = resp.SetMessage("Il y a eu une erreur lors de la modification de de la base de données.").Send(); err != nil {
-			logger.Alert("config/channel.go - Sending error while saving config", err.Error())
-		}
-	}
-	if err := resp.SetMessage("Modification sauvegardé.").Send(); err != nil {
-		logger.Alert("commands/config.go - Modification saved message disable add", err.Error())
-	}
+func HandleDisChannelAddSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+	//resp.IsEphemeral()
+	//cfg := GetGuildConfig(i.GuildID)
+	//id := data.Values[0]
+	//if strings.Contains(cfg.DisabledChannels, id) {
+	//	err := resp.SetMessage("Le salon est déjà dans la liste des salons désactivés").Send()
+	//	if err != nil {
+	//		logger.Alert("commands/config.go - Channel already disabled", err.Error())
+	//	}
+	//	return
+	//}
+	//cfg.DisabledChannels += id + ";"
+	//if err := cfg.Save(); err != nil {
+	//	logger.Alert("commands/config.go - Saving config disable add", err.Error())
+	//	if err = resp.SetMessage("Il y a eu une erreur lors de la modification de de la base de données.").Send(); err != nil {
+	//		logger.Alert("config/channel.go - Sending error while saving config", err.Error())
+	//	}
+	//}
+	//if err := resp.SetMessage("Modification sauvegardé.").Send(); err != nil {
+	//	logger.Alert("commands/config.go - Modification saved message disable add", err.Error())
+	//}
 }
 
-func HandleDisChannelDelSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+func HandleDisChannelDelSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	id := data.Values[0]

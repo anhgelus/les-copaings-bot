@@ -25,7 +25,7 @@ func ResetUser(s *discordgo.Session, i *discordgo.InteractionCreate, optMap cmd.
 		}
 		return
 	}
-	m := v.UserValue(s)
+	m := v.UserValue(s.UserAPI())
 	if m.Bot {
 		if err := resp.SetMessage("Les bots n'ont pas de niveau :upside_down:").Send(); err != nil {
 			logger.Alert("commands/reset.go - Copaing not set", err.Error())

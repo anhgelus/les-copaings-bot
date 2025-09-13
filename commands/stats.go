@@ -18,6 +18,7 @@ import (
 	"github.com/anhgelus/gokord/logger"
 	"github.com/jackc/pgx/v5/pgtype"
 	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/channel"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
@@ -66,7 +67,7 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 	go func() {
 		var w io.WriterTo
 		if v, ok := opt["user"]; ok {
-			w, err = statsMember(s, i, days, v.UserValue(s).ID)
+			w, err = statsMember(s, i, days, v.UserValue(s.UserAPI()).ID)
 		} else {
 			w, err = statsAll(s, i, days)
 		}
@@ -81,7 +82,7 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 		if err != nil {
 			logger.Alert("commands/stats.go - Writing png", err.Error())
 		}
-		err = resp.AddFile(&discordgo.File{
+		err = resp.AddFile(&channel.File{
 			Name:        "plot.png",
 			ContentType: "image/png",
 			Reader:      b,
@@ -99,7 +100,7 @@ func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days int) (i
 }
 
 func statsMember(s *discordgo.Session, i *discordgo.InteractionCreate, days int, discordID string) (io.WriterTo, error) {
-	_, err := s.GuildMember(i.GuildID, discordID)
+	_, err := s.GuildAPI().Member(i.GuildID, discordID)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +200,7 @@ func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, copaings
 
 	cnt := 0
 	for in, c := range copaings {
-		m, err := s.GuildMember(i.GuildID, c.DiscordID)
+		m, err := s.GuildAPI().Member(i.GuildID, c.DiscordID)
 		if err != nil {
 			logger.Alert("commands/stats.go - Fetching guild member", err.Error())
 			return nil, err

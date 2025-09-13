@@ -10,6 +10,7 @@ import (
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/anhgelus/gokord/logger"
 	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/channel"
 )
 
 func Top(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
@@ -18,7 +19,7 @@ func Top(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, 
 		logger.Alert("commands/top.go - Sending deferred", err.Error())
 		return
 	}
-	embeds := make([]*discordgo.MessageEmbed, 3)
+	embeds := make([]*channel.MessageEmbed, 3)
 	wg := sync.WaitGroup{}
 
 	fn := func(s string, n uint, d int, id int) {
@@ -26,14 +27,14 @@ func Top(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, 
 		tops, err := user.GetBestXP(i.GuildID, n, d)
 		if err != nil {
 			logger.Alert("commands/top.go - Fetching best xp", err.Error(), "n", n, "d", d, "id", id, "guild_id", i.GuildID)
-			embeds[id] = &discordgo.MessageEmbed{
+			embeds[id] = &channel.MessageEmbed{
 				Title:       s,
 				Description: "Erreur : impossible de récupérer la liste",
 				Color:       0x831010,
 			}
 			return
 		}
-		embeds[id] = &discordgo.MessageEmbed{
+		embeds[id] = &channel.MessageEmbed{
 			Title:       s,
 			Description: genTopsMessage(tops),
 			Color:       0x10E6AD,

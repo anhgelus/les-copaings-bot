@@ -38,7 +38,7 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	m.Member.GuildID = m.GuildID
 	xp := min(exp.MessageXP(uint(len(trimmed)), exp.CalcDiversity(trimmed)), MaxXpPerMessage)
 	c.AddXP(s, m.Member, xp, func(_ uint, _ uint) {
-		if err := s.MessageReactionAdd(m.ChannelID, m.Message.ID, "⬆"); err != nil {
+		if err := s.ChannelAPI().MessageReactionAdd(m.ChannelID, m.Message.ID, "⬆"); err != nil {
 			logger.Alert(
 				"events.go - add reaction for new level", err.Error(),
 				"channel id", m.ChannelID,
@@ -108,7 +108,7 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 		if len(cfg.FallbackChannel) == 0 {
 			return
 		}
-		_, err := s.ChannelMessageSend(cfg.FallbackChannel, fmt.Sprintf(
+		_, err := s.ChannelAPI().MessageSend(cfg.FallbackChannel, fmt.Sprintf(
 			"%s est maintenant niveau %d", e.Member.Mention(), newLevel,
 		))
 		if err != nil {

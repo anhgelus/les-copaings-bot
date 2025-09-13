@@ -10,9 +10,10 @@ import (
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/logger"
 	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/user"
 )
 
-func onNewLevel(dg *discordgo.Session, m *discordgo.Member, level uint) {
+func onNewLevel(dg *discordgo.Session, m *user.Member, level uint) {
 	cfg := config.GetGuildConfig(m.GuildID)
 	xpForLevel := exp.LevelXP(level)
 	for _, role := range cfg.XpRoles {
@@ -23,7 +24,7 @@ func onNewLevel(dg *discordgo.Session, m *discordgo.Member, level uint) {
 				"user_id", m.User.ID,
 				"guild_id", m.GuildID,
 			)
-			err := dg.GuildMemberRoleAdd(m.GuildID, m.User.ID, role.RoleID)
+			err := dg.GuildAPI().MemberRoleAdd(m.GuildID, m.User.ID, role.RoleID)
 			if err != nil {
 				logger.Alert("user/level.go - Adding role", err.Error(), "role_id", role.RoleID)
 			}
@@ -34,7 +35,7 @@ func onNewLevel(dg *discordgo.Session, m *discordgo.Member, level uint) {
 				"user_id", m.User.ID,
 				"guild_id", m.GuildID,
 			)
-			err := dg.GuildMemberRoleRemove(m.GuildID, m.User.ID, role.RoleID)
+			err := dg.GuildAPI().MemberRoleRemove(m.GuildID, m.User.ID, role.RoleID)
 			if err != nil {
 				logger.Alert("user/level.go - Removing role", err.Error(), "role_id", role.RoleID)
 			}
@@ -43,7 +44,7 @@ func onNewLevel(dg *discordgo.Session, m *discordgo.Member, level uint) {
 }
 
 func (c *Copaing) OnNewLevel(dg *discordgo.Session, level uint) {
-	m, err := dg.GuildMember(c.GuildID, c.DiscordID)
+	m, err := dg.GuildAPI().Member(c.GuildID, c.DiscordID)
 	if err != nil {
 		logger.Alert(
 			"user/level.go - Getting member for new level", err.Error(),

@@ -2,15 +2,12 @@ package config
 
 import (
 	"fmt"
-	"strconv"
-	"time"
 
-	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
-	"github.com/anhgelus/gokord/component"
 	"github.com/anhgelus/gokord/logger"
 	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/interaction"
 )
 
 type XpRole struct {
@@ -36,50 +33,50 @@ var (
 	configModifyMap = map[string]uint{}
 )
 
-func HandleModifyXpRole(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
-	err := resp.IsEphemeral().
-		SetMessage("Action à réaliser").
-		SetComponents(component.New().Add(component.NewActionRow().
-			Add(component.NewButton(XpRoleAdd, discordgo.PrimaryButton).
-				SetLabel("Ajouter").
-				SetEmoji(&discordgo.ComponentEmoji{Name: "⬆️"}),
-			).
-			Add(component.NewButton(XpRoleEdit, discordgo.SecondaryButton).
-				SetLabel("Modifier").
-				SetEmoji(&discordgo.ComponentEmoji{Name: "📝"}),
-			).
-			Add(component.NewButton(XpRoleDel, discordgo.DangerButton).
-				SetLabel("Supprimer").
-				SetEmoji(&discordgo.ComponentEmoji{Name: "❌"}),
-			),
-		)).Send()
-	if err != nil {
-		logger.Alert("config/xp_reduce.go - Sending config", err.Error())
-	}
+func HandleModifyXpRole(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+	//err := resp.IsEphemeral().
+	//	SetMessage("Action à réaliser").
+	//	SetComponents(component.New().Add(component.NewActionRow().
+	//		Add(component.NewButton(XpRoleAdd, discordgo.PrimaryButton).
+	//			SetLabel("Ajouter").
+	//			SetEmoji(&discordgo.ComponentEmoji{Name: "⬆️"}),
+	//		).
+	//		Add(component.NewButton(XpRoleEdit, discordgo.SecondaryButton).
+	//			SetLabel("Modifier").
+	//			SetEmoji(&discordgo.ComponentEmoji{Name: "📝"}),
+	//		).
+	//		Add(component.NewButton(XpRoleDel, discordgo.DangerButton).
+	//			SetLabel("Supprimer").
+	//			SetEmoji(&discordgo.ComponentEmoji{Name: "❌"}),
+	//		),
+	//	)).Send()
+	//if err != nil {
+	//	logger.Alert("config/xp_reduce.go - Sending config", err.Error())
+	//}
 }
 
-func HandleXpRoleAddEdit(_ *discordgo.Session, _ *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
-	cID := XpRoleAddLevel
-	if data.CustomID == XpRoleEdit {
-		cID = XpRoleEditLevel
-	}
-	err := resp.IsModal().
-		SetTitle("Role").
-		SetCustomID(cID).
-		SetComponents(component.New().ForModal().Add(component.NewActionRow().ForModal().Add(
-			component.NewTextInput(cID, "Niveau", discordgo.TextInputShort).
-				SetPlaceholder("5").
-				IsRequired().
-				SetMinLength(0).
-				SetMaxLength(5),
-		))).
-		Send()
-	if err != nil {
-		logger.Alert("config/xp_reduce.go - Sending modal to add/edit", err.Error())
-	}
+func HandleXpRoleAddEdit(_ *discordgo.Session, _ *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+	//cID := XpRoleAddLevel
+	//if data.CustomID == XpRoleEdit {
+	//	cID = XpRoleEditLevel
+	//}
+	//err := resp.IsModal().
+	//	SetTitle("Role").
+	//	SetCustomID(cID).
+	//	SetComponents(component.New().ForModal().Add(component.NewActionRow().ForModal().Add(
+	//		component.NewTextInput(cID, "Niveau", discordgo.TextInputShort).
+	//			SetPlaceholder("5").
+	//			IsRequired().
+	//			SetMinLength(0).
+	//			SetMaxLength(5),
+	//	))).
+	//	Send()
+	//if err != nil {
+	//	logger.Alert("config/xp_reduce.go - Sending modal to add/edit", err.Error())
+	//}
 }
 
-func HandleXpRoleAddRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+func HandleXpRoleAddRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	roleId := data.Values[0]
@@ -111,7 +108,7 @@ func HandleXpRoleAddRole(_ *discordgo.Session, i *discordgo.InteractionCreate, d
 	}
 }
 
-func HandleXpRoleEditRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+func HandleXpRoleEditRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	roleId := data.Values[0]
@@ -139,17 +136,17 @@ func HandleXpRoleEditRole(_ *discordgo.Session, i *discordgo.InteractionCreate, 
 	}
 }
 
-func HandleXpRoleDel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
-	err := resp.IsEphemeral().
-		SetMessage("Rôle à supprimer").
-		SetComponents(component.New().Add(component.NewActionRow().Add(component.NewRoleSelect(XpRoleDelRole)))).
-		Send()
-	if err != nil {
-		logger.Alert("config/xp_reduce.go - Sending response to del", err.Error())
-	}
+func HandleXpRoleDel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+	//err := resp.IsEphemeral().
+	//	SetMessage("Rôle à supprimer").
+	//	SetComponents(component.New().Add(component.NewActionRow().Add(component.NewRoleSelect(XpRoleDelRole)))).
+	//	Send()
+	//if err != nil {
+	//	logger.Alert("config/xp_reduce.go - Sending response to del", err.Error())
+	//}
 }
 
-func HandleXpRoleDelRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+func HandleXpRoleDelRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	roleId := data.Values[0]
@@ -176,39 +173,39 @@ func HandleXpRoleDelRole(_ *discordgo.Session, i *discordgo.InteractionCreate, d
 	}
 }
 
-func HandleXpRoleLevel(_ *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.ModalSubmitInteractionData, resp *cmd.ResponseBuilder) {
-	resp.IsEphemeral()
-	input := data.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput)
-
-	k := getKeyConfigRole(i)
-	in, err := strconv.Atoi(input.Value)
-	if err != nil || in < 0 {
-		if err = resp.
-			SetMessage("Impossible de lire le nombre. Il doit s'agit d'un nombre entier positif.").
-			Send(); err != nil {
-			logger.Alert("command/config.go - Sending bad number", err.Error())
-		}
-		return
-	}
-	configModifyMap[k] = exp.LevelXP(uint(in))
-	go func(i *discordgo.InteractionCreate, k string) {
-		time.Sleep(5 * time.Minute)
-		delete(configModifyMap, k)
-	}(i, k)
-
-	cID := XpRoleAddRole
-	resp.SetMessage("Rôle à ajouter")
-	if data.CustomID == XpRoleEditLevel {
-		cID = XpRoleEditRole
-		resp.SetMessage("Rôle à modifier")
-	}
-
-	err = resp.
-		SetComponents(component.New().Add(component.NewActionRow().Add(component.NewRoleSelect(cID)))).
-		Send()
-	if err != nil {
-		logger.Alert("config/xp_reduce.go - Sending response to add/edit", err.Error())
-	}
+func HandleXpRoleLevel(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.ModalSubmitData, resp *cmd.ResponseBuilder) {
+	//resp.IsEphemeral()
+	//input := data.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput)
+	//
+	//k := getKeyConfigRole(i)
+	//in, err := strconv.Atoi(input.Value)
+	//if err != nil || in < 0 {
+	//	if err = resp.
+	//		SetMessage("Impossible de lire le nombre. Il doit s'agit d'un nombre entier positif.").
+	//		Send(); err != nil {
+	//		logger.Alert("command/config.go - Sending bad number", err.Error())
+	//	}
+	//	return
+	//}
+	//configModifyMap[k] = exp.LevelXP(uint(in))
+	//go func(i *discordgo.InteractionCreate, k string) {
+	//	time.Sleep(5 * time.Minute)
+	//	delete(configModifyMap, k)
+	//}(i, k)
+	//
+	//cID := XpRoleAddRole
+	//resp.SetMessage("Rôle à ajouter")
+	//if data.CustomID == XpRoleEditLevel {
+	//	cID = XpRoleEditRole
+	//	resp.SetMessage("Rôle à modifier")
+	//}
+	//
+	//err = resp.
+	//	SetComponents(component.New().Add(component.NewActionRow().Add(component.NewRoleSelect(cID)))).
+	//	Send()
+	//if err != nil {
+	//	logger.Alert("config/xp_reduce.go - Sending response to add/edit", err.Error())
+	//}
 }
 
 func getKeyConfigRole(i *discordgo.InteractionCreate) string {

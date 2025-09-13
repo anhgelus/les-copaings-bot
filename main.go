@@ -15,6 +15,9 @@ import (
 	"github.com/anhgelus/gokord/logger"
 	"github.com/joho/godotenv"
 	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/discord"
+	"github.com/nyttikord/gokord/discord/types"
+	"github.com/nyttikord/gokord/interaction"
 	"golang.org/x/image/font/opentype"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/font"
@@ -77,7 +80,7 @@ func main() {
 
 	rankCmd := cmd.New("rank", "Affiche le niveau d'un copaing").
 		AddOption(cmd.NewOption(
-			discordgo.ApplicationCommandOptionUser,
+			types.CommandOptionUser,
 			"copaing",
 			"Le niveau du Copaing que vous souhaitez obtenir",
 		)).
@@ -96,7 +99,7 @@ func main() {
 
 	resetUserCmd := cmd.New("reset-user", "Reset l'xp d'un utilisation").
 		AddOption(cmd.NewOption(
-			discordgo.ApplicationCommandOptionUser,
+			types.CommandOptionUser,
 			"user",
 			"Copaing a reset",
 		).IsRequired()).
@@ -108,12 +111,12 @@ func main() {
 
 	statsCmd := cmd.New("stats", "Affiche des stats :D").
 		AddOption(cmd.NewOption(
-			discordgo.ApplicationCommandOptionInteger,
+			types.CommandOptionInteger,
 			"days",
 			"Nombre de jours à afficher dans le graphique",
 		)).
 		AddOption(cmd.NewOption(
-			discordgo.ApplicationCommandOptionUser,
+			types.CommandOptionUser,
 			"user",
 			"Utilisateur à inspecter",
 		)).
@@ -168,13 +171,13 @@ func main() {
 		},
 		Innovations: innovations,
 		Version:     &Version,
-		Intents: discordgo.IntentsAllWithoutPrivileged |
-			discordgo.IntentsMessageContent |
-			discordgo.IntentGuildMembers,
+		Intents: discord.IntentsAllWithoutPrivileged |
+			discord.IntentsMessageContent |
+			discord.IntentGuildMembers,
 	}
 
 	// interaction: /config
-	bot.HandleMessageComponent(func(s *discordgo.Session, i *discordgo.InteractionCreate, data discordgo.MessageComponentInteractionData, resp *cmd.ResponseBuilder) {
+	bot.HandleMessageComponent(func(s *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 		if len(data.Values) != 1 {
 			logger.Alert("main.go - Handle config modify", "invalid data values", "values", data.Values)
 			return
