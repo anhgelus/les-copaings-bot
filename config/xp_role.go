@@ -5,7 +5,6 @@ import (
 
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
-	"github.com/anhgelus/gokord/logger"
 	discordgo "github.com/nyttikord/gokord"
 	"github.com/nyttikord/gokord/interaction"
 )
@@ -76,7 +75,7 @@ func HandleXpRoleAddEdit(_ *discordgo.Session, _ *discordgo.InteractionCreate, d
 	//}
 }
 
-func HandleXpRoleAddRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleXpRoleAddRole(s *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	roleId := data.Values[0]
@@ -84,7 +83,7 @@ func HandleXpRoleAddRole(_ *discordgo.Session, i *discordgo.InteractionCreate, d
 		if r.RoleID == roleId {
 			err := resp.SetMessage("Le rôle est déjà présent dans la config").Send()
 			if err != nil {
-				logger.Alert("config/xp_role.go - Role already in config", err.Error())
+				s.LogError(err, "sending role already in config")
 			}
 			return
 		}
@@ -95,20 +94,15 @@ func HandleXpRoleAddRole(_ *discordgo.Session, i *discordgo.InteractionCreate, d
 	})
 	err := cfg.Save()
 	if err != nil {
-		logger.Alert(
-			"config/xp_role.go - Saving config",
-			err.Error(),
-			"guild_id", i.GuildID,
-			"role_id", roleId,
-			"type", "add",
-		)
+		s.LogError(err, "saving config for role %s in %s", roleId, i.GuildID)
+		return
 	}
 	if err = resp.SetMessage("Rôle ajouté.").Send(); err != nil {
-		logger.Alert("config/xp_role.go - Sending success", err.Error())
+		s.LogError(err, "Sending role saved")
 	}
 }
 
-func HandleXpRoleEditRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleXpRoleEditRole(s *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	roleId := data.Values[0]
@@ -116,23 +110,18 @@ func HandleXpRoleEditRole(_ *discordgo.Session, i *discordgo.InteractionCreate, 
 	if r == nil {
 		err := resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
 		if err != nil {
-			logger.Alert("config/xp_role.go - Role not found (edit)", err.Error())
+			s.LogError(err, "role not found")
 		}
 		return
 	}
 	r.XP = configModifyMap[getKeyConfigRole(i)]
 	err := gokord.DB.Save(r).Error
 	if err != nil {
-		logger.Alert(
-			"config/xp_role.go - Saving config",
-			err.Error(),
-			"guild_id", i.GuildID,
-			"role_id", roleId,
-			"type", "edit",
-		)
+		s.LogError(err, "saving config for role %s in %s", roleId, i.GuildID)
+		return
 	}
 	if err = resp.SetMessage("Rôle modifié.").Send(); err != nil {
-		logger.Alert("config/xp_role.go - Sending success", err.Error())
+		s.LogError(err, "sending role saved")
 	}
 }
 
@@ -146,7 +135,7 @@ func HandleXpRoleDel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ int
 	//}
 }
 
-func HandleXpRoleDelRole(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleXpRoleDelRole(s *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	roleId := data.Values[0]
@@ -154,22 +143,17 @@ func HandleXpRoleDelRole(_ *discordgo.Session, i *discordgo.InteractionCreate, d
 	if r == nil {
 		err := resp.SetMessage("Le rôle n'a pas été trouvé dans la config.").Send()
 		if err != nil {
-			logger.Alert("config/xp_role.go - Sending role not found (del)", err.Error())
+			s.LogError(err, "sending role not found")
 		}
 		return
 	}
 	err := gokord.DB.Delete(r).Error
 	if err != nil {
-		logger.Alert(
-			"config/xp_role.go - Deleting entry",
-			err.Error(),
-			"guild_id", i.GuildID,
-			"role_id", roleId,
-			"type", "del",
-		)
+		s.LogError(err, "saving config for role %s in %s", roleId, i.GuildID)
+		return
 	}
 	if err = resp.SetMessage("Rôle supprimé.").Send(); err != nil {
-		logger.Alert("config/xp_role.go - Sending success", err.Error())
+		s.LogError(err, "sending role deleted")
 	}
 }
 

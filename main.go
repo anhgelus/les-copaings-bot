@@ -12,12 +12,12 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
-	"github.com/anhgelus/gokord/logger"
 	"github.com/joho/godotenv"
 	discordgo "github.com/nyttikord/gokord"
 	"github.com/nyttikord/gokord/discord"
 	"github.com/nyttikord/gokord/discord/types"
 	"github.com/nyttikord/gokord/interaction"
+	"github.com/nyttikord/gokord/logger"
 	"golang.org/x/image/font/opentype"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/font"
@@ -42,7 +42,7 @@ var interTTF []byte
 func init() {
 	err := godotenv.Load()
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		logger.Warn("Error while loading .env file", "error", err.Error())
+		logger.Log(logger.LevelError, 0, "Error while loading .env file: %v", err.Error())
 	}
 	flag.StringVar(&token, "token", os.Getenv("TOKEN"), "token of the bot")
 
@@ -165,7 +165,7 @@ func main() {
 			user.PeriodicReducer(dg)
 
 			stopPeriodicReducer = gokord.NewTimer(d, func(stop chan<- interface{}) {
-				logger.Debug("Periodic reducer")
+				dg.LogDebug("Periodic reducer")
 				user.PeriodicReducer(dg)
 			})
 		},
@@ -179,7 +179,7 @@ func main() {
 	// interaction: /config
 	bot.HandleMessageComponent(func(s *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 		if len(data.Values) != 1 {
-			logger.Alert("main.go - Handle config modify", "invalid data values", "values", data.Values)
+			bot.LogError(errors.New("invalid data values"), "handle config modify, values: %#v", data.Values)
 			return
 		}
 		switch data.Values[0] {
@@ -192,7 +192,7 @@ func main() {
 		case config.ModifyTimeReduce:
 			config.HandleModifyPeriodicReduce(s, i, data, resp)
 		default:
-			logger.Alert("main.go - Detecting value", "unkown value", "value", data.Values[0])
+			bot.LogError(errors.New("unknown value"), "detecting value %s", data.Values[0])
 			return
 		}
 	}, commands.ConfigModify)

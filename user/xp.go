@@ -7,8 +7,8 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord"
-	"github.com/anhgelus/gokord/logger"
 	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/logger"
 	"github.com/nyttikord/gokord/user"
 )
 
@@ -28,23 +28,14 @@ func (c *cXP) GetXP() uint {
 func (c *Copaing) AddXP(s *discordgo.Session, m *user.Member, xp uint, fn func(uint, uint)) {
 	old, err := c.GetXP()
 	if err != nil {
-		logger.Alert("user/xp.go - Getting xp", err.Error(), "discord_id", c.DiscordID, "guild_id", c.GuildID)
+		s.LogError(err, "getting xp for %s in %s", m.DisplayName(), c.GuildID)
 		return
 	}
 	pastLevel := exp.Level(old)
-	logger.Debug("Adding xp", "member", m.DisplayName(), "old xp", old, "xp to add", xp, "old level", pastLevel)
+	s.LogDebug("Adding xp to %s, old: %d, to add: %d", m.DisplayName(), old, xp)
 	c.CopaingXPs = append(c.CopaingXPs, CopaingXP{CopaingID: c.ID, XP: xp, GuildID: c.GuildID})
 	if err = c.Save(); err != nil {
-		logger.Alert(
-			"user/xp.go - Saving user",
-			err.Error(),
-			"xp",
-			c.CopaingXPs,
-			"discord_id",
-			c.DiscordID,
-			"guild_id",
-			c.GuildID,
-		)
+		s.LogError(err, "saving user %s with xp %d in %s", m.DisplayName(), xp, c.GuildID)
 		return
 	}
 	newLevel := exp.Level(old + xp)
@@ -78,7 +69,7 @@ func (c *Copaing) GetXPForDays(n uint) (uint, error) {
 		var cxp CopaingXP
 		err = gokord.DB.ScanRows(rows, &cxp)
 		if err != nil {
-			logger.Alert("user/xp.go - Scanning rows", err.Error(), "copaing_id", c.ID, "guild_id", c.GuildID)
+			logger.Log(logger.LevelError, 0, "scanning rows of copaing %d in %s: %#v", c.ID, c.GuildID, err.Error())
 			continue
 		}
 		xp += cxp.XP
@@ -105,7 +96,7 @@ func GetBestXP(guildId string, n uint, d int) ([]CopaingAccess, error) {
 		var c Copaing
 		err = gokord.DB.ScanRows(rows, &c)
 		if err != nil {
-			logger.Alert("user/xp.go - Scanning rows", err.Error(), "guild_id", guildId)
+			logger.Log(logger.LevelError, 0, "scanning rows of copaing %d in %s: %#v", c.ID, c.GuildID, err.Error())
 			continue
 		}
 		wg.Add(1)
@@ -113,7 +104,7 @@ func GetBestXP(guildId string, n uint, d int) ([]CopaingAccess, error) {
 			defer wg.Done()
 			xp, err := c.GetXPForDays(uint(d))
 			if err != nil {
-				logger.Alert("user/xp.go - Fetching xp", err.Error(), "discord_id", c.DiscordID, "guild_id", guildId)
+				logger.Log(logger.LevelError, 0, "fetching xp of copaing %d in %s: %#v", c.ID, c.GuildID, err.Error())
 				return
 			}
 			l = append(l, &cXP{Cxp: xp, Copaing: &c})

@@ -35,6 +35,10 @@ github.com/anhgelus/gokord v0.11.1-0.20250911112818-b436d35950ae h1:7UFLx1EybWFZ
 github.com/anhgelus/gokord v0.11.1-0.20250911112818-b436d35950ae/go.mod h1:Tw1djmUOTFCIRhEUI7eG2onnreJbVGA40EWYQgj20bE=
 github.com/anhgelus/gokord v0.11.1-0.20250913111909-19135e5d37be h1:D7bFu20Qr2P+hLgv/bWVhscuQ2tt0y0km8fTVZ5ThmY=
 github.com/anhgelus/gokord v0.11.1-0.20250913111909-19135e5d37be/go.mod h1:J/Ja3EIKFOxxy5lx09kjsxyrwv4ardc015cMtmM8XPg=
+github.com/anhgelus/gokord v0.11.1-0.20250913150335-4bcccc1dab83 h1:LyaYwAVoULEXib96M8YlJF7So2srAZktGN6Y6xiOBxs=
+github.com/anhgelus/gokord v0.11.1-0.20250913150335-4bcccc1dab83/go.mod h1:MKTSrPK2w9VCDYHPQ8KwSAVFEFYF0LU8FaBEhNq4VoU=
+github.com/anhgelus/gokord v0.11.1-0.20250913175430-bf95758b4d3b h1:p9XoghqPoBwj2GDR4SNyirKZVm6UI4KNPBa387G8LKM=
+github.com/anhgelus/gokord v0.11.1-0.20250913175430-bf95758b4d3b/go.mod h1:MKTSrPK2w9VCDYHPQ8KwSAVFEFYF0LU8FaBEhNq4VoU=
 github.com/bsm/ginkgo/v2 v2.12.0 h1:Ny8MWAHyOepLGlLKYmXG4IEkioBysk6GpaRTLC8zwWs=
 github.com/bsm/ginkgo/v2 v2.12.0/go.mod h1:SwYbGRRDovPVboqFv0tPTcG1sN61LM1Z4ARdbAV9g4c=
 github.com/bsm/gomega v1.27.10 h1:yeMWxP2pV2fG3FgAODIY8EiRE3dy0aeFYt4l7wh6yKA=
@@ -74,6 +78,10 @@ github.com/nyttikord/gokord v0.30.0 h1:O4LhpCMyfWcgLqziPXQgMCopb9VO7kwcZG3phblOa
 github.com/nyttikord/gokord v0.30.0/go.mod h1:Lhk268VlZ1W6Pb3kYnlU9bIuTCioaumedjHdtw1sxck=
 github.com/nyttikord/gokord v0.30.1-0.20250913111646-475b917cccfb h1:HUL4CikIHguqjKrAqzXYghkzlaZi8+54BBObxBUgeos=
 github.com/nyttikord/gokord v0.30.1-0.20250913111646-475b917cccfb/go.mod h1:Lhk268VlZ1W6Pb3kYnlU9bIuTCioaumedjHdtw1sxck=
+github.com/nyttikord/gokord v0.30.1-0.20250913143152-425cd430dee0 h1:bvSFyK1JXTupt67Y78pzbFPg/5tBaouK0BxAfvpwZBw=
+github.com/nyttikord/gokord v0.30.1-0.20250913143152-425cd430dee0/go.mod h1:Lhk268VlZ1W6Pb3kYnlU9bIuTCioaumedjHdtw1sxck=
+github.com/nyttikord/gokord v0.30.1-0.20250913173431-8e43619c03fa h1:P9zaVyRF0bDnmhUg6PaNfmyUqDZ+EvHpBnCdH0/0T3s=
+github.com/nyttikord/gokord v0.30.1-0.20250913173431-8e43619c03fa/go.mod h1:Lhk268VlZ1W6Pb3kYnlU9bIuTCioaumedjHdtw1sxck=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
 github.com/pelletier/go-toml/v2 v2.2.4/go.mod h1:2gIqNv+qfxSVS7cM2xJQKtLSTLUE9V8t9Stt+h56mCY=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

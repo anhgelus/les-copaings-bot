@@ -7,7 +7,6 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord/cmd"
-	"github.com/anhgelus/gokord/logger"
 	discordgo "github.com/nyttikord/gokord"
 )
 
@@ -15,7 +14,7 @@ const (
 	ConfigModify = "config_modify"
 )
 
-func Config(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
+func Config(s *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	cfg := config.GetGuildConfig(i.GuildID)
 	roles := ""
 	l := len(cfg.XpRoles) - 1
@@ -82,6 +81,6 @@ func Config(_ *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMa
 	)
 	err := resp.SetMessage(msg).IsEphemeral().Send()
 	if err != nil {
-		logger.Alert("config/guild.go - Sending config", err.Error())
+		s.LogError(err, "sending config")
 	}
 }

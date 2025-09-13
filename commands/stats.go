@@ -15,7 +15,6 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
-	"github.com/anhgelus/gokord/logger"
 	"github.com/jackc/pgx/v5/pgtype"
 	discordgo "github.com/nyttikord/gokord"
 	"github.com/nyttikord/gokord/channel"
@@ -53,7 +52,7 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 		if in < 1 || uint(in) > cfg.DaysXPRemains {
 			msg := fmt.Sprintf("Nombre de jours invalide. Il doit être strictement positif et inférieur à %d", cfg.DaysXPRemains)
 			if err := resp.SetMessage(msg).IsEphemeral().Send(); err != nil {
-				logger.Alert("commands/stats.go - Sending invalid days", err.Error())
+				s.LogError(err, "sending error invalid days")
 			}
 			return
 		}
@@ -61,7 +60,7 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 	}
 	err := resp.IsDeferred().Send()
 	if err != nil {
-		logger.Alert("commands/stats.go - Sending deferred", err.Error())
+		s.LogError(err, "sending deferred")
 		return
 	}
 	go func() {
@@ -72,15 +71,16 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 			w, err = statsAll(s, i, days)
 		}
 		if err != nil {
+			s.LogError(err, "generating stats in %s", i.GuildID)
 			if err = resp.IsEphemeral().SetMessage("Il y a eu une erreur...").Send(); err != nil {
-				logger.Alert("commands/stats.go - Sending error occurred", err.Error())
+				s.LogError(err, "sending error occurred")
 			}
 			return
 		}
 		b := new(bytes.Buffer)
 		_, err = w.WriteTo(b)
 		if err != nil {
-			logger.Alert("commands/stats.go - Writing png", err.Error())
+			s.LogError(err, "writing png")
 		}
 		err = resp.AddFile(&channel.File{
 			Name:        "plot.png",
@@ -88,7 +88,7 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 			Reader:      b,
 		}).Send()
 		if err != nil {
-			logger.Alert("commands/stats.go - Sending response", err.Error())
+			s.LogError(err, "sending stats")
 		}
 	}()
 }
@@ -117,7 +117,7 @@ func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days int, execS
 	if gokord.Debug {
 		var rawCopaingData []*user.CopaingXP
 		if err := execSql("SELECT * FROM copaing_xps ", "").Scan(&rawCopaingData).Error; err != nil {
-			logger.Alert("commands/stats.go - Fetching result", err.Error())
+			s.LogError(err, "fetching result")
 			return nil, err
 		}
 		rawData = make([]*data, len(rawCopaingData))
@@ -133,7 +133,7 @@ func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days int, execS
 		if err := execSql(
 			`SELECT "created_at"::date::text, sum("xp") as xp, "copaing_id" FROM copaing_xps `, ` GROUP BY "created_at"::date, "copaing_id"`,
 		).Scan(&rawDbData).Error; err != nil {
-			logger.Alert("commands/stats.go - Fetching result", err.Error())
+			s.LogError(err, "fetching result")
 			return nil, err
 		}
 		rawData = make([]*data, len(rawDbData))
@@ -155,10 +155,10 @@ func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days int, execS
 			var cp user.Copaing
 			if err := gokord.DB.First(&cp, raw.CopaingID).Error; err != nil {
 				if !errors.Is(err, gorm.ErrRecordNotFound) {
-					logger.Alert("commands/stats.go - Finding copaing", err.Error(), "id", raw.CopaingID)
+					s.LogError(err, "finding copaing %d", raw.CopaingID)
 					return nil, err
 				}
-				logger.Warn("Copaing not found, skipping entry", "old_id", raw.CopaingID)
+				s.LogWarn("Copaing %d not found, skipping", raw.CopaingID)
 				continue
 			}
 			copaings[raw.CopaingID] = &cp
@@ -202,7 +202,7 @@ func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, copaings
 	for in, c := range copaings {
 		m, err := s.GuildAPI().Member(i.GuildID, c.DiscordID)
 		if err != nil {
-			logger.Alert("commands/stats.go - Fetching guild member", err.Error())
+			s.LogError(err, "fetching guild member")
 			return nil, err
 		}
 		slices.SortFunc(stats[in], func(a, b plotter.XY) int {
@@ -216,7 +216,7 @@ func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, copaings
 		})
 		l, _, err := plotter.NewLinePoints(plotter.XYs(stats[in]))
 		if err != nil {
-			logger.Alert("commands/stats.go - Adding line points", err.Error())
+			s.LogError(err, "adding line points")
 			return nil, err
 		}
 		l.Color = colors[cnt%len(colors)]
@@ -226,7 +226,7 @@ func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, copaings
 	}
 	w, err := p.WriterTo(8*vg.Inch, 6*vg.Inch, "png")
 	if err != nil {
-		logger.Alert("commands/stats.go - Generating png", err.Error())
+		s.LogError(err, "generating png")
 		return nil, err
 	}
 	return w, nil

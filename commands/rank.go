@@ -6,7 +6,6 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord/cmd"
-	"github.com/anhgelus/gokord/logger"
 	discordgo "github.com/nyttikord/gokord"
 )
 
@@ -20,22 +19,16 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap cmd.Optio
 		if u.Bot {
 			err = resp.SetMessage("Imagine si les bots avaient un niveau :rolling_eyes:").IsEphemeral().Send()
 			if err != nil {
-				logger.Alert("commands/rank.go - Reply error user is a bot", err.Error())
+				s.LogError(err, "reply error user is a bot")
 			}
+			return
 		}
 		m, err = s.GuildAPI().Member(i.GuildID, u.ID)
 		if err != nil {
-			logger.Alert(
-				"commands/rank.go - Fetching guild member",
-				err.Error(),
-				"discord_id",
-				u.ID,
-				"guild_id",
-				i.GuildID,
-			)
+			s.LogError(err, "Fetching guild member %s in %s", u.Username, i.GuildID)
 			err = resp.SetMessage("Erreur : impossible de récupérer le membre").IsEphemeral().Send()
 			if err != nil {
-				logger.Alert("commands/rank.go - Reply error fetching guild member", err.Error())
+				s.LogError(err, "reply error fetching guild member")
 			}
 			return
 		}
@@ -44,17 +37,10 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap cmd.Optio
 	}
 	xp, err := c.GetXP()
 	if err != nil {
-		logger.Alert(
-			"commands/rank.go - Fetching xp",
-			err.Error(),
-			"discord_id",
-			c.ID,
-			"guild_id",
-			i.GuildID,
-		)
+		s.LogError(err, "fetching xp for copaing %s in %s", c.ID, i.GuildID)
 		err = resp.SetMessage("Erreur : impossible de récupérer l'XP").IsEphemeral().Send()
 		if err != nil {
-			logger.Alert("commands/rank.go - Reply error fetching xp", err.Error())
+			s.LogError(err, "reply error fetching xp")
 		}
 		return
 	}
@@ -68,6 +54,6 @@ func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap cmd.Optio
 		nxtLvlXP-xp,
 	)).Send()
 	if err != nil {
-		logger.Alert("commands/rank.go - Sending rank", err.Error())
+		s.LogError(err, "sending rank")
 	}
 }

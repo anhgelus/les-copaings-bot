@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/anhgelus/gokord/cmd"
-	"github.com/anhgelus/gokord/logger"
 	discordgo "github.com/nyttikord/gokord"
 	"github.com/nyttikord/gokord/interaction"
 )
@@ -29,7 +28,7 @@ func HandleModifyFallbackChannel(_ *discordgo.Session, _ *discordgo.InteractionC
 	//}
 }
 
-func HandleFallbackChannelSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleFallbackChannelSet(s *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 
 	cfg := GetGuildConfig(i.GuildID)
@@ -38,14 +37,14 @@ func HandleFallbackChannelSet(_ *discordgo.Session, i *discordgo.InteractionCrea
 	cfg.FallbackChannel = channelID
 	err := cfg.Save()
 	if err != nil {
-		logger.Alert("config/channel.go - Saving fallback channel", err.Error())
+		s.LogError(err, "saving fallback channel")
 		if err = resp.SetMessage("Erreur lors de la sauvegarde du salon").Send(); err != nil {
-			logger.Alert("config/channel.go - Sending error while saving channel", err.Error())
+			s.LogError(err, "sending error while saving channel")
 		}
 		return
 	}
 	if err = resp.SetMessage("Salon sauvegardé.").Send(); err != nil {
-		logger.Alert("config/channel.go - Sending channel saved", err.Error())
+		s.LogError(err, "sending channel saved")
 	}
 }
 
@@ -103,25 +102,25 @@ func HandleDisChannelAddSet(_ *discordgo.Session, i *discordgo.InteractionCreate
 	//}
 }
 
-func HandleDisChannelDelSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleDisChannelDelSet(s *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	id := data.Values[0]
 	if !strings.Contains(cfg.DisabledChannels, id) {
 		err := resp.SetMessage("Le salon n'est pas désactivé").Send()
 		if err != nil {
-			logger.Alert("commands/config.go - Channel not disabled", err.Error())
+			s.LogError(err, "sending channel not disabled")
 		}
 		return
 	}
 	cfg.DisabledChannels = strings.ReplaceAll(cfg.DisabledChannels, id+";", "")
 	if err := cfg.Save(); err != nil {
-		logger.Alert("commands/config.go - Saving config disable del", err.Error())
+		s.LogError(err, "saving config disable del")
 		if err = resp.SetMessage("Il y a eu une erreur lors de la modification de de la base de données.").Send(); err != nil {
-			logger.Alert("config/channel.go - Sending error while saving config", err.Error())
+			s.LogError(err, "sending error while saving config")
 		}
 	}
 	if err := resp.SetMessage("Modification sauvegardé.").Send(); err != nil {
-		logger.Alert("commands/config.go - Modification saved message disable del", err.Error())
+		s.LogError(err, "modification saved message disable del")
 	}
 }
