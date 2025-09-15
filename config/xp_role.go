@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"slices"
 	"strconv"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
@@ -145,11 +144,11 @@ func HandleXpRoleEdit(
 		session.LogError(err, "Reading dynamic CustomID")
 		return
 	}
-	roleIndex := slices.IndexFunc(config.XpRoles, func(role XpRole) bool { return role.ID == id })
-	if roleIndex == -1 {
+	_, role := config.FindXpRoleID(id)
+	if role == nil {
+		HandleXpRole(session, i, interaction.MessageComponentData{}, resp)
 		return
 	}
-	role := config.XpRoles[roleIndex]
 
 	roleSelect := &component.SelectMenu{
 		MenuType: types.SelectMenuRole,
@@ -211,24 +210,8 @@ func HandleXpRoleEditRole(
 	}
 	role := data.Values[0]
 	cfg := GetGuildConfig(i.GuildID)
-	for _, xpRole := range cfg.XpRoles {
-		if xpRole.RoleID == role {
-			err = session.InteractionAPI().Respond(i.Interaction, &interaction.Response{
-				Type: types.InteractionResponseChannelMessageWithSource,
-				Data: &interaction.ResponseData{
-					Flags:           channel.MessageFlagsEphemeral,
-					AllowedMentions: &channel.MessageAllowedMentions{},
-					Content:         fmt.Sprintf("Un autre niveau avec le rôle <@&%s> est déjà existant.", role),
-				},
-			})
-			if err != nil {
-				session.LogError(err, "Sending unable to Already existing role message")
-			}
-			return
-		}
-	}
-	index, xprole := cfg.FindXpRoleID(id)
-	if index == 0 {
+	_, xprole := cfg.FindXpRoleID(id)
+	if xprole == nil {
 		err = session.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
@@ -333,23 +316,8 @@ func HandleXpRoleEditLevel(
 	xp := exp.LevelXP(uint(level))
 
 	cfg := GetGuildConfig(i.GuildID)
-	for _, xpRole := range cfg.XpRoles {
-		if xpRole.XP == xp {
-			err = session.InteractionAPI().Respond(i.Interaction, &interaction.Response{
-				Type: types.InteractionResponseChannelMessageWithSource,
-				Data: &interaction.ResponseData{
-					Flags:   channel.MessageFlagsEphemeral,
-					Content: fmt.Sprintf("Un autre rôle est déjà lié au niveau %d.", level),
-				},
-			})
-			if err != nil {
-				session.LogError(err, "Sending unable to Already existing level message")
-			}
-			return
-		}
-	}
-	index, xprole := cfg.FindXpRoleID(id)
-	if index == -1 {
+	_, xprole := cfg.FindXpRoleID(id)
+	if xprole == nil {
 		err = session.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
@@ -430,21 +398,6 @@ func HandleXpRoleAdd(
 	roleId := data.Components[1].(*component.Label).Component.(*component.SelectMenu).Values[0]
 
 	cfg := GetGuildConfig(i.GuildID)
-	for _, r := range cfg.XpRoles {
-		if r.RoleID == roleId {
-			err := resp.IsEphemeral().SetMessage(fmt.Sprintf("Le rôle <@&%s> est déjà lié au niveau %d.", r.RoleID, exp.Level(r.XP))).Send()
-			if err != nil {
-				session.LogError(err, "sending role already in config")
-			}
-			return
-		} else if r.XP == xp {
-			err := resp.IsEphemeral().SetMessage(fmt.Sprintf("Le niveau %d est déjà lié au rôle <@&%s>.", in, r.RoleID)).Send()
-			if err != nil {
-				session.LogError(err, "sending role already in config")
-			}
-			return
-		}
-	}
 	cfg.XpRoles = append(cfg.XpRoles, XpRole{
 		XP:     xp,
 		RoleID: roleId,
