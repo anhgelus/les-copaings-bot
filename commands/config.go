@@ -8,13 +8,19 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord/cmd"
 	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/channel"
+	"github.com/nyttikord/gokord/component"
+	"github.com/nyttikord/gokord/discord/types"
+	"github.com/nyttikord/gokord/emoji"
+	"github.com/nyttikord/gokord/interaction"
 )
 
 const (
 	ConfigModify = "config_modify"
+	OpenConfig   = "config"
 )
 
-func Config(s *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
+func ConfigResponse(i *discordgo.InteractionCreate) *interaction.Response {
 	cfg := config.GetGuildConfig(i.GuildID)
 	roles := ""
 	l := len(cfg.XpRoles) - 1
@@ -47,40 +53,84 @@ func Config(s *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMa
 	} else {
 		defaultChan = fmt.Sprintf("<#%s>", cfg.FallbackChannel)
 	}
-	//comp := component.New().
-	//	Add(component.NewActionRow().Add(component.NewStringSelect(ConfigModify).
-	//		SetPlaceholder("Modifier...").
-	//		AddOption(
-	//			component.NewSelectOption("Rôles liés à l'XP", config.ModifyXpRole).
-	//				SetDescription("Gère les rôles liés à l'XP").
-	//				SetEmoji(&discordgo.ComponentEmoji{Name: "🏅"}),
-	//		).
-	//		AddOption(
-	//			component.NewSelectOption("Salons désactivés", config.ModifyDisChannel).
-	//				SetDescription("Gère les salons désactivés").
-	//				SetEmoji(&discordgo.ComponentEmoji{Name: "❌"}),
-	//		).
-	//		AddOption(
-	//			// I don't have a better idea for this...
-	//			component.NewSelectOption("Salons par défaut", config.ModifyFallbackChannel).
-	//				SetDescription("Spécifie le salon par défaut").
-	//				SetEmoji(&discordgo.ComponentEmoji{Name: "💾"}),
-	//		).
-	//		AddOption(
-	//			component.NewSelectOption("Temps avec la réduction", config.ModifyTimeReduce).
-	//				SetDescription("Gère le temps avant la réduction d'XP").
-	//				SetEmoji(&discordgo.ComponentEmoji{Name: "⌛"}),
-	//		),
-	//	))
-	msg := fmt.Sprintf(
-		"# Config\n**Salon par défaut**\n%s\n\n**Rôles liés aux niveaux**\n%s\n\n**Salons désactivés**\n%s\n\n**Jours avant la réduction**\n%d",
-		defaultChan,
-		roles,
-		chans,
-		cfg.DaysXPRemains,
-	)
-	err := resp.SetMessage(msg).IsEphemeral().Send()
+	content := []component.Component{
+		&component.Container{
+			Components: []component.Message{
+				&component.TextDisplay{Content: "## Configuration"},
+				&component.Separator{},
+				&component.TextDisplay{Content: "**Salon par défaut**\n" + defaultChan},
+				&component.TextDisplay{Content: "**Rôles de niveau**\n" + roles},
+				&component.TextDisplay{Content: "**Salons ignorés**\n" + chans},
+				&component.TextDisplay{
+					Content: fmt.Sprintf("**Jours avant la réduction**\n%d jours", cfg.DaysXPRemains),
+				},
+				&component.ActionsRow{
+					Components: []component.Message{
+						&component.SelectMenu{
+							MenuType:    types.SelectMenuString,
+							Placeholder: "Gestion des paramètres",
+							CustomID:    ConfigModify,
+							Options: []component.SelectMenuOption{
+								{
+									Label: "Salons par défaut",
+									Value: config.ModifyFallbackChannel,
+									Emoji: &emoji.Component{Name: "📣"},
+								},
+								{
+									Label: "Rôles de niveaux",
+									Value: config.ModifyXpRole,
+									Emoji: &emoji.Component{Name: "🏅"},
+								},
+								{
+									Label: "Salons ignorés",
+									Value: config.ModifyDisChannel,
+									Emoji: &emoji.Component{Name: "🫣"},
+								},
+								{
+									Label: "Temps avant la réduction d'expérience",
+									Value: config.ModifyTimeReduce,
+									Emoji: &emoji.Component{Name: "📉"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	return &interaction.Response{
+		Type: types.InteractionResponseChannelMessageWithSource,
+		Data: &interaction.ResponseData{
+			Components: content,
+			Flags:      channel.MessageFlagsEphemeral | channel.MessageFlagsIsComponentsV2,
+		},
+	}
+}
+
+func ConfigCommand(
+	session *discordgo.Session,
+	i *discordgo.InteractionCreate,
+	_ cmd.OptionMap,
+	resp *cmd.ResponseBuilder,
+) {
+	err := session.InteractionAPI().Respond(i.Interaction, ConfigResponse(i))
+
 	if err != nil {
-		s.LogError(err, "sending config")
+		session.LogError(err, "config/guild.go - Sending config")
+	}
+}
+
+func ConfigMessageComponent(
+	session *discordgo.Session,
+	i *discordgo.InteractionCreate,
+	_ interaction.MessageComponentData,
+	resp *cmd.ResponseBuilder,
+) {
+	response := ConfigResponse(i)
+	response.Type = types.InteractionResponseUpdateMessage
+	err := session.InteractionAPI().Respond(i.Interaction, response)
+
+	if err != nil {
+		session.LogError(err, "sending config")
 	}
 }

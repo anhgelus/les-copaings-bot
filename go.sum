@@ -82,6 +82,8 @@ github.com/nyttikord/gokord v0.30.1-0.20250913143152-425cd430dee0 h1:bvSFyK1JXTu
 github.com/nyttikord/gokord v0.30.1-0.20250913143152-425cd430dee0/go.mod h1:Lhk268VlZ1W6Pb3kYnlU9bIuTCioaumedjHdtw1sxck=
 github.com/nyttikord/gokord v0.30.1-0.20250913173431-8e43619c03fa h1:P9zaVyRF0bDnmhUg6PaNfmyUqDZ+EvHpBnCdH0/0T3s=
 github.com/nyttikord/gokord v0.30.1-0.20250913173431-8e43619c03fa/go.mod h1:Lhk268VlZ1W6Pb3kYnlU9bIuTCioaumedjHdtw1sxck=
+github.com/nyttikord/gokord v0.30.1-0.20250914224716-68c5eb8c8ab2 h1:DHoH/b1SnmJVjDQDd1ZV2Ri+NIXOyrsGgmoRFG1rro8=
+github.com/nyttikord/gokord v0.30.1-0.20250914224716-68c5eb8c8ab2/go.mod h1:Oi0y5sfiYa+hVuV5ZSJ9UMWAGkcaLOhM7xB1TiCdX3U=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
 github.com/pelletier/go-toml/v2 v2.2.4/go.mod h1:2gIqNv+qfxSVS7cM2xJQKtLSTLUE9V8t9Stt+h56mCY=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
