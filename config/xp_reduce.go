@@ -24,7 +24,7 @@ func HandleModifyPeriodicReduce(_ *discordgo.Session, _ *discordgo.InteractionCr
 	//}
 }
 
-func HandleTimeReduceSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.ModalSubmitData, resp *cmd.ResponseBuilder) {
+func HandleTimeReduceSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.ModalSubmitData, resp *cmd.ResponseBuilder) {
 	//resp.IsEphemeral()
 	//v := data.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value
 	//days, err := strconv.Atoi(v)

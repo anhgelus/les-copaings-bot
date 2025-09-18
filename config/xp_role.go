@@ -289,7 +289,7 @@ func HandleXpRoleEditLevelStart(
 func HandleXpRoleEditLevel(
 	session *discordgo.Session,
 	i *discordgo.InteractionCreate,
-	data interaction.ModalSubmitData,
+	data *interaction.ModalSubmitData,
 	parameters []string,
 	resp *cmd.ResponseBuilder,
 ) {
@@ -376,7 +376,7 @@ func HandleXpRoleDel(
 func HandleXpRoleAdd(
 	session *discordgo.Session,
 	i *discordgo.InteractionCreate,
-	data interaction.ModalSubmitData,
+	data *interaction.ModalSubmitData,
 	resp *cmd.ResponseBuilder,
 ) {
 	levelInput := data.Components[0].(*component.Label).Component.(*component.TextInput)

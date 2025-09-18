@@ -96,7 +96,7 @@ func handleDynamicModalComponent(
 	handler func(
 		*discordgo.Session,
 		*discordgo.InteractionCreate,
-		interaction.ModalSubmitData,
+		*interaction.ModalSubmitData,
 		[]string,
 		*cmd.ResponseBuilder,
 	),
