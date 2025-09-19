@@ -35,8 +35,8 @@ const (
 func HandleXpRole(
 	session *discordgo.Session,
 	i *discordgo.InteractionCreate,
-	_ interaction.MessageComponentData,
-	resp *cmd.ResponseBuilder,
+	_ *interaction.MessageComponentData,
+	_ *cmd.ResponseBuilder,
 ) {
 	cfg := GetGuildConfig(i.GuildID)
 	container := component.Container{
@@ -93,8 +93,8 @@ func HandleXpRole(
 func HandleXpRoleNew(
 	session *discordgo.Session,
 	i *discordgo.InteractionCreate,
-	data interaction.MessageComponentData,
-	resp *cmd.ResponseBuilder,
+	_ *interaction.MessageComponentData,
+	_ *cmd.ResponseBuilder,
 ) {
 	one := 1
 	response := &interaction.Response{
@@ -135,7 +135,7 @@ func HandleXpRoleNew(
 func HandleXpRoleEdit(
 	session *discordgo.Session,
 	i *discordgo.InteractionCreate,
-	data interaction.MessageComponentData,
+	_ *interaction.MessageComponentData,
 	parameters []string, resp *cmd.ResponseBuilder,
 ) {
 	config := GetGuildConfig(i.GuildID)
@@ -146,7 +146,7 @@ func HandleXpRoleEdit(
 	}
 	_, role := config.FindXpRoleID(id)
 	if role == nil {
-		HandleXpRole(session, i, interaction.MessageComponentData{}, resp)
+		HandleXpRole(session, i, &interaction.MessageComponentData{}, resp)
 		return
 	}
 
@@ -200,7 +200,7 @@ func HandleXpRoleEdit(
 func HandleXpRoleEditRole(
 	session *discordgo.Session,
 	i *discordgo.InteractionCreate,
-	data interaction.MessageComponentData,
+	data *interaction.MessageComponentData,
 	parameters []string, resp *cmd.ResponseBuilder,
 ) {
 	id, err := getRoleLevelID(parameters)
@@ -229,15 +229,15 @@ func HandleXpRoleEditRole(
 	if err != nil {
 		session.LogError(err, "Saving config guild_id %s, id %d, type add", i.GuildID, id)
 	}
-	HandleXpRoleEdit(session, i, interaction.MessageComponentData{}, parameters, resp)
+	HandleXpRoleEdit(session, i, &interaction.MessageComponentData{}, parameters, resp)
 }
 
 func HandleXpRoleEditLevelStart(
 	session *discordgo.Session,
 	i *discordgo.InteractionCreate,
-	data interaction.MessageComponentData,
+	_ *interaction.MessageComponentData,
 	parameters []string,
-	resp *cmd.ResponseBuilder,
+	_ *cmd.ResponseBuilder,
 ) {
 	id, err := getRoleLevelID(parameters)
 	if err != nil {
@@ -335,17 +335,17 @@ func HandleXpRoleEditLevel(
 	if err != nil {
 		session.LogError(err, "Saving config guild_id %s, id %d, type add", i.GuildID, id)
 	}
-	HandleXpRoleEdit(session, i, interaction.MessageComponentData{}, parameters, resp)
+	HandleXpRoleEdit(session, i, &interaction.MessageComponentData{}, parameters, resp)
 }
 
 func HandleXpRoleDel(
 	session *discordgo.Session,
 	i *discordgo.InteractionCreate,
-	_ interaction.MessageComponentData,
-	dynamic_values []string,
+	_ *interaction.MessageComponentData,
+	dynamicValues []string,
 	resp *cmd.ResponseBuilder,
 ) {
-	id, err := getRoleLevelID(dynamic_values)
+	id, err := getRoleLevelID(dynamicValues)
 	if err != nil {
 		session.LogError(err, "reading dynamic CustomID")
 		return
@@ -370,7 +370,7 @@ func HandleXpRoleDel(
 		session.LogError(err, "Deleting entry guild_id %s, id %d, type del", i.GuildID, id)
 	}
 
-	HandleXpRole(session, i, interaction.MessageComponentData{}, resp)
+	HandleXpRole(session, i, &interaction.MessageComponentData{}, resp)
 }
 
 func HandleXpRoleAdd(
@@ -408,7 +408,7 @@ func HandleXpRoleAdd(
 		return
 	}
 
-	HandleXpRole(session, i, interaction.MessageComponentData{}, resp)
+	HandleXpRole(session, i, &interaction.MessageComponentData{}, resp)
 }
 
 func getRoleLevelID(dynamic []string) (uint, error) {

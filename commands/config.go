@@ -123,8 +123,8 @@ func ConfigCommand(
 func ConfigMessageComponent(
 	session *discordgo.Session,
 	i *discordgo.InteractionCreate,
-	_ interaction.MessageComponentData,
-	resp *cmd.ResponseBuilder,
+	_ *interaction.MessageComponentData,
+	_ *cmd.ResponseBuilder,
 ) {
 	response := ConfigResponse(i)
 	response.Type = types.InteractionResponseUpdateMessage

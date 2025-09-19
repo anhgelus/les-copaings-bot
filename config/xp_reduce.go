@@ -11,7 +11,7 @@ const (
 	TimeReduceSet    = "time_reduce_set"
 )
 
-func HandleModifyPeriodicReduce(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleModifyPeriodicReduce(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	//err := resp.IsModal().
 	//	SetCustomID(TimeReduceSet).
 	//	SetComponents(component.New().ForModal().Add(component.NewActionRow().ForModal().Add(
@@ -24,7 +24,7 @@ func HandleModifyPeriodicReduce(_ *discordgo.Session, _ *discordgo.InteractionCr
 	//}
 }
 
-func HandleTimeReduceSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.ModalSubmitData, resp *cmd.ResponseBuilder) {
+func HandleTimeReduceSet(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ *interaction.ModalSubmitData, _ *cmd.ResponseBuilder) {
 	//resp.IsEphemeral()
 	//v := data.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value
 	//days, err := strconv.Atoi(v)

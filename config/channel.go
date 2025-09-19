@@ -19,7 +19,7 @@ const (
 	DisChannelDelSet = "disabled_channel_del_set"
 )
 
-func HandleModifyFallbackChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleModifyFallbackChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ *interaction.MessageComponentData, _ *cmd.ResponseBuilder) {
 	//err := resp.IsEphemeral().SetComponents(component.New().Add(component.NewActionRow().Add(
 	//	component.NewChannelSelect(FallbackChannelSet).AddChannelType(discordgo.ChannelTypeGuildText),
 	//))).Send()
@@ -28,7 +28,7 @@ func HandleModifyFallbackChannel(_ *discordgo.Session, _ *discordgo.InteractionC
 	//}
 }
 
-func HandleFallbackChannelSet(s *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleFallbackChannelSet(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 
 	cfg := GetGuildConfig(i.GuildID)
@@ -48,7 +48,7 @@ func HandleFallbackChannelSet(s *discordgo.Session, i *discordgo.InteractionCrea
 	}
 }
 
-func HandleModifyDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleModifyDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ *interaction.MessageComponentData, _ *cmd.ResponseBuilder) {
 	//err := resp.IsEphemeral().SetComponents(component.New().Add(component.NewActionRow().
 	//	Add(
 	//		component.NewButton(DisChannelAdd, discordgo.PrimaryButton).
@@ -66,7 +66,7 @@ func HandleModifyDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate
 	//}
 }
 
-func HandleDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	//resp.IsEphemeral().SetMessage("Salon à désactiver...")
 	//cID := DisChannelAddSet
 	//if data.CustomID == DisChannelDel {
@@ -79,7 +79,7 @@ func HandleDisChannel(_ *discordgo.Session, _ *discordgo.InteractionCreate, data
 	//}
 }
 
-func HandleDisChannelAddSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleDisChannelAddSet(_ *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	//resp.IsEphemeral()
 	//cfg := GetGuildConfig(i.GuildID)
 	//id := data.Values[0]
@@ -102,7 +102,7 @@ func HandleDisChannelAddSet(_ *discordgo.Session, i *discordgo.InteractionCreate
 	//}
 }
 
-func HandleDisChannelDelSet(s *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleDisChannelDelSet(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 	cfg := GetGuildConfig(i.GuildID)
 	id := data.Values[0]

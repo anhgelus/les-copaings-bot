@@ -68,11 +68,11 @@ func init() {
 func handleDynamicMessageComponent(
 	b *gokord.Bot,
 	handler func(
-		*discordgo.Session,
-		*discordgo.InteractionCreate,
-		interaction.MessageComponentData,
-		[]string, *cmd.ResponseBuilder,
-	),
+	*discordgo.Session,
+	*discordgo.InteractionCreate,
+	*interaction.MessageComponentData,
+	[]string, *cmd.ResponseBuilder,
+),
 	pattern string,
 ) {
 	compiledPattern := regexp.MustCompile(pattern)
@@ -94,12 +94,12 @@ func handleDynamicMessageComponent(
 func handleDynamicModalComponent(
 	b *gokord.Bot,
 	handler func(
-		*discordgo.Session,
-		*discordgo.InteractionCreate,
-		*interaction.ModalSubmitData,
-		[]string,
-		*cmd.ResponseBuilder,
-	),
+	*discordgo.Session,
+	*discordgo.InteractionCreate,
+	*interaction.ModalSubmitData,
+	[]string,
+	*cmd.ResponseBuilder,
+),
 	pattern string,
 ) {
 	compiledPattern := regexp.MustCompile(pattern)
@@ -110,7 +110,7 @@ func handleDynamicModalComponent(
 
 		data := i.ModalSubmitData()
 		content, _ := json.Marshal(data)
-		s.LogDebug(string(content))
+		s.LogDebug("%s", content)
 		parameters := compiledPattern.FindStringSubmatch(data.CustomID)
 		if parameters == nil {
 			return
@@ -234,7 +234,7 @@ func main() {
 	}
 
 	// interaction: /config
-	bot.HandleMessageComponent(func(s *discordgo.Session, i *discordgo.InteractionCreate, data interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+	bot.HandleMessageComponent(func(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 		if len(data.Values) != 1 {
 			bot.LogError(errors.New("invalid data values"), "handle config modify, values: %#v", data.Values)
 			return
