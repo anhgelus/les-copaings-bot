@@ -116,7 +116,7 @@ func HandleDisChannelDelSet(s *discordgo.Session, i *discordgo.InteractionCreate
 	cfg.DisabledChannels = strings.ReplaceAll(cfg.DisabledChannels, id+";", "")
 	if err := cfg.Save(); err != nil {
 		s.LogError(err, "saving config disable del")
-		if err = resp.SetMessage("Il y a eu une erreur lors de la modification de de la base de données.").Send(); err != nil {
+		if err = resp.SetMessage("Il y a eu une erreur lors de la modification de la base de données.").Send(); err != nil {
 			s.LogError(err, "sending error while saving config")
 		}
 	}
