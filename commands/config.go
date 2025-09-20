@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
@@ -11,7 +12,6 @@ import (
 	"github.com/nyttikord/gokord/channel"
 	"github.com/nyttikord/gokord/component"
 	"github.com/nyttikord/gokord/discord/types"
-	"github.com/nyttikord/gokord/emoji"
 	"github.com/nyttikord/gokord/interaction"
 )
 
@@ -24,6 +24,9 @@ func ConfigResponse(i *discordgo.InteractionCreate) *interaction.Response {
 	cfg := config.GetGuildConfig(i.GuildID)
 	roles := ""
 	l := len(cfg.XpRoles) - 1
+	sort.Slice(cfg.XpRoles, func(i, j int) bool {
+		return cfg.XpRoles[i].XP > cfg.XpRoles[j].XP
+	})
 	for i, r := range cfg.XpRoles {
 		if i == l {
 			roles += fmt.Sprintf("> Niveau %d - <@&%s>", exp.Level(r.XP), r.RoleID)
@@ -32,67 +35,77 @@ func ConfigResponse(i *discordgo.InteractionCreate) *interaction.Response {
 		}
 	}
 	if len(roles) == 0 {
-		roles = "Aucun rôle configuré :("
+		roles = "Aucun rôle configuré"
 	}
 	disChans := strings.Split(cfg.DisabledChannels, ";")
-	l = len(disChans) - 1
-	chans := ""
-	for i, c := range disChans {
-		if i == l-1 {
-			chans += fmt.Sprintf("> <#%s>", c)
-		} else if i != l {
-			chans += fmt.Sprintf("> <#%s>\n", c)
+	disChansDefault := []component.SelectMenuDefaultValue{}
+	for _, c := range disChans {
+		if c != "" {
+			disChansDefault = append(disChansDefault, component.SelectMenuDefaultValue{
+				ID:   c,
+				Type: types.SelectMenuDefaultValueChannel,
+			})
 		}
 	}
-	if len(chans) == 0 {
-		chans = "Aucun salon désactivé :)"
+	defaultChan := []component.SelectMenuDefaultValue{}
+	if len(cfg.FallbackChannel) > 0 {
+		defaultChan = append(defaultChan, component.SelectMenuDefaultValue{
+			ID:   cfg.FallbackChannel,
+			Type: types.SelectMenuDefaultValueChannel,
+		})
 	}
-	var defaultChan string
-	if len(cfg.FallbackChannel) == 0 {
-		defaultChan = "Pas de valeur"
-	} else {
-		defaultChan = fmt.Sprintf("<#%s>", cfg.FallbackChannel)
-	}
+	zero := 0
 	content := []component.Component{
 		&component.Container{
 			Components: []component.Message{
 				&component.TextDisplay{Content: "## Configuration"},
 				&component.Separator{},
-				&component.TextDisplay{Content: "**Salon par défaut**\n" + defaultChan},
-				&component.TextDisplay{Content: "**Rôles de niveau**\n" + roles},
-				&component.TextDisplay{Content: "**Salons ignorés**\n" + chans},
-				&component.TextDisplay{
-					Content: fmt.Sprintf("**Jours avant la réduction**\n%d jours", cfg.DaysXPRemains),
-				},
+				&component.TextDisplay{Content: "**Salons par défaut**\n-# Les niveaux obtenue grâce à un appel sont affichés ici"},
 				&component.ActionsRow{
 					Components: []component.Message{
 						&component.SelectMenu{
-							MenuType:    types.SelectMenuString,
-							Placeholder: "Gestion des paramètres",
-							CustomID:    ConfigModify,
-							Options: []component.SelectMenuOption{
-								{
-									Label: "Salons par défaut",
-									Value: config.ModifyFallbackChannel,
-									Emoji: &emoji.Component{Name: "📣"},
-								},
-								{
-									Label: "Rôles de niveaux",
-									Value: config.ModifyXpRole,
-									Emoji: &emoji.Component{Name: "🏅"},
-								},
-								{
-									Label: "Salons ignorés",
-									Value: config.ModifyDisChannel,
-									Emoji: &emoji.Component{Name: "🫣"},
-								},
-								{
-									Label: "Temps avant la réduction d'expérience",
-									Value: config.ModifyTimeReduce,
-									Emoji: &emoji.Component{Name: "📉"},
-								},
-							},
+							MenuType:      types.SelectMenuChannel,
+							CustomID:      config.ModifyFallbackChannel,
+							Placeholder:   "Pas de salon par défaut",
+							MinValues:     &zero,
+							MaxValues:     1,
+							DefaultValues: defaultChan,
 						},
+					},
+				},
+				&component.TextDisplay{Content: "**Salons désactivé**\n-# Les messages ne donneront pas d'expérience dans ces salons"},
+				&component.ActionsRow{
+					Components: []component.Message{
+						&component.SelectMenu{
+							MenuType:      types.SelectMenuChannel,
+							CustomID:      config.ModifyDisChannel,
+							Placeholder:   "Pas de salons désactivé",
+							MinValues:     &zero,
+							MaxValues:     25,
+							DefaultValues: disChansDefault,
+						},
+					},
+				},
+				&component.Section{
+					Components: []component.Message{
+						&component.TextDisplay{Content: "**Rôles de niveau**\n" + roles},
+					},
+					Accessory: &component.Button{
+						Label:    "Modifier",
+						Style:    component.ButtonStyleSecondary,
+						CustomID: config.ModifyXpRole,
+					},
+				},
+				&component.Section{
+					Components: []component.Message{
+						&component.TextDisplay{
+							Content: fmt.Sprintf("**Jours avant la réduction**\n-# Seule l'expérience gagnée les x derniers jours est comptabilisée dans le niveau par défaut\n%d jours", cfg.DaysXPRemains),
+						},
+					},
+					Accessory: &component.Button{
+						Label:    "Modifier",
+						Style:    component.ButtonStyleSecondary,
+						CustomID: config.ModifyTimeReduce,
 					},
 				},
 			},
@@ -121,16 +134,31 @@ func ConfigCommand(
 }
 
 func ConfigMessageComponent(
-	session *discordgo.Session,
+	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 	_ *interaction.MessageComponentData,
 	_ *cmd.ResponseBuilder,
 ) {
 	response := ConfigResponse(i)
 	response.Type = types.InteractionResponseUpdateMessage
-	err := session.InteractionAPI().Respond(i.Interaction, response)
+	err := s.InteractionAPI().Respond(i.Interaction, response)
 
 	if err != nil {
-		session.LogError(err, "sending config")
+		s.LogError(err, "sending config")
+	}
+}
+
+func ConfigModal(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+	_ *interaction.ModalSubmitData,
+	resp *cmd.ResponseBuilder,
+) {
+	response := ConfigResponse(i)
+	response.Type = types.InteractionResponseUpdateMessage
+	err := s.InteractionAPI().Respond(i.Interaction, response)
+
+	if err != nil {
+		s.LogError(err, "sending config")
 	}
 }

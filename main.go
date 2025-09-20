@@ -241,14 +241,8 @@ func main() {
 			return
 		}
 		switch data.Values[0] {
-		case config.ModifyXpRole:
-			config.HandleXpRole(s, i, data, resp)
-		case config.ModifyFallbackChannel:
-			config.HandleModifyFallbackChannel(s, i, data, resp)
 		case config.ModifyDisChannel:
 			config.HandleModifyDisChannel(s, i, data, resp)
-		case config.ModifyTimeReduce:
-			config.HandleModifyPeriodicReduce(s, i, data, resp)
 		default:
 			bot.LogError(errors.New("unknown value"), "detecting value %s", data.Values[0])
 			return
@@ -265,13 +259,23 @@ func main() {
 	handleDynamicModalComponent(&bot, config.HandleXpRoleEditLevel, config.XpRoleEditLevelPattern)
 	handleDynamicMessageComponent(&bot, config.HandleXpRoleDel, config.XpRoleDel)
 	// channel related
-	bot.HandleMessageComponent(config.HandleFallbackChannelSet, config.FallbackChannelSet)
-	bot.HandleMessageComponent(config.HandleDisChannel, config.DisChannelAdd)
-	bot.HandleMessageComponent(config.HandleDisChannel, config.DisChannelDel)
-	bot.HandleMessageComponent(config.HandleDisChannelAddSet, config.DisChannelAddSet)
-	bot.HandleMessageComponent(config.HandleDisChannelDelSet, config.DisChannelDelSet)
+	bot.HandleMessageComponent(func(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+		if config.HandleModifyFallbackChannel(s, i, data, resp) {
+			commands.ConfigMessageComponent(s, i, data, resp)
+		}
+	}, config.ModifyFallbackChannel)
+	bot.HandleMessageComponent(func(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+		if config.HandleModifyDisChannel(s, i, data, resp) {
+			commands.ConfigMessageComponent(s, i, data, resp)
+		}
+	}, config.ModifyDisChannel)
 	// reduce related
-	bot.HandleModal(config.HandleTimeReduceSet, config.TimeReduceSet)
+	bot.HandleMessageComponent(config.HandleModifyPeriodicReduceCommand, config.ModifyTimeReduce)
+	bot.HandleModal(func(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.ModalSubmitData, resp *cmd.ResponseBuilder) {
+		if config.HandleTimeReduceSet(s, i, data, resp) {
+			commands.ConfigModal(s, i, data, resp)
+		}
+	}, config.TimeReduceSet)
 
 	// xp handlers
 	bot.AddHandler(OnMessage)

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
@@ -33,7 +34,7 @@ const (
 )
 
 func HandleXpRole(
-	session *discordgo.Session,
+	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 	_ *interaction.MessageComponentData,
 	_ *cmd.ResponseBuilder,
@@ -42,9 +43,13 @@ func HandleXpRole(
 	container := component.Container{
 		Components: []component.Message{
 			&component.TextDisplay{Content: "## Configuration / Rôles de niveaux"},
+			&component.TextDisplay{Content: "Ces rôles seront donnés et retirés en fonction du niveau de chacun"},
 			&component.Separator{},
 		},
 	}
+	sort.Slice(cfg.XpRoles, func(i, j int) bool {
+		return cfg.XpRoles[i].XP > cfg.XpRoles[j].XP
+	})
 	for _, r := range cfg.XpRoles {
 		container.Components = append(container.Components, &component.Section{
 			Components: []component.Message{
@@ -84,14 +89,14 @@ func HandleXpRole(
 			Flags:      channel.MessageFlagsIsComponentsV2,
 		},
 	}
-	err := session.InteractionAPI().Respond(i.Interaction, response)
+	err := s.InteractionAPI().Respond(i.Interaction, response)
 	if err != nil {
-		session.LogError(err, "Sending config")
+		s.LogError(err, "Sending config")
 	}
 }
 
 func HandleXpRoleNew(
-	session *discordgo.Session,
+	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 	_ *interaction.MessageComponentData,
 	_ *cmd.ResponseBuilder,
@@ -126,14 +131,14 @@ func HandleXpRoleNew(
 			},
 		},
 	}
-	err := session.InteractionAPI().Respond(i.Interaction, response)
+	err := s.InteractionAPI().Respond(i.Interaction, response)
 	if err != nil {
-		session.LogError(err, "Sending modal to add")
+		s.LogError(err, "Sending modal to add")
 	}
 }
 
 func HandleXpRoleEdit(
-	session *discordgo.Session,
+	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 	_ *interaction.MessageComponentData,
 	parameters []string, resp *cmd.ResponseBuilder,
@@ -141,12 +146,12 @@ func HandleXpRoleEdit(
 	config := GetGuildConfig(i.GuildID)
 	id, err := getRoleLevelID(parameters)
 	if err != nil {
-		session.LogError(err, "Reading dynamic CustomID")
+		s.LogError(err, "Reading dynamic CustomID")
 		return
 	}
 	_, role := config.FindXpRoleID(id)
 	if role == nil {
-		HandleXpRole(session, i, &interaction.MessageComponentData{}, resp)
+		HandleXpRole(s, i, &interaction.MessageComponentData{}, resp)
 		return
 	}
 
@@ -191,28 +196,28 @@ func HandleXpRoleEdit(
 		},
 	}
 
-	err = session.InteractionAPI().Respond(i.Interaction, response)
+	err = s.InteractionAPI().Respond(i.Interaction, response)
 	if err != nil {
-		session.LogError(err, "Sending xp_role config")
+		s.LogError(err, "Sending xp_role config")
 	}
 }
 
 func HandleXpRoleEditRole(
-	session *discordgo.Session,
+	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 	data *interaction.MessageComponentData,
 	parameters []string, resp *cmd.ResponseBuilder,
 ) {
 	id, err := getRoleLevelID(parameters)
 	if err != nil {
-		session.LogError(err, "Reading dynamic CustomID")
+		s.LogError(err, "Reading dynamic CustomID")
 		return
 	}
 	role := data.Values[0]
 	cfg := GetGuildConfig(i.GuildID)
-	_, xprole := cfg.FindXpRoleID(id)
-	if xprole == nil {
-		err = session.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	_, xpRole := cfg.FindXpRoleID(id)
+	if xpRole == nil {
+		err = s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Flags:   channel.MessageFlagsEphemeral,
@@ -220,20 +225,20 @@ func HandleXpRoleEditRole(
 			},
 		})
 		if err != nil {
-			session.LogError(err, "Sending unable to get role message")
+			s.LogError(err, "Sending unable to get role message")
 		}
 		return
 	}
-	xprole.RoleID = role
-	err = gokord.DB.Save(xprole).Error
+	xpRole.RoleID = role
+	err = gokord.DB.Save(xpRole).Error
 	if err != nil {
-		session.LogError(err, "Saving config guild_id %s, id %d, type add", i.GuildID, id)
+		s.LogError(err, "Saving config guild_id %s, id %d, type add", i.GuildID, id)
 	}
-	HandleXpRoleEdit(session, i, &interaction.MessageComponentData{}, parameters, resp)
+	HandleXpRoleEdit(s, i, &interaction.MessageComponentData{}, parameters, resp)
 }
 
 func HandleXpRoleEditLevelStart(
-	session *discordgo.Session,
+	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 	_ *interaction.MessageComponentData,
 	parameters []string,
@@ -241,13 +246,13 @@ func HandleXpRoleEditLevelStart(
 ) {
 	id, err := getRoleLevelID(parameters)
 	if err != nil {
-		session.LogError(err, "Reading dynamic CustomID")
+		s.LogError(err, "Reading dynamic CustomID")
 		return
 	}
 	cfg := GetGuildConfig(i.GuildID)
-	_, role := cfg.FindXpRoleID(id)
-	if role == nil {
-		err = session.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	_, xpRole := cfg.FindXpRoleID(id)
+	if xpRole == nil {
+		err = s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Flags:   channel.MessageFlagsEphemeral,
@@ -255,7 +260,7 @@ func HandleXpRoleEditLevelStart(
 			},
 		})
 		if err != nil {
-			session.LogError(err, "Sending Unable to get role message")
+			s.LogError(err, "Sending Unable to get role message")
 		}
 		return
 	}
@@ -274,20 +279,20 @@ func HandleXpRoleEditLevelStart(
 						MinLength:   1,
 						MaxLength:   5,
 						Placeholder: "5",
-						Value:       strconv.FormatUint(uint64(exp.Level(role.XP)), 10),
+						Value:       strconv.FormatUint(uint64(exp.Level(xpRole.XP)), 10),
 					},
 				},
 			},
 		},
 	}
-	err = session.InteractionAPI().Respond(i.Interaction, response)
+	err = s.InteractionAPI().Respond(i.Interaction, response)
 	if err != nil {
-		session.LogError(err, "Sending Edit level modal")
+		s.LogError(err, "Sending Edit level modal")
 	}
 }
 
 func HandleXpRoleEditLevel(
-	session *discordgo.Session,
+	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 	data *interaction.ModalSubmitData,
 	parameters []string,
@@ -295,7 +300,7 @@ func HandleXpRoleEditLevel(
 ) {
 	id, err := getRoleLevelID(parameters)
 	if err != nil {
-		session.LogError(err, "Reading dynamic CustomID")
+		s.LogError(err, "Reading dynamic CustomID")
 		return
 	}
 
@@ -309,16 +314,16 @@ func HandleXpRoleEditLevel(
 			).
 			Send()
 		if err != nil {
-			session.LogError(err, "Sending bad number warning message")
+			s.LogError(err, "Sending bad number warning message")
 		}
 		return
 	}
 	xp := exp.LevelXP(uint(level))
 
 	cfg := GetGuildConfig(i.GuildID)
-	_, xprole := cfg.FindXpRoleID(id)
-	if xprole == nil {
-		err = session.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	_, xpRole := cfg.FindXpRoleID(id)
+	if xpRole == nil {
+		err = s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Flags:   channel.MessageFlagsEphemeral,
@@ -326,20 +331,20 @@ func HandleXpRoleEditLevel(
 			},
 		})
 		if err != nil {
-			session.LogError(err, "Sending unable to modify role message")
+			s.LogError(err, "Sending unable to modify role message")
 		}
 		return
 	}
-	xprole.XP = xp
-	err = gokord.DB.Save(xprole).Error
+	xpRole.XP = xp
+	err = gokord.DB.Save(xpRole).Error
 	if err != nil {
-		session.LogError(err, "Saving config guild_id %s, id %d, type add", i.GuildID, id)
+		s.LogError(err, "Saving config guild_id %s, id %d, type add", i.GuildID, id)
 	}
-	HandleXpRoleEdit(session, i, &interaction.MessageComponentData{}, parameters, resp)
+	HandleXpRoleEdit(s, i, &interaction.MessageComponentData{}, parameters, resp)
 }
 
 func HandleXpRoleDel(
-	session *discordgo.Session,
+	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 	_ *interaction.MessageComponentData,
 	dynamicValues []string,
@@ -347,13 +352,13 @@ func HandleXpRoleDel(
 ) {
 	id, err := getRoleLevelID(dynamicValues)
 	if err != nil {
-		session.LogError(err, "reading dynamic CustomID")
+		s.LogError(err, "reading dynamic CustomID")
 		return
 	}
 	cfg := GetGuildConfig(i.GuildID)
 	_, role := cfg.FindXpRoleID(id)
 	if role == nil {
-		err := session.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Content: "Rôle introuvable. Peut-être a-t-il déjà été supprimé ?",
@@ -361,20 +366,20 @@ func HandleXpRoleDel(
 			},
 		})
 		if err != nil {
-			session.LogError(err, "Sending role not found message")
+			s.LogError(err, "Sending role not found message")
 		}
 		return
 	}
 	err = gokord.DB.Delete(role).Error
 	if err != nil {
-		session.LogError(err, "Deleting entry guild_id %s, id %d, type del", i.GuildID, id)
+		s.LogError(err, "Deleting entry guild_id %s, id %d, type del", i.GuildID, id)
 	}
 
-	HandleXpRole(session, i, &interaction.MessageComponentData{}, resp)
+	HandleXpRole(s, i, &interaction.MessageComponentData{}, resp)
 }
 
 func HandleXpRoleAdd(
-	session *discordgo.Session,
+	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 	data *interaction.ModalSubmitData,
 	resp *cmd.ResponseBuilder,
@@ -389,7 +394,7 @@ func HandleXpRoleAdd(
 			).
 			Send()
 		if err != nil {
-			session.LogError(err, "sending bad number warning message")
+			s.LogError(err, "sending bad number warning message")
 		}
 		return
 	}
@@ -404,11 +409,11 @@ func HandleXpRoleAdd(
 	})
 	err = cfg.Save()
 	if err != nil {
-		session.LogError(err, "saving config for role %s in %s", roleId, i.GuildID)
+		s.LogError(err, "saving config for role %s in %s", roleId, i.GuildID)
 		return
 	}
 
-	HandleXpRole(session, i, &interaction.MessageComponentData{}, resp)
+	HandleXpRole(s, i, &interaction.MessageComponentData{}, resp)
 }
 
 func getRoleLevelID(dynamic []string) (uint, error) {
