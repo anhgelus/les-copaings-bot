@@ -61,10 +61,10 @@ func (c *Copaing) GetXPForDays(n uint) (uint, error) {
 			c.ID,
 		).
 		Rows()
-	defer rows.Close()
 	if err != nil {
 		return 0, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var cxp CopaingXP
 		err = gokord.DB.ScanRows(rows, &cxp)
@@ -86,10 +86,10 @@ func GetBestXP(guildId string, n uint, d int) ([]CopaingAccess, error) {
 		d = int(cfg.DaysXPRemains)
 	}
 	rows, err := gokord.DB.Model(&Copaing{}).Where("guild_id = ?", guildId).Rows()
-	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var l []*cXP
 	wg := sync.WaitGroup{}
 	for rows.Next() {

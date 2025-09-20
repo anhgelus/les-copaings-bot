@@ -68,11 +68,11 @@ func init() {
 func handleDynamicMessageComponent(
 	b *gokord.Bot,
 	handler func(
-	*discordgo.Session,
-	*discordgo.InteractionCreate,
-	*interaction.MessageComponentData,
-	[]string, *cmd.ResponseBuilder,
-),
+		*discordgo.Session,
+		*discordgo.InteractionCreate,
+		*interaction.MessageComponentData,
+		[]string, *cmd.ResponseBuilder,
+	),
 	pattern string,
 ) {
 	compiledPattern := regexp.MustCompile(pattern)
@@ -94,12 +94,12 @@ func handleDynamicMessageComponent(
 func handleDynamicModalComponent(
 	b *gokord.Bot,
 	handler func(
-	*discordgo.Session,
-	*discordgo.InteractionCreate,
-	*interaction.ModalSubmitData,
-	[]string,
-	*cmd.ResponseBuilder,
-),
+		*discordgo.Session,
+		*discordgo.InteractionCreate,
+		*interaction.ModalSubmitData,
+		[]string,
+		*cmd.ResponseBuilder,
+	),
 	pattern string,
 ) {
 	compiledPattern := regexp.MustCompile(pattern)
