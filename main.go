@@ -11,6 +11,7 @@ import (
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/commands"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
@@ -216,7 +217,7 @@ func main() {
 		AfterInit: func(dg *discordgo.Session) {
 			d := 24 * time.Hour
 			if gokord.Debug {
-				d = 24 * time.Second
+				d = 3 * exp.DebugFactor * time.Second
 			}
 
 			user.PeriodicReducer(dg)

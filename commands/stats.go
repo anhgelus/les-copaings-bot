@@ -21,6 +21,7 @@ import (
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
+	"gonum.org/v1/plot/vg/draw"
 	"gorm.io/gorm"
 )
 
@@ -172,7 +173,7 @@ func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days int, execS
 			pts = make([]plotter.XY, days+1)
 			for i := 0; i < len(pts); i++ {
 				pts[i] = plotter.XY{
-					X: float64(i - int(days)),
+					X: float64(i - days),
 					Y: 0,
 				}
 			}
@@ -181,6 +182,8 @@ func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days int, execS
 		t := raw.CreatedAt.Unix() - now
 		if !gokord.Debug {
 			t = int64(math.Ceil(float64(t) / (24 * 60 * 60)))
+		} else {
+			t = int64(math.Ceil(float64(t) / exp.DebugFactor))
 		}
 		pts[int64(days)+t] = plotter.XY{ // because t <= 0
 			X: float64(t),
@@ -192,10 +195,22 @@ func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days int, execS
 
 func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, copaings map[int]*user.Copaing, stats map[int][]plotter.XY) (io.WriterTo, error) {
 	p := plot.New()
-	p.Title.Text = "Évolution de l'XP"
+	fontSizeTitle := vg.Length(16)
+	fontSize := vg.Length(12)
+	// set font size
+	p.Title.TextStyle.Font.Size = fontSizeTitle
+	p.X.Label.TextStyle.Font.Size = fontSizeTitle
+	p.Y.Label.TextStyle.Font.Size = fontSizeTitle
+	p.Legend.TextStyle.Font.Size = fontSize
+	// set legend style
+	p.Legend.YPosition = draw.PosTop
+	p.Legend.Top = true
+	p.Legend.Padding = vg.Points(2)
+	// set scales
+	p.Title.Text = "XP gagnées"
 	p.X.Label.Text = "Jours"
 	if gokord.Debug {
-		p.X.Label.Text = "Secondes"
+		p.X.Label.Text = fmt.Sprintf("%d secondes", exp.DebugFactor)
 	}
 	p.Y.Label.Text = "XP"
 	p.Y.Scale = exp.LevelScale{}
@@ -224,11 +239,19 @@ func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, copaings
 			return nil, err
 		}
 		l.Color = colors[cnt%len(colors)]
+		if len(copaings) < 4 {
+			l.Width = vg.Points(2)
+		}
+		if cnt/len(colors) > 0 {
+			size := 7 / min(cnt/len(colors), 7)
+			l.Dashes = []vg.Length{vg.Points(float64(size)), vg.Points(float64(size))}
+		}
 		p.Add(l)
 		p.Legend.Add(m.DisplayName(), l)
 		cnt++
 	}
-	w, err := p.WriterTo(8*vg.Inch, 6*vg.Inch, "png")
+	w, err := p.WriterTo(12*vg.Inch, 8*vg.Inch, "png")
+
 	if err != nil {
 		s.LogError(err, "generating png")
 		return nil, err

@@ -11,6 +11,8 @@ import (
 	"github.com/anhgelus/gokord"
 )
 
+const DebugFactor = 30
+
 func MessageXP(length uint, diversity uint) uint {
 	return uint(math.Floor(
 		0.025*math.Pow(float64(length), 1.25)*math.Sqrt(float64(diversity)) + 1,
@@ -67,7 +69,7 @@ func LevelXP(level uint) uint {
 func TimeStampNDaysBefore(n uint) string {
 	var unix time.Time
 	if gokord.Debug {
-		unix = time.Unix(time.Now().Unix()-int64(n), 0) // reduce time for debug
+		unix = time.Unix(time.Now().Unix()-int64(DebugFactor*n), 0) // reduce time for debug
 	} else {
 		unix = time.Unix(time.Now().Unix()-int64(n*24*60*60), 0)
 	}
