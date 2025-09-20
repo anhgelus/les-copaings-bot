@@ -235,19 +235,6 @@ func main() {
 	}
 
 	// interaction: /config
-	bot.HandleMessageComponent(func(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
-		if len(data.Values) != 1 {
-			bot.LogError(errors.New("invalid data values"), "handle config modify, values: %#v", data.Values)
-			return
-		}
-		switch data.Values[0] {
-		case config.ModifyDisChannel:
-			config.HandleModifyDisChannel(s, i, data, resp)
-		default:
-			bot.LogError(errors.New("unknown value"), "detecting value %s", data.Values[0])
-			return
-		}
-	}, commands.ConfigModify)
 	bot.HandleMessageComponent(commands.ConfigMessageComponent, commands.OpenConfig)
 	// xp role related
 	bot.HandleMessageComponent(config.HandleXpRole, config.ModifyXpRole)
