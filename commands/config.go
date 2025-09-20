@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
@@ -24,8 +24,8 @@ func ConfigResponse(i *discordgo.InteractionCreate) *interaction.Response {
 	cfg := config.GetGuildConfig(i.GuildID)
 	roles := ""
 	l := len(cfg.XpRoles) - 1
-	sort.Slice(cfg.XpRoles, func(i, j int) bool {
-		return cfg.XpRoles[i].XP > cfg.XpRoles[j].XP
+	slices.SortFunc(cfg.XpRoles, func(xp1, xp2 config.XpRole) int {
+		return int(xp2.XP) - int(xp1.XP)
 	})
 	for i, r := range cfg.XpRoles {
 		if i == l {

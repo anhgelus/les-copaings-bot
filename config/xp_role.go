@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strconv"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
@@ -47,8 +47,8 @@ func HandleXpRole(
 			&component.Separator{},
 		},
 	}
-	sort.Slice(cfg.XpRoles, func(i, j int) bool {
-		return cfg.XpRoles[i].XP > cfg.XpRoles[j].XP
+	slices.SortFunc(cfg.XpRoles, func(xp1, xp2 XpRole) int {
+		return int(xp2.XP) - int(xp1.XP)
 	})
 	for _, r := range cfg.XpRoles {
 		container.Components = append(container.Components, &component.Section{
