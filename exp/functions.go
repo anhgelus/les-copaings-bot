@@ -33,12 +33,26 @@ func VocalXP(time uint) uint {
 	))
 }
 
+type LevelScale struct{}
+
+func (LevelScale) Normalize(min, max, x float64) float64 {
+	if min < 0 || max < 0 || x < 0 {
+		panic("Values must be positive or null for a level scale.")
+	}
+	levelMin := LevelExact(min)
+	return (LevelExact(x) - levelMin) / (LevelExact(max) - levelMin)
+}
+
 // Level gives the level with the given XP.
 // See LevelXP to get the XP required to get a level.
 func Level(xp uint) uint {
-	return uint(math.Floor(
-		0.2 * math.Sqrt(float64(xp)),
-	))
+	return uint(math.Floor(LevelExact(float64(xp))))
+}
+
+// LevelExact gives the exact level with the given XP.
+// See Level to get the floored level.
+func LevelExact(xp float64) float64 {
+	return 0.2 * math.Sqrt(xp)
 }
 
 // LevelXP gives the XP required to get this level.

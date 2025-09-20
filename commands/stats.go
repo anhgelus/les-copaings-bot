@@ -47,6 +47,9 @@ var colors = []color.RGBA{
 func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	cfg := config.GetGuildConfig(i.GuildID)
 	days := 15
+	if gokord.Debug {
+		days = 90
+	}
 	if v, ok := opt["days"]; ok {
 		in := v.IntValue()
 		if in < 1 || uint(in) > cfg.DaysXPRemains {
@@ -195,6 +198,7 @@ func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, copaings
 		p.X.Label.Text = "Secondes"
 	}
 	p.Y.Label.Text = "XP"
+	p.Y.Scale = exp.LevelScale{}
 
 	p.Add(plotter.NewGrid())
 
