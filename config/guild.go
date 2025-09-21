@@ -34,10 +34,7 @@ func (cfg *GuildConfig) Save() error {
 
 func (cfg *GuildConfig) IsDisabled(s *discordgo.Session, channelID string) bool {
 	ok := true
-	s.LogInfo("Configuration: %s", cfg.DisabledChannels)
-	s.LogInfo("Channel %s, ok %t", channelID, ok)
 	for channelID != "" && ok {
-		s.LogInfo("Channel %s, ok %t", channelID, ok)
 		ok = !strings.Contains(cfg.DisabledChannels, channelID)
 		c, err := s.State.Channel(channelID)
 		if err != nil {
