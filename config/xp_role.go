@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strconv"
 
+	"git.anhgelus.world/anhgelus/les-copaings-bot/dynamicid"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
@@ -23,15 +24,19 @@ type XpRole struct {
 	GuildConfigID uint
 }
 
+type XpRoleId struct {
+	ID uint
+}
+
 const (
-	ModifyXpRole                = "xp_role"
-	XpRoleNew                   = "xp_role_add"
-	XpRoleAdd                   = "xp_role_add_level"
-	XpRoleEditPattern           = `^xp_role_edit_(\d+)$`
-	XpRoleEditLevelPattern      = `^xp_role_edit_level_(\d+)$`
-	XpRoleEditLevelStartPattern = `^xp_role_edit_level_start_(\d+)$`
-	XpRoleEditRolePattern       = `^xp_role_edit_role_(\d+)$`
-	XpRoleDel                   = `^xp_role_del_(\d+)$`
+	ModifyXpRole         = "xp_role"
+	XpRoleNew            = "xp_role_add"
+	XpRoleAdd            = "xp_role_add_level"
+	XpRoleEdit           = `xp_role_edit`
+	XpRoleEditLevel      = `xp_role_edit_level`
+	XpRoleEditLevelStart = `xp_role_edit_level_start`
+	XpRoleEditRole       = `xp_role_edit_role`
+	XpRoleDel            = `xp_role_del`
 )
 
 func HandleXpRole(
@@ -59,7 +64,7 @@ func HandleXpRole(
 				},
 			},
 			Accessory: &component.Button{
-				CustomID: fmt.Sprintf("xp_role_edit_%d", r.ID),
+				CustomID: dynamicid.FormatCustomID(XpRoleEdit, XpRoleId{ID: r.ID}),
 				Style:    component.ButtonStyleSecondary,
 				Label:    "Modifier",
 			},
@@ -142,14 +147,10 @@ func HandleXpRoleEdit(
 	s bot.Session,
 	i *event.InteractionCreate,
 	_ *interaction.MessageComponentData,
-	parameters []string, resp *cmd.ResponseBuilder,
+	parameters *XpRoleId, resp *cmd.ResponseBuilder,
 ) {
 	config := GetGuildConfig(i.GuildID)
-	id, err := getRoleLevelID(parameters)
-	if err != nil {
-		s.Logger().Error("reading dynamic CustomID", "error", err)
-		return
-	}
+	id := parameters.ID
 	_, role := config.FindXpRoleID(id)
 	if role == nil {
 		HandleXpRole(s, i, &interaction.MessageComponentData{}, resp)
@@ -158,7 +159,7 @@ func HandleXpRoleEdit(
 
 	roleSelect := &component.SelectMenu{
 		MenuType: types.SelectMenuRole,
-		CustomID: fmt.Sprintf("xp_role_edit_role_%d", id),
+		CustomID: dynamicid.FormatCustomID(XpRoleEditRole, XpRoleId{ID: id}),
 		DefaultValues: []component.SelectMenuDefaultValue{
 			{ID: role.RoleID, Type: types.SelectMenuDefaultValueRole},
 		},
@@ -173,14 +174,18 @@ func HandleXpRoleEdit(
 					&component.TextDisplay{Content: fmt.Sprintf("Niveau **%d**", exp.Level(role.XP))},
 				},
 				Accessory: &component.Button{
-					CustomID: fmt.Sprintf("xp_role_edit_level_start_%d", id),
+					CustomID: dynamicid.FormatCustomID(XpRoleEditLevelStart, XpRoleId{ID: id}),
 					Style:    component.ButtonStyleSecondary,
 					Label:    "Modifier",
 				},
 			},
 			&component.ActionsRow{Components: []component.Message{roleSelect}},
 			&component.ActionsRow{Components: []component.Message{
-				&component.Button{CustomID: fmt.Sprintf("xp_role_del_%d", id), Style: component.ButtonStyleDanger, Label: "Supprimer"},
+				&component.Button{
+					CustomID: dynamicid.FormatCustomID(XpRoleDel, XpRoleId{ID: id}),
+					Style:    component.ButtonStyleDanger,
+					Label:    "Supprimer",
+				},
 			}},
 			&component.Separator{},
 			&component.ActionsRow{Components: []component.Message{
@@ -197,7 +202,7 @@ func HandleXpRoleEdit(
 		},
 	}
 
-	err = s.InteractionAPI().Respond(i.Interaction, response)
+	err := s.InteractionAPI().Respond(i.Interaction, response)
 	if err != nil {
 		s.Logger().Error("sending xp_role config", "error", err)
 	}
@@ -207,18 +212,14 @@ func HandleXpRoleEditRole(
 	s bot.Session,
 	i *event.InteractionCreate,
 	data *interaction.MessageComponentData,
-	parameters []string, resp *cmd.ResponseBuilder,
+	parameters *XpRoleId, resp *cmd.ResponseBuilder,
 ) {
-	id, err := getRoleLevelID(parameters)
-	if err != nil {
-		s.Logger().Error("reading dynamic CustomID", "error", err)
-		return
-	}
+	id := parameters.ID
 	role := data.Values[0]
 	cfg := GetGuildConfig(i.GuildID)
 	_, xpRole := cfg.FindXpRoleID(id)
 	if xpRole == nil {
-		err = s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Flags:   channel.MessageFlagsEphemeral,
@@ -231,7 +232,7 @@ func HandleXpRoleEditRole(
 		return
 	}
 	xpRole.RoleID = role
-	err = gokord.DB.Save(xpRole).Error
+	err := gokord.DB.Save(xpRole).Error
 	if err != nil {
 		s.Logger().Error("saving config", "error", err, "guild", i.GuildID, "id", id, "type", "add")
 	}
@@ -242,18 +243,14 @@ func HandleXpRoleEditLevelStart(
 	s bot.Session,
 	i *event.InteractionCreate,
 	_ *interaction.MessageComponentData,
-	parameters []string,
+	parameters *XpRoleId,
 	_ *cmd.ResponseBuilder,
 ) {
-	id, err := getRoleLevelID(parameters)
-	if err != nil {
-		s.Logger().Error("reading dynamic CustomID", "error", err)
-		return
-	}
+	id := parameters.ID
 	cfg := GetGuildConfig(i.GuildID)
 	_, xpRole := cfg.FindXpRoleID(id)
 	if xpRole == nil {
-		err = s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Flags:   channel.MessageFlagsEphemeral,
@@ -269,7 +266,7 @@ func HandleXpRoleEditLevelStart(
 		Type: types.InteractionResponseModal,
 		Data: &interaction.ResponseData{
 			Title:    "Modification du niveau lié au rôle",
-			CustomID: fmt.Sprintf("xp_role_edit_level_%d", id),
+			CustomID: dynamicid.FormatCustomID(XpRoleEditLevel, XpRoleId{ID: id}),
 			Components: []component.Component{
 				&component.Label{
 					Label: "Nouveau niveau",
@@ -286,7 +283,7 @@ func HandleXpRoleEditLevelStart(
 			},
 		},
 	}
-	err = s.InteractionAPI().Respond(i.Interaction, response)
+	err := s.InteractionAPI().Respond(i.Interaction, response)
 	if err != nil {
 		s.Logger().Error("sending edit level modal", "error", err)
 	}
@@ -296,16 +293,11 @@ func HandleXpRoleEditLevel(
 	s bot.Session,
 	i *event.InteractionCreate,
 	data *interaction.ModalSubmitData,
-	parameters []string,
+	parameters *XpRoleId,
 	resp *cmd.ResponseBuilder,
 ) {
-	id, err := getRoleLevelID(parameters)
-	if err != nil {
-		s.Logger().Error("reading dynamic CustomID", "error", err)
-		return
-	}
+	id := parameters.ID
 
-	fmt.Printf("Alors?... %#v", data.Components)
 	levelInput := data.Components[0].(*component.Label).Component.(*component.TextInput)
 	level, err := strconv.Atoi(levelInput.Value)
 	if err != nil || level < 0 {
@@ -348,18 +340,14 @@ func HandleXpRoleDel(
 	s bot.Session,
 	i *event.InteractionCreate,
 	_ *interaction.MessageComponentData,
-	dynamicValues []string,
+	parameters *XpRoleId,
 	resp *cmd.ResponseBuilder,
 ) {
-	id, err := getRoleLevelID(dynamicValues)
-	if err != nil {
-		s.Logger().Error("reading dynamic CustomID", "error", err)
-		return
-	}
+	id := parameters.ID
 	cfg := GetGuildConfig(i.GuildID)
 	_, role := cfg.FindXpRoleID(id)
 	if role == nil {
-		err = s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Content: "Rôle introuvable. Peut-être a-t-il déjà été supprimé ?",
@@ -371,7 +359,7 @@ func HandleXpRoleDel(
 		}
 		return
 	}
-	err = gokord.DB.Delete(role).Error
+	err := gokord.DB.Delete(role).Error
 	if err != nil {
 		s.Logger().Error("deleting entry", "error", err, "guild", i.GuildID, "id", id, "type", "del")
 	}
@@ -415,13 +403,4 @@ func HandleXpRoleAdd(
 	}
 
 	HandleXpRole(s, i, &interaction.MessageComponentData{}, resp)
-}
-
-func getRoleLevelID(dynamic []string) (uint, error) {
-	id64, err := strconv.ParseUint(dynamic[0], 10, 0)
-	if err != nil {
-		return 0, err
-	}
-
-	return uint(id64), nil
 }

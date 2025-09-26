@@ -2,17 +2,17 @@ package main
 
 import (
 	_ "embed"
-	"encoding/json"
 	"errors"
 	"flag"
 	"log/slog"
 	"os"
-	"regexp"
 	"time"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/commands"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/dynamicid"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/rolereact"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
@@ -68,61 +68,6 @@ func init() {
 
 }
 
-func handleDynamicMessageComponent(
-	b *gokord.Bot,
-	handler func(
-		bot.Session,
-		*event.InteractionCreate,
-		*interaction.MessageComponentData,
-		[]string, *cmd.ResponseBuilder,
-	),
-	pattern string,
-) {
-	compiledPattern := regexp.MustCompile(pattern)
-	b.AddHandler(func(s bot.Session, i *event.InteractionCreate) {
-		if i.Type != types.InteractionMessageComponent {
-			return
-		}
-
-		data := i.MessageComponentData()
-		parameters := compiledPattern.FindStringSubmatch(data.CustomID)
-		if parameters == nil {
-			return
-		}
-		parameters = parameters[1:]
-		handler(s, i, data, parameters, cmd.NewResponseBuilder(s, i))
-	})
-}
-
-func handleDynamicModalComponent(
-	b *gokord.Bot,
-	handler func(
-		bot.Session,
-		*event.InteractionCreate,
-		*interaction.ModalSubmitData,
-		[]string,
-		*cmd.ResponseBuilder,
-	),
-	pattern string,
-) {
-	compiledPattern := regexp.MustCompile(pattern)
-	b.AddHandler(func(s bot.Session, i *event.InteractionCreate) {
-		if i.Type != types.InteractionModalSubmit {
-			return
-		}
-
-		data := i.ModalSubmitData()
-		content, _ := json.Marshal(data)
-		s.Logger().Debug(string(content))
-		parameters := compiledPattern.FindStringSubmatch(data.CustomID)
-		if parameters == nil {
-			return
-		}
-		parameters = parameters[1:]
-		handler(s, i, data, parameters, cmd.NewResponseBuilder(s, i))
-	})
-}
-
 func main() {
 	flag.Parse()
 	gokord.UseRedis = false
@@ -131,7 +76,7 @@ func main() {
 		panic(err)
 	}
 
-	err = gokord.DB.AutoMigrate(&user.Copaing{}, &config.GuildConfig{}, &config.XpRole{}, &user.CopaingXP{})
+	err = gokord.DB.AutoMigrate(&user.Copaing{}, &config.GuildConfig{}, &config.XpRole{}, &user.CopaingXP{}, &config.RoleReactMessage{}, &config.RoleReact{})
 	if err != nil {
 		panic(err)
 	}
@@ -182,6 +127,15 @@ func main() {
 		)).
 		SetHandler(commands.Stats)
 
+	rolereactCmd := cmd.New("rolereact", "Envoie un message permettant de récupérer des rôles grâce à des réactions").
+		SetPermission(&adm).
+		AddOption(cmd.NewOption(
+			types.CommandOptionChannel,
+			"salon",
+			"Destination du message",
+		)).
+		SetHandler(rolereact.HandleCommand)
+
 	innovations, err := gokord.LoadInnovationFromJson(updatesData)
 	if err != nil {
 		panic(err)
@@ -215,6 +169,7 @@ func main() {
 			resetUserCmd,
 			creditsCmd,
 			statsCmd,
+			rolereactCmd,
 		},
 		AfterInit: func(dg *discordgo.Session) {
 			d := 24 * time.Hour
@@ -236,17 +191,66 @@ func main() {
 			discord.IntentGuildMembers,
 	}
 
+	// related to rolereact
+	b.AddHandler(func(s bot.Session, e *event.Ready) {
+		var guildID string
+		gs, err := s.GuildAPI().UserGuilds(1, "", "", false)
+		if err != nil {
+			s.Logger().Error("fetching guilds for debug", "error", err)
+			return
+		} else {
+			guildID = gs[0].ID
+		}
+
+		handleRolereactionMessageCmd := interaction.Command{
+			Type:                     types.CommandMessage,
+			Name:                     "Modifier",
+			DefaultMemberPermissions: &adm,
+		}
+		c, err := s.InteractionAPI().CommandCreate(s.SessionState().User().ID, guildID, &handleRolereactionMessageCmd)
+		if err != nil {
+			s.Logger().Error("unable to push rolereaction message command", "error", err)
+			return
+		}
+		s.Logger().Debug("pushed rolereaction message command, commandid %s", c.ID)
+	})
+	b.AddHandler(func(s bot.Session, i *event.InteractionCreate) {
+		s.Logger().Debug("Handler successfuly called 1")
+		if i.Type != types.InteractionApplicationCommand {
+			return
+		}
+		data := i.CommandData()
+		s.Logger().Debug("Handler successfuly called")
+		if "Modifier" == data.Name {
+			resp := cmd.NewResponseBuilder(s, i)
+			rolereact.HandleModifyCommand(s, i, data, resp)
+		}
+	})
+	b.AddHandler(rolereact.HandleReactionAdd)
+	b.AddHandler(rolereact.HandleReactionRemove)
+	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleModifyComponent, rolereact.OpenMessage)
+	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleApplyMessage, rolereact.ApplyMessage)
+	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleResetMessage, rolereact.ResetMessage)
+	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleStartSetNote, rolereact.SetNote)
+	dynamicid.HandleDynamicModalComponent(&b, rolereact.HandleSetNote, rolereact.SetNote)
+	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleNewRole, rolereact.NewRole)
+	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleOpenRole, rolereact.OpenRole)
+	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleSetRole, rolereact.SetRoleRoleID)
+	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleSetReaction, rolereact.SetRoleReaction)
+	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleDelRole, rolereact.DelRole)
+
 	// interaction: /config
 	b.HandleMessageComponent(commands.ConfigMessageComponent, commands.OpenConfig)
 	// xp role related
 	b.HandleMessageComponent(config.HandleXpRole, config.ModifyXpRole)
 	b.HandleMessageComponent(config.HandleXpRoleNew, config.XpRoleNew)
 	b.HandleModal(config.HandleXpRoleAdd, config.XpRoleAdd)
-	handleDynamicMessageComponent(&b, config.HandleXpRoleEdit, config.XpRoleEditPattern)
-	handleDynamicMessageComponent(&b, config.HandleXpRoleEditRole, config.XpRoleEditRolePattern)
-	handleDynamicMessageComponent(&b, config.HandleXpRoleEditLevelStart, config.XpRoleEditLevelStartPattern)
-	handleDynamicModalComponent(&b, config.HandleXpRoleEditLevel, config.XpRoleEditLevelPattern)
-	handleDynamicMessageComponent(&b, config.HandleXpRoleDel, config.XpRoleDel)
+	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleEdit, config.XpRoleEdit)
+	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleEdit, config.XpRoleEdit)
+	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleEditRole, config.XpRoleEditRole)
+	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleEditLevelStart, config.XpRoleEditLevelStart)
+	dynamicid.HandleDynamicModalComponent(&b, config.HandleXpRoleEditLevel, config.XpRoleEditLevel)
+	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleDel, config.XpRoleDel)
 	// channel related
 	b.HandleMessageComponent(func(s bot.Session, i *event.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 		if config.HandleModifyFallbackChannel(s, i, data, resp) {
