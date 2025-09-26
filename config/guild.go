@@ -14,6 +14,25 @@ type GuildConfig struct {
 	DisabledChannels string
 	FallbackChannel  string
 	DaysXPRemains    uint `gorm:"default:90"` // 30 * 3 = 90 (three months)
+	RrMessages       []RoleReactMessage
+}
+
+type RoleReactMessage struct {
+	ID            uint   `gorm:"primarykey"`
+	MessageID     string `gorm:"not null;unique"`
+	ChannelID     string
+	GuildID       string
+	Note          string
+	Roles         []*RoleReact
+	GuildConfigID uint
+}
+
+type RoleReact struct {
+	ID                 uint `gorm:"primarykey"`
+	Reaction           string
+	RoleID             string
+	RoleReactMessageID uint
+	CounterID          uint `gorm:"-"`
 }
 
 func GetGuildConfig(guildID string) *GuildConfig {
@@ -34,10 +53,7 @@ func (cfg *GuildConfig) Save() error {
 
 func (cfg *GuildConfig) IsDisabled(s *discordgo.Session, channelID string) bool {
 	ok := true
-	s.LogInfo("Configuration: %s", cfg.DisabledChannels)
-	s.LogInfo("Channel %s, ok %t", channelID, ok)
 	for channelID != "" && ok {
-		s.LogInfo("Channel %s, ok %t", channelID, ok)
 		ok = !strings.Contains(cfg.DisabledChannels, channelID)
 		c, err := s.State.Channel(channelID)
 		if err != nil {

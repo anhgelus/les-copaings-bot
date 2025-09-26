@@ -6,7 +6,6 @@ import (
 	"github.com/anhgelus/gokord/cmd"
 	discordgo "github.com/nyttikord/gokord"
 
-	// "github.com/nyttikord/gokord/component"
 	"github.com/nyttikord/gokord/interaction"
 )
 
