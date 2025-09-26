@@ -1,8 +1,13 @@
 package config
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/anhgelus/gokord/cmd"
 	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/component"
+	"github.com/nyttikord/gokord/discord/types"
 	"github.com/nyttikord/gokord/interaction"
 )
 
@@ -11,47 +16,61 @@ const (
 	TimeReduceSet    = "time_reduce_set"
 )
 
-func HandleModifyPeriodicReduce(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
-	//err := resp.IsModal().
-	//	SetCustomID(TimeReduceSet).
-	//	SetComponents(component.New().ForModal().Add(component.NewActionRow().ForModal().Add(
-	//		component.NewTextInput(TimeReduceSet, "Jours avant la réduction", discordgo.TextInputShort).
-	//			SetMinLength(1).
-	//			SetMaxLength(3),
-	//	))).Send()
-	//if err != nil {
-	//	logger.Alert("config/xp_reduce.go - Sending modal for periodic reduce", err.Error())
-	//}
+func HandleModifyPeriodicReduceCommand(s *discordgo.Session, i *discordgo.InteractionCreate, _ *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+	cfg := GetGuildConfig(i.GuildID)
+	response := interaction.Response{
+		Type: types.InteractionResponseModal,
+		Data: &interaction.ResponseData{
+			CustomID: TimeReduceSet,
+			Title:    "Modifier la durée de l'expérience",
+			Components: []component.Component{
+				// TODO: When gokord supports it, enable this description again
+				// &component.TextDisplay{
+				// 	Content: "Seul l'expérience gagnée sur cette période sera comptabilisée dans le niveau par défaut",
+				// },
+				&component.Label{
+					Label: "Durée en jours",
+					Component: &component.TextInput{
+						CustomID:    TimeReduceSet,
+						MinLength:   1,
+						MaxLength:   3,
+						Style:       component.TextInputShort,
+						Placeholder: "Durée en jours",
+						Value:       fmt.Sprintf("%d", cfg.DaysXPRemains),
+					},
+				},
+			},
+		},
+	}
+	err := s.InteractionAPI().Respond(i.Interaction, &response)
+	if err != nil {
+		s.LogError(err, "Sending xp reduce modal")
+	}
 }
 
-func HandleTimeReduceSet(_ *discordgo.Session, _ *discordgo.InteractionCreate, _ *interaction.ModalSubmitData, _ *cmd.ResponseBuilder) {
-	//resp.IsEphemeral()
-	//v := data.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value
-	//days, err := strconv.Atoi(v)
-	//if err != nil {
-	//	logger.Debug(err.Error())
-	//	if err = resp.SetMessage("Nombres de jours invalides. Merci de mettre un entier.").Send(); err != nil {
-	//		logger.Alert("config/xp_reduce.go - Sending bad input", err.Error())
-	//	}
-	//	return
-	//}
-	//if days < 30 {
-	//	err = resp.SetMessage("Le nombre de jours est inférieur à 30.").Send()
-	//	if err != nil {
-	//		logger.Alert("config/xp_reduce.go - Days < 30 (fallback)", err.Error())
-	//	}
-	//	return
-	//}
-	//cfg := GetGuildConfig(i.GuildID)
-	//cfg.DaysXPRemains = uint(days)
-	//if err = cfg.Save(); err != nil {
-	//	logger.Alert("config/channel.go - Saving days xp remains", err.Error())
-	//	if err = resp.SetMessage("Erreur lors de la sauvegarde du salon").Send(); err != nil {
-	//		logger.Alert("config/xp_reduce.go - Sending error while saving days xp remains", err.Error())
-	//	}
-	//	return
-	//}
-	//if err = resp.SetMessage("Modification sauvegardée.").Send(); err != nil {
-	//	logger.Alert("config/xp_reduce.go - Sending days saved", err.Error())
-	//}
+func HandleTimeReduceSet(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.ModalSubmitData, resp *cmd.ResponseBuilder) bool {
+	v := data.Components[0].(*component.Label).Component.(*component.TextInput).Value
+	days, err := strconv.Atoi(v)
+	if err != nil {
+		err = resp.IsEphemeral().SetMessage(fmt.Sprintf("La valeur indiquée, `%s`, c'est pas un entier.", v)).Send()
+		if err != nil {
+			s.LogError(err, "Sending bad input message")
+		}
+		return false
+	}
+	if days < 30 {
+		err = resp.IsEphemeral().SetMessage("Le nombre de jours doit être suppérieur à 30.").Send()
+		if err != nil {
+			s.LogError(err, "Sending less than 30 days message")
+		}
+		return false
+	}
+	cfg := GetGuildConfig(i.GuildID)
+	cfg.DaysXPRemains = uint(days)
+	err = cfg.Save()
+	if err != nil {
+		s.LogError(err, "Saving DaysXPRemains configuration")
+		return false
+	}
+	return true
 }

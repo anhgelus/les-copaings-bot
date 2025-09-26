@@ -27,7 +27,7 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	cfg := config.GetGuildConfig(m.GuildID)
-	if cfg.IsDisabled(m.ChannelID) {
+	if cfg.IsDisabled(s, m.ChannelID) {
 		return
 	}
 	c := user.GetCopaing(m.Author.ID, m.GuildID)
@@ -48,13 +48,13 @@ func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 		return
 	}
 	cfg := config.GetGuildConfig(e.GuildID)
-	if (e.BeforeUpdate == nil || cfg.IsDisabled(e.BeforeUpdate.ChannelID)) && e.ChannelID != "" {
-		if cfg.IsDisabled(e.ChannelID) {
+	if (e.BeforeUpdate == nil || cfg.IsDisabled(s, e.BeforeUpdate.ChannelID)) && e.ChannelID != "" {
+		if cfg.IsDisabled(s, e.ChannelID) {
 			return
 		}
 		onConnection(s, e)
-	} else if e.BeforeUpdate != nil && (e.ChannelID == "" || cfg.IsDisabled(e.ChannelID)) {
-		if cfg.IsDisabled(e.BeforeUpdate.ChannelID) {
+	} else if e.BeforeUpdate != nil && (e.ChannelID == "" || cfg.IsDisabled(s, e.ChannelID)) {
+		if cfg.IsDisabled(s, e.BeforeUpdate.ChannelID) {
 			return
 		}
 		onDisconnect(s, e)

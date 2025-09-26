@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/anhgelus/gokord"
+	discordgo "github.com/nyttikord/gokord"
 )
 
 type GuildConfig struct {
@@ -31,8 +32,27 @@ func (cfg *GuildConfig) Save() error {
 	return gokord.DB.Save(cfg).Error
 }
 
-func (cfg *GuildConfig) IsDisabled(channelID string) bool {
-	return strings.Contains(cfg.DisabledChannels, channelID)
+func (cfg *GuildConfig) IsDisabled(s *discordgo.Session, channelID string) bool {
+	ok := true
+	for channelID != "" && ok {
+		ok = !strings.Contains(cfg.DisabledChannels, channelID)
+		c, err := s.State.Channel(channelID)
+		if err != nil {
+			s.LogError(err, "Unable to find channel %s in state", c)
+			c, err = s.ChannelAPI().Channel(channelID)
+			if err == nil {
+				s.State.ChannelAdd(c)
+			} else {
+				s.LogError(err, "Unable to fetch channel %s", s)
+				return false
+			}
+		}
+		if err != nil {
+			return false
+		}
+		channelID = c.ParentID
+	}
+	return !ok
 }
 
 func (cfg *GuildConfig) FindXpRole(roleID string) (int, *XpRole) {
