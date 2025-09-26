@@ -6,10 +6,11 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord/cmd"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
+	"github.com/nyttikord/gokord/event"
 )
 
-func Rank(s *discordgo.Session, i *discordgo.InteractionCreate, optMap cmd.OptionMap, resp *cmd.ResponseBuilder) {
+func Rank(s bot.Session, i *event.InteractionCreate, optMap cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	c := user.GetCopaing(i.Member.User.ID, i.GuildID) // current user = member who used /rank
 	msg := "Votre niveau"
 	m := i.Member

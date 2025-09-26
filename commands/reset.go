@@ -4,10 +4,11 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
+	"github.com/nyttikord/gokord/event"
 )
 
-func Reset(s *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
+func Reset(s bot.Session, i *event.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	var copaings []*user.Copaing
 	gokord.DB.Where("guild_id = ?", i.GuildID).Delete(&copaings)
 	if err := resp.IsEphemeral().SetMessage("L'XP a été reset.").Send(); err != nil {
@@ -15,7 +16,7 @@ func Reset(s *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap
 	}
 }
 
-func ResetUser(s *discordgo.Session, i *discordgo.InteractionCreate, optMap cmd.OptionMap, resp *cmd.ResponseBuilder) {
+func ResetUser(s bot.Session, i *event.InteractionCreate, optMap cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	resp.IsEphemeral()
 	v, ok := optMap["user"]
 	if !ok {

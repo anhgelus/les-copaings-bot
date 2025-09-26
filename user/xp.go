@@ -7,7 +7,7 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/logger"
 	"github.com/nyttikord/gokord/user"
 )
@@ -25,7 +25,7 @@ func (c *cXP) GetXP() uint {
 	return c.Cxp
 }
 
-func (c *Copaing) AddXP(s *discordgo.Session, m *user.Member, xp uint, fn func(uint, uint)) {
+func (c *Copaing) AddXP(s bot.Session, m *user.Member, xp uint, fn func(uint, uint)) {
 	old, err := c.GetXP()
 	if err != nil {
 		s.LogError(err, "getting xp for %s in %s", m.DisplayName(), c.GuildID)

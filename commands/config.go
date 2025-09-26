@@ -8,10 +8,11 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord/cmd"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/channel"
 	"github.com/nyttikord/gokord/component"
 	"github.com/nyttikord/gokord/discord/types"
+	"github.com/nyttikord/gokord/event"
 	"github.com/nyttikord/gokord/interaction"
 )
 
@@ -20,7 +21,7 @@ const (
 	OpenConfig   = "config"
 )
 
-func ConfigResponse(i *discordgo.InteractionCreate) *interaction.Response {
+func ConfigResponse(i *event.InteractionCreate) *interaction.Response {
 	cfg := config.GetGuildConfig(i.GuildID)
 	roles := ""
 	l := len(cfg.XpRoles) - 1
@@ -38,7 +39,7 @@ func ConfigResponse(i *discordgo.InteractionCreate) *interaction.Response {
 		roles = "Aucun rôle configuré"
 	}
 	disChans := strings.Split(cfg.DisabledChannels, ";")
-	disChansDefault := []component.SelectMenuDefaultValue{}
+	var disChansDefault []component.SelectMenuDefaultValue
 	for _, c := range disChans {
 		if c != "" {
 			disChansDefault = append(disChansDefault, component.SelectMenuDefaultValue{
@@ -47,7 +48,7 @@ func ConfigResponse(i *discordgo.InteractionCreate) *interaction.Response {
 			})
 		}
 	}
-	defaultChan := []component.SelectMenuDefaultValue{}
+	var defaultChan []component.SelectMenuDefaultValue
 	if len(cfg.FallbackChannel) > 0 {
 		defaultChan = append(defaultChan, component.SelectMenuDefaultValue{
 			ID:   cfg.FallbackChannel,
@@ -121,21 +122,21 @@ func ConfigResponse(i *discordgo.InteractionCreate) *interaction.Response {
 }
 
 func ConfigCommand(
-	session *discordgo.Session,
-	i *discordgo.InteractionCreate,
+	s bot.Session,
+	i *event.InteractionCreate,
 	_ cmd.OptionMap,
 	resp *cmd.ResponseBuilder,
 ) {
-	err := session.InteractionAPI().Respond(i.Interaction, ConfigResponse(i))
+	err := s.InteractionAPI().Respond(i.Interaction, ConfigResponse(i))
 
 	if err != nil {
-		session.LogError(err, "config/guild.go - Sending config")
+		s.LogError(err, "config/guild.go - Sending config")
 	}
 }
 
 func ConfigMessageComponent(
-	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
+	s bot.Session,
+	i *event.InteractionCreate,
 	_ *interaction.MessageComponentData,
 	_ *cmd.ResponseBuilder,
 ) {
@@ -149,10 +150,10 @@ func ConfigMessageComponent(
 }
 
 func ConfigModal(
-	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
+	s bot.Session,
+	i *event.InteractionCreate,
 	_ *interaction.ModalSubmitData,
-	resp *cmd.ResponseBuilder,
+	_ *cmd.ResponseBuilder,
 ) {
 	response := ConfigResponse(i)
 	response.Type = types.InteractionResponseUpdateMessage

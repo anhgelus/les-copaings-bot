@@ -8,10 +8,11 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/channel"
 	"github.com/nyttikord/gokord/component"
 	"github.com/nyttikord/gokord/discord/types"
+	"github.com/nyttikord/gokord/event"
 	"github.com/nyttikord/gokord/interaction"
 )
 
@@ -34,8 +35,8 @@ const (
 )
 
 func HandleXpRole(
-	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
+	s bot.Session,
+	i *event.InteractionCreate,
 	_ *interaction.MessageComponentData,
 	_ *cmd.ResponseBuilder,
 ) {
@@ -96,8 +97,8 @@ func HandleXpRole(
 }
 
 func HandleXpRoleNew(
-	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
+	s bot.Session,
+	i *event.InteractionCreate,
 	_ *interaction.MessageComponentData,
 	_ *cmd.ResponseBuilder,
 ) {
@@ -138,8 +139,8 @@ func HandleXpRoleNew(
 }
 
 func HandleXpRoleEdit(
-	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
+	s bot.Session,
+	i *event.InteractionCreate,
 	_ *interaction.MessageComponentData,
 	parameters []string, resp *cmd.ResponseBuilder,
 ) {
@@ -203,8 +204,8 @@ func HandleXpRoleEdit(
 }
 
 func HandleXpRoleEditRole(
-	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
+	s bot.Session,
+	i *event.InteractionCreate,
 	data *interaction.MessageComponentData,
 	parameters []string, resp *cmd.ResponseBuilder,
 ) {
@@ -238,8 +239,8 @@ func HandleXpRoleEditRole(
 }
 
 func HandleXpRoleEditLevelStart(
-	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
+	s bot.Session,
+	i *event.InteractionCreate,
 	_ *interaction.MessageComponentData,
 	parameters []string,
 	_ *cmd.ResponseBuilder,
@@ -292,8 +293,8 @@ func HandleXpRoleEditLevelStart(
 }
 
 func HandleXpRoleEditLevel(
-	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
+	s bot.Session,
+	i *event.InteractionCreate,
 	data *interaction.ModalSubmitData,
 	parameters []string,
 	resp *cmd.ResponseBuilder,
@@ -344,8 +345,8 @@ func HandleXpRoleEditLevel(
 }
 
 func HandleXpRoleDel(
-	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
+	s bot.Session,
+	i *event.InteractionCreate,
 	_ *interaction.MessageComponentData,
 	dynamicValues []string,
 	resp *cmd.ResponseBuilder,
@@ -379,8 +380,8 @@ func HandleXpRoleDel(
 }
 
 func HandleXpRoleAdd(
-	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
+	s bot.Session,
+	i *event.InteractionCreate,
 	data *interaction.ModalSubmitData,
 	resp *cmd.ResponseBuilder,
 ) {

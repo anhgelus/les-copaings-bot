@@ -4,7 +4,8 @@ import (
 	"strings"
 
 	"github.com/anhgelus/gokord/cmd"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
+	"github.com/nyttikord/gokord/event"
 
 	"github.com/nyttikord/gokord/interaction"
 )
@@ -19,7 +20,7 @@ const (
 	DisChannelDelSet = "disabled_channel_del_set"
 )
 
-func HandleModifyFallbackChannel(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) bool {
+func HandleModifyFallbackChannel(s bot.Session, i *event.InteractionCreate, data *interaction.MessageComponentData, _ *cmd.ResponseBuilder) bool {
 	cfg := GetGuildConfig(i.GuildID)
 	var channelID string
 	if len(data.Values) > 0 {
@@ -34,7 +35,7 @@ func HandleModifyFallbackChannel(s *discordgo.Session, i *discordgo.InteractionC
 	return true
 }
 
-func HandleModifyDisChannel(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) bool {
+func HandleModifyDisChannel(s bot.Session, i *event.InteractionCreate, data *interaction.MessageComponentData, _ *cmd.ResponseBuilder) bool {
 	cfg := GetGuildConfig(i.GuildID)
 	cfg.DisabledChannels = strings.Join(data.Values, ";")
 	err := cfg.Save()

@@ -9,7 +9,8 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
+	"github.com/nyttikord/gokord/event"
 )
 
 const (
@@ -22,7 +23,7 @@ var (
 	connectedSince = map[string]int64{}
 )
 
-func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
+func OnMessage(s bot.Session, m *event.MessageCreate) {
 	if m.Author.Bot {
 		return
 	}
@@ -43,7 +44,7 @@ func OnMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	})
 }
 
-func OnVoiceUpdate(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
+func OnVoiceUpdate(s bot.Session, e *event.VoiceStateUpdate) {
 	if e.Member.User.Bot {
 		return
 	}
@@ -65,12 +66,12 @@ func genMapKey(guildID string, userID string) string {
 	return fmt.Sprintf("%s:%s", guildID, userID)
 }
 
-func onConnection(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
+func onConnection(s bot.Session, e *event.VoiceStateUpdate) {
 	s.LogDebug("User connected username %s", e.Member.DisplayName())
 	connectedSince[genMapKey(e.GuildID, e.UserID)] = time.Now().Unix()
 }
 
-func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
+func onDisconnect(s bot.Session, e *event.VoiceStateUpdate) {
 	now := time.Now().Unix()
 	c := user.GetCopaing(e.UserID, e.GuildID)
 	// check the validity of user
@@ -106,7 +107,7 @@ func onDisconnect(s *discordgo.Session, e *discordgo.VoiceStateUpdate) {
 	})
 }
 
-func OnLeave(s *discordgo.Session, e *discordgo.GuildMemberRemove) {
+func OnLeave(s bot.Session, e *event.GuildMemberRemove) {
 	s.LogDebug("Leave event user_id %s", e.User.ID)
 	if e.User.Bot {
 		return

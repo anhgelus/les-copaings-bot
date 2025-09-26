@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/anhgelus/gokord"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
 )
 
 type GuildConfig struct {
@@ -32,18 +32,21 @@ func (cfg *GuildConfig) Save() error {
 	return gokord.DB.Save(cfg).Error
 }
 
-func (cfg *GuildConfig) IsDisabled(s *discordgo.Session, channelID string) bool {
+func (cfg *GuildConfig) IsDisabled(s bot.Session, channelID string) bool {
 	ok := true
 	for channelID != "" && ok {
 		ok = !strings.Contains(cfg.DisabledChannels, channelID)
-		c, err := s.State.Channel(channelID)
+		c, err := s.ChannelAPI().State.Channel(channelID)
 		if err != nil {
-			s.LogError(err, "Unable to find channel %s in state", c)
+			s.LogError(err, "unable to find channel %s in state", c)
 			c, err = s.ChannelAPI().Channel(channelID)
 			if err == nil {
-				s.State.ChannelAdd(c)
+				err = s.ChannelAPI().State.ChannelAdd(c)
+				if err != nil {
+					s.LogError(err, "unable to add channel %s to state", c)
+				}
 			} else {
-				s.LogError(err, "Unable to fetch channel %s", s)
+				s.LogError(err, "unable to fetch channel %s", s)
 				return false
 			}
 		}

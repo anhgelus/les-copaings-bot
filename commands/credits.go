@@ -3,10 +3,11 @@ package commands
 import (
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
+	"github.com/nyttikord/gokord/event"
 )
 
-func Credits(s *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
+func Credits(s bot.Session, _ *event.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	msg := "**Les Copaings**, le bot gérant les serveurs privés de [anhgelus](<https://anhgelus.world/>).\n"
 	msg += "Code source : <https://git.anhgelus.world/anhgelus/les-copaings-bot>\n\n"
 	msg += "Host du bot : " + gokord.BaseCfg.GetAuthor() + ".\n\n"

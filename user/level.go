@@ -9,10 +9,11 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord"
 	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/user"
 )
 
-func onNewLevel(s *discordgo.Session, m *user.Member, level uint) {
+func onNewLevel(s bot.Session, m *user.Member, level uint) {
 	cfg := config.GetGuildConfig(m.GuildID)
 	xpForLevel := exp.LevelXP(level)
 	for _, role := range cfg.XpRoles {
@@ -68,7 +69,9 @@ func PeriodicReducer(s *discordgo.Session) {
 		}()
 	}
 	wg.Wait()
-	for _, g := range s.State.Guilds {
+	i := 0
+	for g := range s.GuildAPI().State.Guilds() {
+		i++
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -99,5 +102,5 @@ func PeriodicReducer(s *discordgo.Session) {
 			c.OnNewLevel(s, exp.Level(xp))
 		}
 	}
-	s.LogDebug("Periodic reduce finished for %d guilds", len(s.State.Guilds))
+	s.LogDebug("Periodic reduce finished for %d guilds", i)
 }

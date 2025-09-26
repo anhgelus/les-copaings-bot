@@ -16,8 +16,9 @@ import (
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/jackc/pgx/v5/pgtype"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/channel"
+	"github.com/nyttikord/gokord/event"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
@@ -45,7 +46,7 @@ var colors = []color.RGBA{
 	{193, 18, 31, 255},
 }
 
-func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionMap, resp *cmd.ResponseBuilder) {
+func Stats(s bot.Session, i *event.InteractionCreate, opt cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	cfg := config.GetGuildConfig(i.GuildID)
 	days := 15
 	if gokord.Debug {
@@ -97,13 +98,13 @@ func Stats(s *discordgo.Session, i *discordgo.InteractionCreate, opt cmd.OptionM
 	}()
 }
 
-func statsAll(s *discordgo.Session, i *discordgo.InteractionCreate, days int) (io.WriterTo, error) {
+func statsAll(s bot.Session, i *event.InteractionCreate, days int) (io.WriterTo, error) {
 	return stats(s, i, days, func(before, after string) *gorm.DB {
 		return gokord.DB.Raw(before+"WHERE guild_id = ? and created_at > ?"+after, i.GuildID, exp.TimeStampNDaysBefore(uint(days)))
 	})
 }
 
-func statsMember(s *discordgo.Session, i *discordgo.InteractionCreate, days int, discordID string) (io.WriterTo, error) {
+func statsMember(s bot.Session, i *event.InteractionCreate, days int, discordID string) (io.WriterTo, error) {
 	_, err := s.GuildAPI().Member(i.GuildID, discordID)
 	if err != nil {
 		return nil, err
@@ -116,7 +117,7 @@ func statsMember(s *discordgo.Session, i *discordgo.InteractionCreate, days int,
 	})
 }
 
-func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days int, execSql func(before, after string) *gorm.DB) (io.WriterTo, error) {
+func stats(s bot.Session, i *event.InteractionCreate, days int, execSql func(before, after string) *gorm.DB) (io.WriterTo, error) {
 	var rawData []*data
 	if gokord.Debug {
 		var rawCopaingData []*user.CopaingXP
@@ -193,7 +194,7 @@ func stats(s *discordgo.Session, i *discordgo.InteractionCreate, days int, execS
 	return generatePlot(s, i, copaings, stats)
 }
 
-func generatePlot(s *discordgo.Session, i *discordgo.InteractionCreate, copaings map[int]*user.Copaing, stats map[int][]plotter.XY) (io.WriterTo, error) {
+func generatePlot(s bot.Session, i *event.InteractionCreate, copaings map[int]*user.Copaing, stats map[int][]plotter.XY) (io.WriterTo, error) {
 	p := plot.New()
 	fontSizeTitle := vg.Length(16)
 	fontSize := vg.Length(12)

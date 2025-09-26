@@ -17,8 +17,10 @@ import (
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/joho/godotenv"
 	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/discord"
 	"github.com/nyttikord/gokord/discord/types"
+	"github.com/nyttikord/gokord/event"
 	"github.com/nyttikord/gokord/interaction"
 	"github.com/nyttikord/gokord/logger"
 	"golang.org/x/image/font/opentype"
@@ -69,15 +71,15 @@ func init() {
 func handleDynamicMessageComponent(
 	b *gokord.Bot,
 	handler func(
-		*discordgo.Session,
-		*discordgo.InteractionCreate,
+		bot.Session,
+		*event.InteractionCreate,
 		*interaction.MessageComponentData,
 		[]string, *cmd.ResponseBuilder,
 	),
 	pattern string,
 ) {
 	compiledPattern := regexp.MustCompile(pattern)
-	b.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	b.AddHandler(func(s bot.Session, i *event.InteractionCreate) {
 		if i.Type != types.InteractionMessageComponent {
 			return
 		}
@@ -95,8 +97,8 @@ func handleDynamicMessageComponent(
 func handleDynamicModalComponent(
 	b *gokord.Bot,
 	handler func(
-		*discordgo.Session,
-		*discordgo.InteractionCreate,
+		bot.Session,
+		*event.InteractionCreate,
 		*interaction.ModalSubmitData,
 		[]string,
 		*cmd.ResponseBuilder,
@@ -104,7 +106,7 @@ func handleDynamicModalComponent(
 	pattern string,
 ) {
 	compiledPattern := regexp.MustCompile(pattern)
-	b.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	b.AddHandler(func(s bot.Session, i *event.InteractionCreate) {
 		if i.Type != types.InteractionModalSubmit {
 			return
 		}
@@ -185,7 +187,7 @@ func main() {
 		panic(err)
 	}
 
-	bot := gokord.Bot{
+	b := gokord.Bot{
 		Token: token,
 		Status: []*gokord.Status{
 			{
@@ -235,41 +237,41 @@ func main() {
 	}
 
 	// interaction: /config
-	bot.HandleMessageComponent(commands.ConfigMessageComponent, commands.OpenConfig)
+	b.HandleMessageComponent(commands.ConfigMessageComponent, commands.OpenConfig)
 	// xp role related
-	bot.HandleMessageComponent(config.HandleXpRole, config.ModifyXpRole)
-	bot.HandleMessageComponent(config.HandleXpRoleNew, config.XpRoleNew)
-	bot.HandleModal(config.HandleXpRoleAdd, config.XpRoleAdd)
-	handleDynamicMessageComponent(&bot, config.HandleXpRoleEdit, config.XpRoleEditPattern)
-	handleDynamicMessageComponent(&bot, config.HandleXpRoleEditRole, config.XpRoleEditRolePattern)
-	handleDynamicMessageComponent(&bot, config.HandleXpRoleEditLevelStart, config.XpRoleEditLevelStartPattern)
-	handleDynamicModalComponent(&bot, config.HandleXpRoleEditLevel, config.XpRoleEditLevelPattern)
-	handleDynamicMessageComponent(&bot, config.HandleXpRoleDel, config.XpRoleDel)
+	b.HandleMessageComponent(config.HandleXpRole, config.ModifyXpRole)
+	b.HandleMessageComponent(config.HandleXpRoleNew, config.XpRoleNew)
+	b.HandleModal(config.HandleXpRoleAdd, config.XpRoleAdd)
+	handleDynamicMessageComponent(&b, config.HandleXpRoleEdit, config.XpRoleEditPattern)
+	handleDynamicMessageComponent(&b, config.HandleXpRoleEditRole, config.XpRoleEditRolePattern)
+	handleDynamicMessageComponent(&b, config.HandleXpRoleEditLevelStart, config.XpRoleEditLevelStartPattern)
+	handleDynamicModalComponent(&b, config.HandleXpRoleEditLevel, config.XpRoleEditLevelPattern)
+	handleDynamicMessageComponent(&b, config.HandleXpRoleDel, config.XpRoleDel)
 	// channel related
-	bot.HandleMessageComponent(func(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+	b.HandleMessageComponent(func(s bot.Session, i *event.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 		if config.HandleModifyFallbackChannel(s, i, data, resp) {
 			commands.ConfigMessageComponent(s, i, data, resp)
 		}
 	}, config.ModifyFallbackChannel)
-	bot.HandleMessageComponent(func(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+	b.HandleMessageComponent(func(s bot.Session, i *event.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
 		if config.HandleModifyDisChannel(s, i, data, resp) {
 			commands.ConfigMessageComponent(s, i, data, resp)
 		}
 	}, config.ModifyDisChannel)
 	// reduce related
-	bot.HandleMessageComponent(config.HandleModifyPeriodicReduceCommand, config.ModifyTimeReduce)
-	bot.HandleModal(func(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.ModalSubmitData, resp *cmd.ResponseBuilder) {
+	b.HandleMessageComponent(config.HandleModifyPeriodicReduceCommand, config.ModifyTimeReduce)
+	b.HandleModal(func(s bot.Session, i *event.InteractionCreate, data *interaction.ModalSubmitData, resp *cmd.ResponseBuilder) {
 		if config.HandleTimeReduceSet(s, i, data, resp) {
 			commands.ConfigModal(s, i, data, resp)
 		}
 	}, config.TimeReduceSet)
 
 	// xp handlers
-	bot.AddHandler(OnMessage)
-	bot.AddHandler(OnVoiceUpdate)
-	bot.AddHandler(OnLeave)
+	b.AddHandler(OnMessage)
+	b.AddHandler(OnVoiceUpdate)
+	b.AddHandler(OnLeave)
 
-	bot.Start()
+	b.Start()
 
 	if stopPeriodicReducer != nil {
 		stopPeriodicReducer <- true

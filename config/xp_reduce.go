@@ -5,9 +5,10 @@ import (
 	"strconv"
 
 	"github.com/anhgelus/gokord/cmd"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/component"
 	"github.com/nyttikord/gokord/discord/types"
+	"github.com/nyttikord/gokord/event"
 	"github.com/nyttikord/gokord/interaction"
 )
 
@@ -16,7 +17,7 @@ const (
 	TimeReduceSet    = "time_reduce_set"
 )
 
-func HandleModifyPeriodicReduceCommand(s *discordgo.Session, i *discordgo.InteractionCreate, _ *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
+func HandleModifyPeriodicReduceCommand(s bot.Session, i *event.InteractionCreate, _ *interaction.MessageComponentData, _ *cmd.ResponseBuilder) {
 	cfg := GetGuildConfig(i.GuildID)
 	response := interaction.Response{
 		Type: types.InteractionResponseModal,
@@ -48,7 +49,7 @@ func HandleModifyPeriodicReduceCommand(s *discordgo.Session, i *discordgo.Intera
 	}
 }
 
-func HandleTimeReduceSet(s *discordgo.Session, i *discordgo.InteractionCreate, data *interaction.ModalSubmitData, resp *cmd.ResponseBuilder) bool {
+func HandleTimeReduceSet(s bot.Session, i *event.InteractionCreate, data *interaction.ModalSubmitData, resp *cmd.ResponseBuilder) bool {
 	v := data.Components[0].(*component.Label).Component.(*component.TextInput).Value
 	days, err := strconv.Atoi(v)
 	if err != nil {

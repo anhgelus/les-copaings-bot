@@ -8,11 +8,12 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord/cmd"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/channel"
+	"github.com/nyttikord/gokord/event"
 )
 
-func Top(s *discordgo.Session, i *discordgo.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
+func Top(s bot.Session, i *event.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	err := resp.IsDeferred().Send()
 	if err != nil {
 		s.LogError(err, "sending deferred")
