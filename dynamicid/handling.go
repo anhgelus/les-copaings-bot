@@ -26,16 +26,17 @@ func HandleDynamicMessageComponent[DynamicData any](
 			return
 		}
 		data := i.MessageComponentData()
-		if strings.HasPrefix(data.CustomID, base+";") {
-			dynamicID := data.CustomID[len(base)+1:]
-			dynamicData := new(DynamicData)
-			err := UnmarshallCSV(dynamicID, dynamicData)
-			if err != nil {
-				s.Logger().Error("Unable to parse CustomID %s for %s", data.CustomID, base, "error", err)
-				return
-			}
-			handler(s, i, data, dynamicData, cmd.NewResponseBuilder(s, i))
+		if !strings.HasPrefix(data.CustomID, base+";") {
+			return
 		}
+		dynamicID := data.CustomID[len(base)+1:]
+		dynamicData := new(DynamicData)
+		err := UnmarshallCSV(dynamicID, dynamicData)
+		if err != nil {
+			s.Logger().Error("Unable to parse CustomID", "error", err, "CustomID", data.CustomID, "base", base)
+			return
+		}
+		handler(s, i, data, dynamicData, cmd.NewResponseBuilder(s, i))
 	})
 }
 
@@ -60,7 +61,7 @@ func HandleDynamicModalComponent[DynamicData any](
 			dynamicData := new(DynamicData)
 			err := UnmarshallCSV(dynamicID, dynamicData)
 			if err != nil {
-				s.Logger().Error("Unable to parse CustomID %s for %s", data.CustomID, base, "error", err)
+				s.Logger().Error("Unable to parse CustomID", "error", err, "CustomID", data.CustomID, "base", base)
 				return
 			}
 			handler(s, i, data, dynamicData, cmd.NewResponseBuilder(s, i))
@@ -69,5 +70,5 @@ func HandleDynamicModalComponent[DynamicData any](
 }
 
 func FormatCustomID(base string, dynamicData any) string {
-	return base + ";" + Marshall(dynamicData)
+	return base + ";" + MarshallCSV(dynamicData)
 }

@@ -42,9 +42,11 @@ type EditIDWithRole struct {
 	RoleCounterID uint
 }
 
-var messageCounter uint = 1
-var roleCounter uint = 1
-var messageEdits map[uint]*config.RoleReactMessage = make(map[uint]*config.RoleReactMessage)
+var (
+	messageCounter uint                              = 1
+	roleCounter    uint                              = 1
+	messageEdits   map[uint]*config.RoleReactMessage = make(map[uint]*config.RoleReactMessage)
+)
 
 func MessageContent(message *config.RoleReactMessage) string {
 	content := "## Réagis pour obtenir un rôle"
@@ -153,7 +155,7 @@ func MessageModifyData(i *event.InteractionCreate, parameters *EditID) *interact
 				},
 			},
 		}}...)
-	responsedata := &interaction.ResponseData{
+	responseData := &interaction.ResponseData{
 		Flags: channel.MessageFlagsIsComponentsV2 | channel.MessageFlagsEphemeral,
 		Components: []component.Component{
 			&component.Container{
@@ -161,7 +163,7 @@ func MessageModifyData(i *event.InteractionCreate, parameters *EditID) *interact
 			},
 		},
 	}
-	return responsedata
+	return responseData
 }
 
 func MessageModifyRoleComponents(i *event.InteractionCreate, parameters *EditIDWithRole, emojiMessage string) []component.Message {
@@ -266,10 +268,14 @@ func HandleCommand(
 	o cmd.OptionMap,
 	resp *cmd.ResponseBuilder,
 ) {
-	s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 		Type: types.InteractionResponseDeferredMessageUpdate,
 		Data: &interaction.ResponseData{Flags: channel.MessageFlagsEphemeral},
 	})
+	if err != nil {
+		s.Logger().Error("unable to defer interaction", "error", err)
+		return
+	}
 	c := o["salon"]
 	var channelID string
 	if c != nil {
@@ -577,14 +583,22 @@ func HandleApplyMessage(
 				for _, role := range oldMessage.Roles {
 					_, ok := roles[role.ID]
 					if !ok {
-						oldGokord.DB.Delete(role)
+						err := oldGokord.DB.Delete(role).Error
+						if err != nil {
+							s.Logger().Error("unable to delete reaction role from database", "error", err)
+						}
 					}
 				}
-				// cfg.Save()
 				cfg.RrMessages[messageIndex] = *message
-				oldGokord.DB.Save(cfg.RrMessages[messageIndex])
+				err := oldGokord.DB.Save(cfg.RrMessages[messageIndex]).Error
+				if err != nil {
+					s.Logger().Error("unable to save rolereaction message in database", "error", err)
+				}
 				for _, role := range cfg.RrMessages[messageIndex].Roles {
-					oldGokord.DB.Save(role)
+					err = oldGokord.DB.Save(role).Error
+					if err != nil {
+						s.Logger().Error("unable to save rolereaction role in database", "error", err)
+					}
 				}
 			}
 		}
@@ -743,13 +757,12 @@ func HandleSetReaction(
 		emojiName := emoji.APIName()
 		err := s.ChannelAPI().MessageReactionAdd(message.ChannelID, message.MessageID, emojiName)
 		if err != nil {
-			responseData := MessageModifyRoleData(i, parameters, "La réaction n'est pas utilisable. Cela peut être résolu en l'ajoutant à ce serveur")
-			err = s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
-				Type: types.InteractionResponseUpdateMessage,
-				Data: &responseData,
+			editResponseComponents := MessageModifyRoleComponents(i, parameters, "La réaction n'est pas utilisable. Cela peut être résolu en l'ajoutant à ce serveur")
+			_, err := s.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
+				Components: &editResponseComponents,
 			})
 			if err != nil {
-				s.Logger().Error("Unable to edit original response", "error", err)
+				s.Logger().Error("unable to send unusable reaction message", "error", err)
 			}
 			return
 		}
@@ -764,11 +777,13 @@ func HandleSetReaction(
 			s.Logger().Error("Unable to edit original response", "error", err)
 		}
 	case <-ctx.Done():
-		responseData := MessageModifyRoleData(i, parameters, "Le temps d'attente a été dépassé")
-		s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
-			Type: types.InteractionResponseUpdateMessage,
-			Data: &responseData,
+		editResponseComponents := MessageModifyRoleComponents(i, parameters, "Le temps d'attente a été dépassé")
+		_, err := s.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
+			Components: &editResponseComponents,
 		})
+		if err != nil {
+			s.Logger().Error("unable to send timed out reaction message", "error", err)
+		}
 	}
 }
 

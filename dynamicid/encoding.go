@@ -8,12 +8,14 @@ import (
 	"strings"
 )
 
-var stringReflectType = reflect.TypeOf(string(""))
-var intReflectType = reflect.TypeOf(int(0))
-var uintReflectType = reflect.TypeOf(uint(0))
-var boolReflectType = reflect.TypeOf(bool(false))
+var (
+	stringReflectType = reflect.TypeOf(string(""))
+	intReflectType    = reflect.TypeOf(int(0))
+	uintReflectType   = reflect.TypeOf(uint(0))
+	boolReflectType   = reflect.TypeOf(bool(false))
+)
 
-// Unmarshall a CSV record into a struct in-place
+// UnmarshallCSV record into a struct in-place
 func UnmarshallCSV(data string, v any) error {
 	r := csv.NewReader(strings.NewReader(data))
 	record, err := r.Read()
@@ -23,7 +25,7 @@ func UnmarshallCSV(data string, v any) error {
 	s := reflect.ValueOf(v).Elem()
 	t := s.Type()
 	if s.NumField() != len(record) {
-		return &FieldMismatch{s.NumField(), len(record)}
+		return &ErrFieldMismatch{s.NumField(), len(record)}
 	}
 	for i := 0; i < s.NumField(); i++ {
 		f := s.Field(i)
@@ -50,18 +52,18 @@ func UnmarshallCSV(data string, v any) error {
 				case "1":
 					f.SetBool(true)
 				default:
-					return &Unreadable{"boolean", record[i]}
+					return &ErrUnreadable{"boolean", record[i]}
 				}
 			default:
-				return &UnsupportedType{Type: f.Type().String()}
+				return &ErrUnsupportedType{Type: f.Type().String()}
 			}
 		}
 	}
 	return nil
 }
 
-// Marshall a struct into a CSV record
-func Marshall(v any) string {
+// MarshallCSV from a struct
+func MarshallCSV(v any) string {
 	s := reflect.ValueOf(v)
 	r := make([]string, 0)
 	for i := 0; i < s.NumField(); i++ {
@@ -88,26 +90,26 @@ func Marshall(v any) string {
 	return b.String()
 }
 
-type FieldMismatch struct {
+type ErrFieldMismatch struct {
 	Expected, Found int
 }
 
-func (e *FieldMismatch) Error() string {
+func (e *ErrFieldMismatch) Error() string {
 	return fmt.Sprintf("CSV line fields mismatch. Expected %d found %d", e.Expected, e.Found)
 }
 
-type Unreadable struct {
+type ErrUnreadable struct {
 	Format, Found string
 }
 
-func (e *Unreadable) Error() string {
+func (e *ErrUnreadable) Error() string {
 	return fmt.Sprintf("Unreadable value as %s. Found %s", e.Format, e.Found)
 }
 
-type UnsupportedType struct {
+type ErrUnsupportedType struct {
 	Type string
 }
 
-func (e *UnsupportedType) Error() string {
+func (e *ErrUnsupportedType) Error() string {
 	return "Unsupported type: " + e.Type
 }

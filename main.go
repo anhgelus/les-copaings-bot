@@ -212,16 +212,14 @@ func main() {
 			s.Logger().Error("unable to push rolereaction message command", "error", err)
 			return
 		}
-		s.Logger().Debug("pushed rolereaction message command, commandid %s", c.ID)
+		s.Logger().Debug("pushed rolereaction message command", "CommandID", c.ID)
 	})
 	b.AddHandler(func(s bot.Session, i *event.InteractionCreate) {
-		s.Logger().Debug("Handler successfuly called 1")
 		if i.Type != types.InteractionApplicationCommand {
 			return
 		}
 		data := i.CommandData()
-		s.Logger().Debug("Handler successfuly called")
-		if "Modifier" == data.Name {
+		if data.Name == "Modifier" {
 			resp := cmd.NewResponseBuilder(s, i)
 			rolereact.HandleModifyCommand(s, i, data, resp)
 		}

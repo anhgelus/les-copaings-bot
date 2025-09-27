@@ -20,11 +20,10 @@ func HandleReactionAdd(
 		Joins("JOIN role_react_messages ON role_reacts.role_react_message_id = role_react_messages.id").
 		Where("role_react_messages.message_id = ? AND role_reacts.reaction = ?", e.MessageID, e.MessageReaction.Emoji.APIName()).
 		Scan(&results)
-	s.Logger().Debug("test: %#v\n", results)
 	for _, role := range results {
 		err := s.GuildAPI().MemberRoleAdd(e.GuildID, e.UserID, role.RoleID)
 		if err != nil {
-			s.Logger().Error("Unable to add message after member added reaction", "error", err)
+			s.Logger().Error("Unable to add role after member added reaction", "error", err)
 		}
 	}
 }
@@ -38,8 +37,10 @@ func HandleReactionRemove(
 		Joins("JOIN role_react_messages ON role_reacts.role_react_message_id = role_react_messages.id").
 		Where("role_react_messages.message_id = ? AND role_reacts.reaction = ?", e.MessageID, e.MessageReaction.Emoji.APIName()).
 		Scan(&results)
-	s.Logger().Debug("test: %#v\n", results)
 	for _, role := range results {
-		s.GuildAPI().MemberRoleRemove(e.GuildID, e.UserID, role.RoleID)
+		err := s.GuildAPI().MemberRoleRemove(e.GuildID, e.UserID, role.RoleID)
+		if err != nil {
+			s.Logger().Error("Unable to remove role after member removed reaction", "error", err)
+		}
 	}
 }
