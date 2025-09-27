@@ -433,6 +433,22 @@ func HandleStartSetNote(
 	parameters *EditID,
 	resp *cmd.ResponseBuilder,
 ) {
+	message, ok := GetMessageFromEditID(i, parameters.MessageEditID)
+	if !ok {
+		err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+			Type: types.InteractionResponseUpdateMessage,
+			Data: &interaction.ResponseData{
+				Flags: channel.MessageFlagsEphemeral | channel.MessageFlagsIsComponentsV2,
+				Components: []component.Component{
+					&component.TextDisplay{Content: "Impossible de trouver la modification de message. Veuillez réessayer."},
+				},
+			},
+		})
+		if err != nil {
+			s.Logger().Error("Unable to send message edit not found message", "error", err)
+		}
+		return
+	}
 	err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 		Type: types.InteractionResponseModal,
 		Data: &interaction.ResponseData{
@@ -446,6 +462,7 @@ func HandleStartSetNote(
 						Style:     component.TextInputParagraph,
 						MaxLength: 2000,
 						CustomID:  "note",
+						Value:     message.Note,
 					},
 				},
 			},
