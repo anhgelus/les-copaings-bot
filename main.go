@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"log/slog"
 	"os"
 	"regexp"
 	"time"
@@ -22,7 +23,6 @@ import (
 	"github.com/nyttikord/gokord/discord/types"
 	"github.com/nyttikord/gokord/event"
 	"github.com/nyttikord/gokord/interaction"
-	"github.com/nyttikord/gokord/logger"
 	"golang.org/x/image/font/opentype"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/font"
@@ -47,7 +47,7 @@ var interTTF []byte
 func init() {
 	err := godotenv.Load()
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		logger.Log(logger.LevelError, 0, "Error while loading .env file: %v", err.Error())
+		slog.Error("error while loading .env file", "error", err)
 	}
 	flag.StringVar(&token, "token", os.Getenv("TOKEN"), "token of the bot")
 
@@ -113,7 +113,7 @@ func handleDynamicModalComponent(
 
 		data := i.ModalSubmitData()
 		content, _ := json.Marshal(data)
-		s.LogDebug("%s", content)
+		s.Logger().Debug(string(content))
 		parameters := compiledPattern.FindStringSubmatch(data.CustomID)
 		if parameters == nil {
 			return
@@ -225,7 +225,7 @@ func main() {
 			user.PeriodicReducer(dg)
 
 			stopPeriodicReducer = gokord.NewTimer(d, func(stop chan<- interface{}) {
-				dg.LogDebug("Periodic reducer")
+				dg.Logger().Debug("periodic reducer")
 				user.PeriodicReducer(dg)
 			})
 		},

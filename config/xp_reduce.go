@@ -45,7 +45,7 @@ func HandleModifyPeriodicReduceCommand(s bot.Session, i *event.InteractionCreate
 	}
 	err := s.InteractionAPI().Respond(i.Interaction, &response)
 	if err != nil {
-		s.LogError(err, "Sending xp reduce modal")
+		s.Logger().Error("sending xp reduce modal", "error", err)
 	}
 }
 
@@ -55,14 +55,14 @@ func HandleTimeReduceSet(s bot.Session, i *event.InteractionCreate, data *intera
 	if err != nil {
 		err = resp.IsEphemeral().SetMessage(fmt.Sprintf("La valeur indiquée, `%s`, c'est pas un entier.", v)).Send()
 		if err != nil {
-			s.LogError(err, "Sending bad input message")
+			s.Logger().Error("sending bad input message", "error", err)
 		}
 		return false
 	}
 	if days < 30 {
 		err = resp.IsEphemeral().SetMessage("Le nombre de jours doit être suppérieur à 30.").Send()
 		if err != nil {
-			s.LogError(err, "Sending less than 30 days message")
+			s.Logger().Error("sending less than 30 days message", "error", err)
 		}
 		return false
 	}
@@ -70,7 +70,7 @@ func HandleTimeReduceSet(s bot.Session, i *event.InteractionCreate, data *intera
 	cfg.DaysXPRemains = uint(days)
 	err = cfg.Save()
 	if err != nil {
-		s.LogError(err, "Saving DaysXPRemains configuration")
+		s.Logger().Error("saving DaysXPRemains configuration", "error", err)
 		return false
 	}
 	return true

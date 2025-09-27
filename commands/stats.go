@@ -57,7 +57,7 @@ func Stats(s bot.Session, i *event.InteractionCreate, opt cmd.OptionMap, resp *c
 		if in < 1 || uint(in) > cfg.DaysXPRemains {
 			msg := fmt.Sprintf("Nombre de jours invalide. Il doit être strictement positif et inférieur à %d", cfg.DaysXPRemains)
 			if err := resp.SetMessage(msg).IsEphemeral().Send(); err != nil {
-				s.LogError(err, "sending error invalid days")
+				s.Logger().Error("sending error invalid days", "error", err)
 			}
 			return
 		}
@@ -65,7 +65,7 @@ func Stats(s bot.Session, i *event.InteractionCreate, opt cmd.OptionMap, resp *c
 	}
 	err := resp.IsDeferred().Send()
 	if err != nil {
-		s.LogError(err, "sending deferred")
+		s.Logger().Error("sending deferred", "error", err)
 		return
 	}
 	go func() {
@@ -76,16 +76,16 @@ func Stats(s bot.Session, i *event.InteractionCreate, opt cmd.OptionMap, resp *c
 			w, err = statsAll(s, i, days)
 		}
 		if err != nil {
-			s.LogError(err, "generating stats in %s", i.GuildID)
+			s.Logger().Error("generating stats", "error", err, "guild", i.GuildID)
 			if err = resp.IsEphemeral().SetMessage("Il y a eu une erreur...").Send(); err != nil {
-				s.LogError(err, "sending error occurred")
+				s.Logger().Error("sending error occurred", "error", err)
 			}
 			return
 		}
 		b := new(bytes.Buffer)
 		_, err = w.WriteTo(b)
 		if err != nil {
-			s.LogError(err, "writing png")
+			s.Logger().Error("writing png", "error", err)
 		}
 		err = resp.AddFile(&channel.File{
 			Name:        "plot.png",
@@ -93,7 +93,7 @@ func Stats(s bot.Session, i *event.InteractionCreate, opt cmd.OptionMap, resp *c
 			Reader:      b,
 		}).Send()
 		if err != nil {
-			s.LogError(err, "sending stats")
+			s.Logger().Error("sending stats", "error", err)
 		}
 	}()
 }
@@ -122,7 +122,7 @@ func stats(s bot.Session, i *event.InteractionCreate, days int, execSql func(bef
 	if gokord.Debug {
 		var rawCopaingData []*user.CopaingXP
 		if err := execSql("SELECT * FROM copaing_xps ", "").Scan(&rawCopaingData).Error; err != nil {
-			s.LogError(err, "fetching result")
+			s.Logger().Error("fetching result", "error", err)
 			return nil, err
 		}
 		rawData = make([]*data, len(rawCopaingData))
@@ -138,7 +138,7 @@ func stats(s bot.Session, i *event.InteractionCreate, days int, execSql func(bef
 		if err := execSql(
 			`SELECT "created_at"::date::text, sum("xp") as xp, "copaing_id" FROM copaing_xps `, ` GROUP BY "created_at"::date, "copaing_id"`,
 		).Scan(&rawDbData).Error; err != nil {
-			s.LogError(err, "fetching result")
+			s.Logger().Error("fetching result", "error", err)
 			return nil, err
 		}
 		rawData = make([]*data, len(rawDbData))
@@ -160,10 +160,10 @@ func stats(s bot.Session, i *event.InteractionCreate, days int, execSql func(bef
 			var cp user.Copaing
 			if err := gokord.DB.First(&cp, raw.CopaingID).Error; err != nil {
 				if !errors.Is(err, gorm.ErrRecordNotFound) {
-					s.LogError(err, "finding copaing %d", raw.CopaingID)
+					s.Logger().Error("finding copaing", "error", err, "copaing", raw.CopaingID)
 					return nil, err
 				}
-				s.LogWarn("Copaing %d not found, skipping", raw.CopaingID)
+				s.Logger().Warn("copaing not found, skipping", "copaing", raw.CopaingID)
 				continue
 			}
 			copaings[raw.CopaingID] = &cp
@@ -222,7 +222,7 @@ func generatePlot(s bot.Session, i *event.InteractionCreate, copaings map[int]*u
 	for in, c := range copaings {
 		m, err := s.GuildAPI().Member(i.GuildID, c.DiscordID)
 		if err != nil {
-			s.LogError(err, "fetching guild member")
+			s.Logger().Error("fetching guild member", "error", err)
 			return nil, err
 		}
 		slices.SortFunc(stats[in], func(a, b plotter.XY) int {
@@ -236,7 +236,6 @@ func generatePlot(s bot.Session, i *event.InteractionCreate, copaings map[int]*u
 		})
 		l, _, err := plotter.NewLinePoints(plotter.XYs(stats[in]))
 		if err != nil {
-			s.LogError(err, "adding line points")
 			return nil, err
 		}
 		l.Color = colors[cnt%len(colors)]
@@ -251,11 +250,5 @@ func generatePlot(s bot.Session, i *event.InteractionCreate, copaings map[int]*u
 		p.Legend.Add(m.DisplayName(), l)
 		cnt++
 	}
-	w, err := p.WriterTo(12*vg.Inch, 8*vg.Inch, "png")
-
-	if err != nil {
-		s.LogError(err, "generating png")
-		return nil, err
-	}
-	return w, nil
+	return p.WriterTo(12*vg.Inch, 8*vg.Inch, "png")
 }

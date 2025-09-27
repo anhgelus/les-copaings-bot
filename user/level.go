@@ -18,16 +18,28 @@ func onNewLevel(s bot.Session, m *user.Member, level uint) {
 	xpForLevel := exp.LevelXP(level)
 	for _, role := range cfg.XpRoles {
 		if role.XP <= xpForLevel && !slices.Contains(m.Roles, role.RoleID) {
-			s.LogDebug("add role %s to %s in %s", role.RoleID, m.DisplayName(), m.GuildID)
+			s.Logger().Debug("add role", "role", role.RoleID, "user", m.DisplayName(), "guild", m.GuildID)
 			err := s.GuildAPI().MemberRoleAdd(m.GuildID, m.User.ID, role.RoleID)
 			if err != nil {
-				s.LogError(err, "adding role %s to %s in %s", role.RoleID, m.DisplayName(), m.GuildID)
+				s.Logger().Error(
+					"adding role",
+					"error", err,
+					"role", role.RoleID,
+					"user", m.DisplayName(),
+					"guild", m.GuildID,
+				)
 			}
 		} else if role.XP > xpForLevel && slices.Contains(m.Roles, role.RoleID) {
-			s.LogDebug("remove role %s to %s in %s", role.RoleID, m.DisplayName(), m.GuildID)
+			s.Logger().Debug("remove role", "role", role.RoleID, "user", m.DisplayName(), "guild", m.GuildID)
 			err := s.GuildAPI().MemberRoleRemove(m.GuildID, m.User.ID, role.RoleID)
 			if err != nil {
-				s.LogError(err, "removing role s to %s in %s", role.RoleID, m.DisplayName(), m.GuildID)
+				s.Logger().Error(
+					"removing role",
+					"error", err,
+					"role", role.RoleID,
+					"user", m.DisplayName(),
+					"guild", m.GuildID,
+				)
 			}
 		}
 	}
@@ -36,7 +48,7 @@ func onNewLevel(s bot.Session, m *user.Member, level uint) {
 func (c *Copaing) OnNewLevel(s *discordgo.Session, level uint) {
 	m, err := s.GuildAPI().Member(c.GuildID, c.DiscordID)
 	if err != nil {
-		s.LogError(err, "getting member %s in %s for new level", c.DiscordID, c.GuildID)
+		s.Logger().Error("getting member for new level", "error", err, "user", c.DiscordID, "guild", c.GuildID)
 		return
 	}
 	onNewLevel(s, m, level)
@@ -46,7 +58,7 @@ func PeriodicReducer(s *discordgo.Session) {
 	wg := &sync.WaitGroup{}
 	var cs []*Copaing
 	if err := gokord.DB.Find(&cs).Error; err != nil {
-		s.LogError(err, "fetching all copaings")
+		s.Logger().Error("fetching all copaings", "error", err)
 		return
 	}
 	cxps := make([]*cXP, len(cs))
@@ -57,9 +69,9 @@ func PeriodicReducer(s *discordgo.Session) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			xp, err := c.GetXP()
+			xp, err := c.GetXP(s.Logger())
 			if err != nil {
-				s.LogError(err, "getting xp of copaing %d in %s", c.ID, c.GuildID)
+				s.Logger().Error("getting xp", "error", err, "copaing", c.ID, "guild", c.GuildID)
 				xp = 0
 			}
 			cxps[i] = &cXP{
@@ -81,26 +93,26 @@ func PeriodicReducer(s *discordgo.Session) {
 				Where("guild_id = ? and created_at < ?", g.ID, exp.TimeStampNDaysBefore(cfg.DaysXPRemains)).
 				Delete(&CopaingXP{})
 			if res.Error != nil {
-				s.LogError(res.Error, "removing old xp in %s", g.ID)
+				s.Logger().Error("removing old xp", "error", res.Error, "guild", g.ID)
 			}
-			s.LogDebug("Guild cleaned %s, rows affected: %d", g.Name, res.RowsAffected)
+			s.Logger().Debug("guild cleaned", "guild", g.Name, "rows affected", res.RowsAffected)
 		}()
 	}
 	wg.Wait()
 	for i, c := range cxps {
 		if i%50 == 49 {
-			s.LogDebug("Sleeping...")
+			s.Logger().Debug("sleeping...")
 			time.Sleep(15 * time.Second) // prevents spamming the API
 		}
 		oldXp := c.GetXP()
-		xp, err := c.ToCopaing().GetXP()
+		xp, err := c.ToCopaing().GetXP(s.Logger())
 		if err != nil {
-			s.LogError(err, "getting xp of copaing %s in %s", c.ID, c.GuildID)
+			s.Logger().Error("getting xp of copaing", "error", err, "copaing", c.ID, "guild", c.GuildID)
 			continue
 		}
 		if exp.Level(oldXp) != exp.Level(xp) {
 			c.OnNewLevel(s, exp.Level(xp))
 		}
 	}
-	s.LogDebug("Periodic reduce finished for %d guilds", i)
+	s.Logger().Debug("periodic reduce finished", "guilds affected", i)
 }

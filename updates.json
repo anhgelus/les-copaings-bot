@@ -48,6 +48,6 @@
       "removed": [],
       "updated": []
     },
-    "changelog": "Nouvelle config très stylée par @ascpial (merci à lui) !\nAjout du role react (enfin), toujours par @ascpial (encore merci à lui) !\nAmélioration de la commande stats, par @anhgelus et @ascpial.\nRéécriture d'une bonne partie du bot pour remplacer discordgo par [gokord](<https://github.com/nyttikord/gokord>).\n\nLa prochaine version devrait arrivée prochainement, elle touchera surtout des modifications en interne, peut visible par les utilisateurs et les administrateurs."
+    "changelog": "Nouvelle config très stylée par @ascpial (merci à lui) !\nAjout du role react (enfin), toujours par @ascpial (encore merci à lui) !\nAmélioration de la commande stats, par @anhgelus et @ascpial.\nRéécriture d'une bonne partie du bot pour remplacer discordgo par [gokord](<https://github.com/nyttikord/gokord>).\n\nLa prochaine version devrait arriver prochainement. Elle touchera surtout à du code en interne peu visible par les utilisateurs et les administrateurs."
   }
 ]

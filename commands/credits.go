@@ -15,6 +15,6 @@ func Credits(s bot.Session, _ *event.InteractionCreate, _ cmd.OptionMap, resp *c
 	msg += "- [Inter](<https://github.com/rsms/inter>)"
 	err := resp.SetMessage(msg).Send()
 	if err != nil {
-		s.LogError(err, "sending credits")
+		s.Logger().Error("sending credits", "error", err)
 	}
 }

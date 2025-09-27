@@ -29,7 +29,7 @@ func HandleModifyFallbackChannel(s bot.Session, i *event.InteractionCreate, data
 	cfg.FallbackChannel = channelID
 	err := cfg.Save()
 	if err != nil {
-		s.LogError(err, "Saving fallback channel")
+		s.Logger().Error("saving fallback channel", "error", err)
 		return false
 	}
 	return true
@@ -40,7 +40,7 @@ func HandleModifyDisChannel(s bot.Session, i *event.InteractionCreate, data *int
 	cfg.DisabledChannels = strings.Join(data.Values, ";")
 	err := cfg.Save()
 	if err != nil {
-		s.LogError(err, "Unable to save disabled channel")
+		s.Logger().Error("unable to save disabled channel", "error", err)
 		return false
 	}
 	return true

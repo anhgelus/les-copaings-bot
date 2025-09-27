@@ -38,15 +38,15 @@ func (cfg *GuildConfig) IsDisabled(s bot.Session, channelID string) bool {
 		ok = !strings.Contains(cfg.DisabledChannels, channelID)
 		c, err := s.ChannelAPI().State.Channel(channelID)
 		if err != nil {
-			s.LogError(err, "unable to find channel %s in state", c)
+			s.Logger().Error("unable to find channel %s in state", "error", err, "channel", c)
 			c, err = s.ChannelAPI().Channel(channelID)
 			if err == nil {
 				err = s.ChannelAPI().State.ChannelAdd(c)
 				if err != nil {
-					s.LogError(err, "unable to add channel %s to state", c)
+					s.Logger().Error("unable to add channel to state", "error", err, "channel", c)
 				}
 			} else {
-				s.LogError(err, "unable to fetch channel %s", s)
+				s.Logger().Error("unable to fetch channel", "error", err, "channel", c)
 				return false
 			}
 		}

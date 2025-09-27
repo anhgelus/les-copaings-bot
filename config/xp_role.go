@@ -92,7 +92,7 @@ func HandleXpRole(
 	}
 	err := s.InteractionAPI().Respond(i.Interaction, response)
 	if err != nil {
-		s.LogError(err, "Sending config")
+		s.Logger().Error("sending config", "error", err)
 	}
 }
 
@@ -134,7 +134,7 @@ func HandleXpRoleNew(
 	}
 	err := s.InteractionAPI().Respond(i.Interaction, response)
 	if err != nil {
-		s.LogError(err, "Sending modal to add")
+		s.Logger().Error("sending modal to add", "error", err)
 	}
 }
 
@@ -147,7 +147,7 @@ func HandleXpRoleEdit(
 	config := GetGuildConfig(i.GuildID)
 	id, err := getRoleLevelID(parameters)
 	if err != nil {
-		s.LogError(err, "Reading dynamic CustomID")
+		s.Logger().Error("reading dynamic CustomID", "error", err)
 		return
 	}
 	_, role := config.FindXpRoleID(id)
@@ -199,7 +199,7 @@ func HandleXpRoleEdit(
 
 	err = s.InteractionAPI().Respond(i.Interaction, response)
 	if err != nil {
-		s.LogError(err, "Sending xp_role config")
+		s.Logger().Error("sending xp_role config", "error", err)
 	}
 }
 
@@ -211,7 +211,7 @@ func HandleXpRoleEditRole(
 ) {
 	id, err := getRoleLevelID(parameters)
 	if err != nil {
-		s.LogError(err, "Reading dynamic CustomID")
+		s.Logger().Error("reading dynamic CustomID", "error", err)
 		return
 	}
 	role := data.Values[0]
@@ -226,14 +226,14 @@ func HandleXpRoleEditRole(
 			},
 		})
 		if err != nil {
-			s.LogError(err, "Sending unable to get role message")
+			s.Logger().Error("sending unable to get role message", "error", err)
 		}
 		return
 	}
 	xpRole.RoleID = role
 	err = gokord.DB.Save(xpRole).Error
 	if err != nil {
-		s.LogError(err, "Saving config guild_id %s, id %d, type add", i.GuildID, id)
+		s.Logger().Error("saving config", "error", err, "guild", i.GuildID, "id", id, "type", "add")
 	}
 	HandleXpRoleEdit(s, i, &interaction.MessageComponentData{}, parameters, resp)
 }
@@ -247,7 +247,7 @@ func HandleXpRoleEditLevelStart(
 ) {
 	id, err := getRoleLevelID(parameters)
 	if err != nil {
-		s.LogError(err, "Reading dynamic CustomID")
+		s.Logger().Error("reading dynamic CustomID", "error", err)
 		return
 	}
 	cfg := GetGuildConfig(i.GuildID)
@@ -261,7 +261,7 @@ func HandleXpRoleEditLevelStart(
 			},
 		})
 		if err != nil {
-			s.LogError(err, "Sending Unable to get role message")
+			s.Logger().Error("sending unable to get role message", "error", err)
 		}
 		return
 	}
@@ -288,7 +288,7 @@ func HandleXpRoleEditLevelStart(
 	}
 	err = s.InteractionAPI().Respond(i.Interaction, response)
 	if err != nil {
-		s.LogError(err, "Sending Edit level modal")
+		s.Logger().Error("sending edit level modal", "error", err)
 	}
 }
 
@@ -301,7 +301,7 @@ func HandleXpRoleEditLevel(
 ) {
 	id, err := getRoleLevelID(parameters)
 	if err != nil {
-		s.LogError(err, "Reading dynamic CustomID")
+		s.Logger().Error("reading dynamic CustomID", "error", err)
 		return
 	}
 
@@ -315,7 +315,7 @@ func HandleXpRoleEditLevel(
 			).
 			Send()
 		if err != nil {
-			s.LogError(err, "Sending bad number warning message")
+			s.Logger().Error("sending bad number warning message", "error", err)
 		}
 		return
 	}
@@ -332,14 +332,14 @@ func HandleXpRoleEditLevel(
 			},
 		})
 		if err != nil {
-			s.LogError(err, "Sending unable to modify role message")
+			s.Logger().Error("sending unable to modify role message", "error", err)
 		}
 		return
 	}
 	xpRole.XP = xp
 	err = gokord.DB.Save(xpRole).Error
 	if err != nil {
-		s.LogError(err, "Saving config guild_id %s, id %d, type add", i.GuildID, id)
+		s.Logger().Error("saving config", "guild", i.GuildID, "id", id, "type", "edit")
 	}
 	HandleXpRoleEdit(s, i, &interaction.MessageComponentData{}, parameters, resp)
 }
@@ -353,13 +353,13 @@ func HandleXpRoleDel(
 ) {
 	id, err := getRoleLevelID(dynamicValues)
 	if err != nil {
-		s.LogError(err, "reading dynamic CustomID")
+		s.Logger().Error("reading dynamic CustomID", "error", err)
 		return
 	}
 	cfg := GetGuildConfig(i.GuildID)
 	_, role := cfg.FindXpRoleID(id)
 	if role == nil {
-		err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err = s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Content: "Rôle introuvable. Peut-être a-t-il déjà été supprimé ?",
@@ -367,13 +367,13 @@ func HandleXpRoleDel(
 			},
 		})
 		if err != nil {
-			s.LogError(err, "Sending role not found message")
+			s.Logger().Error("sending role not found message", "error", err)
 		}
 		return
 	}
 	err = gokord.DB.Delete(role).Error
 	if err != nil {
-		s.LogError(err, "Deleting entry guild_id %s, id %d, type del", i.GuildID, id)
+		s.Logger().Error("deleting entry", "error", err, "guild", i.GuildID, "id", id, "type", "del")
 	}
 
 	HandleXpRole(s, i, &interaction.MessageComponentData{}, resp)
@@ -395,7 +395,7 @@ func HandleXpRoleAdd(
 			).
 			Send()
 		if err != nil {
-			s.LogError(err, "sending bad number warning message")
+			s.Logger().Error("sending bad number warning message", "error", err)
 		}
 		return
 	}
@@ -410,7 +410,7 @@ func HandleXpRoleAdd(
 	})
 	err = cfg.Save()
 	if err != nil {
-		s.LogError(err, "saving config for role %s in %s", roleId, i.GuildID)
+		s.Logger().Error("saving config", "error", err, "role", roleId, "guild", i.GuildID)
 		return
 	}
 

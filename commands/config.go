@@ -130,7 +130,7 @@ func ConfigCommand(
 	err := s.InteractionAPI().Respond(i.Interaction, ConfigResponse(i))
 
 	if err != nil {
-		s.LogError(err, "config/guild.go - Sending config")
+		s.Logger().Error("sending config", "error", err)
 	}
 }
 
@@ -145,7 +145,7 @@ func ConfigMessageComponent(
 	err := s.InteractionAPI().Respond(i.Interaction, response)
 
 	if err != nil {
-		s.LogError(err, "sending config")
+		s.Logger().Error("sending config", "error", err)
 	}
 }
 
@@ -160,6 +160,6 @@ func ConfigModal(
 	err := s.InteractionAPI().Respond(i.Interaction, response)
 
 	if err != nil {
-		s.LogError(err, "sending config")
+		s.Logger().Error("sending config", "error", err)
 	}
 }

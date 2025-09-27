@@ -39,7 +39,12 @@ func OnMessage(s bot.Session, m *event.MessageCreate) {
 	xp := min(exp.MessageXP(uint(len(trimmed)), exp.CalcDiversity(trimmed)), MaxXpPerMessage)
 	c.AddXP(s, m.Member, xp, func(_ uint, _ uint) {
 		if err := s.ChannelAPI().MessageReactionAdd(m.ChannelID, m.Message.ID, "⬆"); err != nil {
-			s.LogError(err, "add reaction for new level channel id %s, message id %s", m.ChannelID, m.Message.ID)
+			s.Logger().Error(
+				"add reaction for new level",
+				"error", err,
+				"channel", m.ChannelID,
+				"message", m.Message.ID,
+			)
 		}
 	})
 }
@@ -67,7 +72,7 @@ func genMapKey(guildID string, userID string) string {
 }
 
 func onConnection(s bot.Session, e *event.VoiceStateUpdate) {
-	s.LogDebug("User connected username %s", e.Member.DisplayName())
+	s.Logger().Debug("user connected", "user", e.Member.DisplayName())
 	connectedSince[genMapKey(e.GuildID, e.UserID)] = time.Now().Unix()
 }
 
@@ -77,21 +82,21 @@ func onDisconnect(s bot.Session, e *event.VoiceStateUpdate) {
 	// check the validity of user
 	con, ok := connectedSince[genMapKey(e.GuildID, e.UserID)]
 	if !ok || con == NotConnected {
-		s.LogWarn("User %s disconnect from a vocal but was registered as not connected", e.Member.DisplayName())
+		s.Logger().Warn(
+			"user disconnect from a vocal but was registered as not connected",
+			"user", e.Member.DisplayName(),
+		)
 		return
 	}
 	timeInVocal := now - con
-	s.LogDebug("User disconnected username %s, time in vocal %d", e.Member.DisplayName(), timeInVocal)
+	s.Logger().Debug("user disconnected", "user", e.Member.DisplayName(), "time in vocal", timeInVocal)
 	connectedSince[genMapKey(e.GuildID, e.UserID)] = NotConnected
 	// add exp
 	if timeInVocal < 0 {
-		s.LogWarn("Time spent in vocal negative discord_id %s, guild_id %s", e.UserID, e.GuildID)
+		s.Logger().Warn("time spent in vocal is negative", "user", e.Member.DisplayName(), "guild", e.GuildID)
 		return
 	}
-	if timeInVocal > MaxTimeInVocal {
-		s.LogWarn("User %s spent more than 6 hours in vocal", e.Member.DisplayName())
-		timeInVocal = MaxTimeInVocal
-	}
+	timeInVocal = min(timeInVocal, MaxTimeInVocal)
 	e.Member.GuildID = e.GuildID
 	c.AddXP(s, e.Member, exp.VocalXP(uint(timeInVocal)), func(_ uint, newLevel uint) {
 		cfg := config.GetGuildConfig(e.GuildID)
@@ -102,13 +107,13 @@ func onDisconnect(s bot.Session, e *event.VoiceStateUpdate) {
 			"%s est maintenant niveau %d", e.Member.Mention(), newLevel,
 		))
 		if err != nil {
-			s.LogError(err, "Sending new level in fallback channel")
+			s.Logger().Error("sending new level in fallback channel", "error", err)
 		}
 	})
 }
 
 func OnLeave(s bot.Session, e *event.GuildMemberRemove) {
-	s.LogDebug("Leave event user_id %s", e.User.ID)
+	s.Logger().Debug("leave event", "user", e.User.Username)
 	if e.User.Bot {
 		return
 	}
@@ -118,9 +123,9 @@ func OnLeave(s bot.Session, e *event.GuildMemberRemove) {
 		Delete(&user.CopaingXP{}).
 		Error
 	if err != nil {
-		s.LogError(err, "Deleting user xp from db user_id %s, guild_id %s", e.User.ID, e.GuildID)
+		s.Logger().Error("deleting user xp from DB", "user", e.User.Username, "guild", e.GuildID)
 	}
 	if err = c.Delete(); err != nil {
-		s.LogError(err, "Deleting user from DB user_id %s, guild_id %s", e.User.ID, e.GuildID)
+		s.Logger().Error("deleting user from DB", "user", e.User.Username, "guild", e.GuildID)
 	}
 }

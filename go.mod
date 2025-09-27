@@ -5,10 +5,10 @@ go 1.24.0
 toolchain go1.24.6
 
 require (
-	github.com/anhgelus/gokord v0.12.1-0.20250926161635-21b1b138fd90
+	github.com/anhgelus/gokord v0.12.1-0.20250927153335-e73ec7a067f2
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/joho/godotenv v1.5.1
-	github.com/nyttikord/gokord v0.31.1-0.20250926154959-93603cbc1df5
+	github.com/nyttikord/gokord v0.31.1-0.20250927153129-9bed7a4b26bf
 	github.com/pelletier/go-toml/v2 v2.2.4
 	golang.org/x/image v0.30.0
 	gonum.org/v1/plot v0.16.0
@@ -33,7 +33,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/redis/go-redis/v9 v9.14.0 // indirect
+	github.com/redis/go-redis/v9 v9.15.0 // indirect
 	golang.org/x/crypto v0.42.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect

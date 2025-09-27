@@ -16,7 +16,7 @@ import (
 func Top(s bot.Session, i *event.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	err := resp.IsDeferred().Send()
 	if err != nil {
-		s.LogError(err, "sending deferred")
+		s.Logger().Error("sending deferred", "error", err)
 		return
 	}
 	embeds := make([]*channel.MessageEmbed, 3)
@@ -24,9 +24,9 @@ func Top(s bot.Session, i *event.InteractionCreate, _ cmd.OptionMap, resp *cmd.R
 
 	fn := func(str string, n uint, d int, id int) {
 		defer wg.Done()
-		tops, err := user.GetBestXP(i.GuildID, n, d)
+		tops, err := user.GetBestXP(s.Logger(), i.GuildID, n, d)
 		if err != nil {
-			s.LogError(err, "fetching best xp, n: %d, d: %d, id: %d, guild: %s", n, d, id, i.GuildID)
+			s.Logger().Error("fetching best xp", "error", err, "n", n, "d", d, "id", id, "guild", i.GuildID)
 			embeds[id] = &channel.MessageEmbed{
 				Title:       str,
 				Description: "Erreur : impossible de récupérer la liste",
@@ -60,7 +60,7 @@ func Top(s bot.Session, i *event.InteractionCreate, _ cmd.OptionMap, resp *cmd.R
 		}
 		err = resp.Send()
 		if err != nil {
-			s.LogError(err, "sending response top")
+			s.Logger().Error("sending response top", "error", err)
 		}
 	}()
 }
