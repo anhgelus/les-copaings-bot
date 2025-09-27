@@ -1,21 +1,16 @@
 package rolereact
 
 import (
-	"context"
 	"fmt"
 	"slices"
-	"strings"
-	"time"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/dynamicid"
-	oldGokord "github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/channel"
 	"github.com/nyttikord/gokord/component"
 	"github.com/nyttikord/gokord/discord/types"
-	"github.com/nyttikord/gokord/emoji"
 	"github.com/nyttikord/gokord/event"
 	"github.com/nyttikord/gokord/interaction"
 )
@@ -47,220 +42,6 @@ var (
 	roleCounter    uint                              = 1
 	messageEdits   map[uint]*config.RoleReactMessage = make(map[uint]*config.RoleReactMessage)
 )
-
-func MessageContent(message *config.RoleReactMessage) string {
-	content := "## Réagis pour obtenir un rôle"
-	if message.Note != "" {
-		content = fmt.Sprintf("%s\n%s", content, message.Note)
-	}
-	for _, role := range message.Roles {
-		if role.Reaction != "" && role.RoleID != "" {
-			content += fmt.Sprintf("\n> -# %s <@&%s>", FormatEmoji(role.Reaction), role.RoleID)
-		}
-	}
-	if len(message.Roles) == 0 {
-		content += "\n*Pas de rôles pour le moment*"
-	}
-	return content
-}
-
-func MessageModifyData(i *event.InteractionCreate, parameters *EditID) *interaction.ResponseData {
-	message, ok := GetMessageFromEditID(i, parameters.MessageEditID)
-	if !ok {
-		return &interaction.ResponseData{
-			Flags: channel.MessageFlagsIsComponentsV2,
-			Components: []component.Component{
-				&component.TextDisplay{Content: "Cette modification est trop vieille et a été oubliée."},
-			},
-		}
-	}
-	var note string
-	if message.Note != "" {
-		note = message.Note
-	} else {
-		note = "*Pas de note*"
-	}
-	components := []component.Message{
-		&component.TextDisplay{Content: "## Modifier un message de réaction"},
-		&component.Separator{},
-		&component.Section{
-			Components: []component.Message{&component.TextDisplay{Content: note}},
-			Accessory: &component.Button{
-				Label:    "Modifier",
-				Style:    component.ButtonStyleSecondary,
-				CustomID: dynamicid.FormatCustomID(SetNote, *parameters),
-			},
-		},
-		&component.Separator{},
-	}
-	for _, role := range message.Roles {
-		var reaction string
-		if role.Reaction != "" {
-			reaction = FormatEmoji(role.Reaction)
-		} else {
-			reaction = ":no_entry_sign:"
-		}
-		var roleMention string
-		if role.RoleID != "" {
-			roleMention = fmt.Sprintf("<@&%s>", role.RoleID)
-		} else {
-			roleMention = "*Pas de rôle sélectionné*"
-		}
-		if role.CounterID == 0 {
-			role.CounterID = roleCounter
-			roleCounter++
-		}
-		components = append(components, &component.Section{
-			Components: []component.Message{&component.TextDisplay{Content: fmt.Sprintf("%s %s", reaction, roleMention)}},
-			Accessory: &component.Button{
-				Label:    "Modifier",
-				Style:    component.ButtonStyleSecondary,
-				CustomID: dynamicid.FormatCustomID(OpenRole, EditIDWithRole{parameters.MessageEditID, role.CounterID}),
-			},
-		})
-	}
-	if len(message.Roles) == 0 {
-		components = append(components, &component.TextDisplay{
-			Content: "*Pas de rôles de réaction défini*",
-		})
-	}
-	components = append(components, []component.Message{
-		&component.ActionsRow{
-			Components: []component.Message{
-				&component.Button{
-					Style:    component.ButtonStylePrimary,
-					Label:    "Ajouter",
-					CustomID: dynamicid.FormatCustomID(NewRole, EditID{MessageEditID: parameters.MessageEditID}),
-					Disabled: len(message.Roles) >= 20,
-				},
-			},
-		},
-		&component.Separator{},
-		&component.ActionsRow{
-			Components: []component.Message{
-				&component.Button{
-					Label:    "Appliquer",
-					Style:    component.ButtonStylePrimary,
-					CustomID: dynamicid.FormatCustomID(ApplyMessage, EditID{MessageEditID: parameters.MessageEditID}),
-				},
-				&component.Button{
-					Label:    "Réinitialiser",
-					Style:    component.ButtonStyleDanger,
-					CustomID: dynamicid.FormatCustomID(ResetMessage, *parameters),
-				},
-				&component.Button{
-					Label: "Message",
-					Style: component.ButtonStyleLink,
-					URL:   fmt.Sprintf("https://discord.com/channels/%s/%s/%s", message.GuildID, message.ChannelID, message.MessageID),
-				},
-			},
-		}}...)
-	responseData := &interaction.ResponseData{
-		Flags: channel.MessageFlagsIsComponentsV2 | channel.MessageFlagsEphemeral,
-		Components: []component.Component{
-			&component.Container{
-				Components: components,
-			},
-		},
-	}
-	return responseData
-}
-
-func MessageModifyRoleComponents(i *event.InteractionCreate, parameters *EditIDWithRole, emojiMessage string) []component.Message {
-	message, ok := GetMessageFromEditID(i, parameters.MessageEditID)
-	var role *config.RoleReact
-	if ok {
-		roleIndex := slices.IndexFunc(message.Roles, func(role *config.RoleReact) bool { return role.CounterID == parameters.RoleCounterID })
-		if roleIndex != -1 {
-			role = message.Roles[roleIndex]
-		}
-	}
-	if !ok || role == nil {
-		return []component.Message{
-			&component.TextDisplay{Content: "Impossible de trouver la modification de message. Veuillez réessayer."},
-		}
-	}
-	disableBack := false
-	var reactionDescription string
-	var reactionButton component.Button
-	if role.Reaction != "" {
-		reactionDescription = fmt.Sprintf("**Réaction : ** %s", FormatEmoji(role.Reaction))
-		reactionButton = component.Button{Label: "Modifier", Style: component.ButtonStyleSecondary}
-	} else {
-		reactionDescription = "*Aucune réaction pour le moment*"
-		reactionButton = component.Button{Label: "Ajouter", Style: component.ButtonStylePrimary}
-		disableBack = true
-	}
-	reactionButton.CustomID = dynamicid.FormatCustomID(SetRoleReaction, *parameters)
-	defaultRoleValues := make([]component.SelectMenuDefaultValue, 0)
-	if role.RoleID != "" {
-		defaultRoleValues = append(defaultRoleValues, component.SelectMenuDefaultValue{
-			Type: types.SelectMenuDefaultValueRole,
-			ID:   role.RoleID,
-		})
-	}
-	disableBack = disableBack || (role.RoleID == "")
-	one := 1
-	components := []component.Message{
-		&component.TextDisplay{Content: "## Modifier un message de réaction"},
-		&component.Separator{},
-		&component.Section{
-			Components: []component.Message{
-				&component.TextDisplay{Content: reactionDescription},
-			},
-			Accessory: &reactionButton,
-		},
-	}
-	if emojiMessage != "" {
-		components = append(components, &component.TextDisplay{Content: "-# " + emojiMessage})
-	}
-	components = append(components,
-		[]component.Message{
-			&component.ActionsRow{Components: []component.Message{
-				&component.SelectMenu{
-					MenuType:  types.SelectMenuRole,
-					CustomID:  dynamicid.FormatCustomID(SetRoleRoleID, *parameters),
-					MinValues: &one, MaxValues: 1,
-					Placeholder:   "Sélectionner un rôle",
-					DefaultValues: defaultRoleValues,
-				},
-			}},
-			&component.ActionsRow{Components: []component.Message{
-				&component.Button{
-					Style:    component.ButtonStyleDanger,
-					Label:    "Supprimer",
-					CustomID: dynamicid.FormatCustomID(DelRole, *parameters),
-				},
-			}},
-			&component.Separator{},
-			&component.ActionsRow{Components: []component.Message{
-				&component.Button{
-					Label:    "Retour",
-					Style:    component.ButtonStyleSecondary,
-					Disabled: disableBack,
-					CustomID: dynamicid.FormatCustomID(OpenMessage, EditID{MessageEditID: parameters.MessageEditID}),
-				},
-				&component.Button{
-					Label: "Message", Style: component.ButtonStyleLink,
-					URL: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", message.GuildID, message.ChannelID, message.MessageID),
-				},
-			}},
-		}...)
-	return []component.Message{&component.Container{
-		Components: components,
-	}}
-}
-
-func MessageModifyRoleData(i *event.InteractionCreate, parameters *EditIDWithRole, emojiMessage string) interaction.ResponseData {
-	components := []component.Component{}
-	for _, component := range MessageModifyRoleComponents(i, parameters, emojiMessage) {
-		components = append(components, component)
-	}
-	return interaction.ResponseData{
-		Flags:      channel.MessageFlagsEphemeral | channel.MessageFlagsIsComponentsV2,
-		Components: components,
-	}
-}
 
 func HandleCommand(
 	s bot.Session,
@@ -498,7 +279,7 @@ func HandleSetNote(
 			},
 		})
 		if err != nil {
-			s.Logger().Error("Unable to send reset message message", "error", err)
+			s.Logger().Error("unable to send set note error message", "error", err)
 		}
 		return
 	}
@@ -533,81 +314,24 @@ func HandleApplyMessage(
 			Data: &responseData,
 		})
 		if err != nil {
-			s.Logger().Error("Unable to send reset message message", "error", err)
+			s.Logger().Error("unable to send apply message error message", "error", err)
 		}
-	} else {
-		err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
-			Type: types.InteractionResponseDeferredChannelMessageWithSource,
-			Data: &interaction.ResponseData{Flags: channel.MessageFlagsEphemeral},
-		})
-		if err != nil {
-			s.Logger().Error("Unable to defer interaction", "error", err)
-			return
-		}
-		messageContent := MessageContent(message)
-		_, err = s.ChannelAPI().MessageEditComplex(
-			&channel.MessageEdit{
-				Content:         &messageContent,
-				AllowedMentions: &channel.MessageAllowedMentions{},
-				Channel:         message.ChannelID,
-				ID:              message.MessageID,
-			},
-		)
-		if err == nil {
-			for _, role := range message.Roles {
-				if role.Reaction != "" && role.RoleID != "" && err == nil {
-					err = s.ChannelAPI().MessageReactionAdd(
-						message.ChannelID,
-						message.MessageID,
-						role.Reaction,
-					)
-				}
-			}
-		}
-		var content string
-		if err != nil {
-			content = "Impossible de mettre à jour le message."
-			s.Logger().Error("Unable to apply rolereaction message changes", "error", err)
-			err = nil
-		} else {
-			content = "Message mis à jour avec succès."
-			cfg := GetGuildConfigPreloaded(i.GuildID)
-			messageIndex := slices.IndexFunc(cfg.RrMessages, func(m config.RoleReactMessage) bool { return m.ID == message.ID })
-			if messageIndex != -1 {
-				oldMessage := cfg.RrMessages[messageIndex]
-				// cfg.RrMessages[messageIndex] = *message
-				roles := make(map[uint]config.RoleReact, len(message.Roles))
-				for _, role := range message.Roles {
-					roles[role.ID] = *role
-				}
-				for _, role := range oldMessage.Roles {
-					_, ok := roles[role.ID]
-					if !ok {
-						err := oldGokord.DB.Delete(role).Error
-						if err != nil {
-							s.Logger().Error("unable to delete reaction role from database", "error", err)
-						}
-					}
-				}
-				cfg.RrMessages[messageIndex] = *message
-				err := oldGokord.DB.Save(cfg.RrMessages[messageIndex]).Error
-				if err != nil {
-					s.Logger().Error("unable to save rolereaction message in database", "error", err)
-				}
-				for _, role := range cfg.RrMessages[messageIndex].Roles {
-					err = oldGokord.DB.Save(role).Error
-					if err != nil {
-						s.Logger().Error("unable to save rolereaction role in database", "error", err)
-					}
-				}
-			}
-		}
-		_, err = s.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
-			Content: &content,
-		})
-		if err != nil {
-			s.Logger().Error("Unable to send apply rolereaction message changes", "error", err)
-		}
+		return
+	}
+	err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		Type: types.InteractionResponseDeferredChannelMessageWithSource,
+		Data: &interaction.ResponseData{Flags: channel.MessageFlagsEphemeral},
+	})
+	if err != nil {
+		s.Logger().Error("Unable to defer interaction", "error", err)
+		return
+	}
+	m := ApplyMessageChange(s, i, message)
+	_, err = s.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
+		Content: &m,
+	})
+	if err != nil {
+		s.Logger().Error("Unable to send apply rolereaction message changes", "error", err)
 	}
 }
 
@@ -740,43 +464,8 @@ func HandleSetReaction(
 		Type: types.InteractionResponseUpdateMessage,
 		Data: &responseData,
 	})
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer cancel()
-
-	emojiChann := make(chan emoji.Emoji)
-
-	cancelHandler := s.EventManager().AddHandler(func(s bot.Session, e *event.MessageReactionAdd) {
-		if e.MessageID == message.MessageID && e.UserID == i.Member.User.ID {
-			emojiChann <- e.Emoji
-		}
-	})
-	defer cancelHandler()
-
-	select {
-	case emoji := <-emojiChann:
-		emojiName := emoji.APIName()
-		err := s.ChannelAPI().MessageReactionAdd(message.ChannelID, message.MessageID, emojiName)
-		if err != nil {
-			editResponseComponents := MessageModifyRoleComponents(i, parameters, "La réaction n'est pas utilisable. Cela peut être résolu en l'ajoutant à ce serveur")
-			_, err := s.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
-				Components: &editResponseComponents,
-			})
-			if err != nil {
-				s.Logger().Error("unable to send unusable reaction message", "error", err)
-			}
-			return
-		}
-		s.ChannelAPI().MessageReactionRemove(message.ChannelID, message.MessageID, emojiName, i.Member.User.ID)
-		role.Reaction = emojiName
-		components := MessageModifyRoleComponents(i, parameters, "")
-		_, err = s.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
-			Flags:      channel.MessageFlagsIsComponentsV2 | channel.MessageFlagsEphemeral,
-			Components: &components,
-		})
-		if err != nil {
-			s.Logger().Error("Unable to edit original response", "error", err)
-		}
-	case <-ctx.Done():
+	emojiName, ok := WaitForEmoji(s, i.Member.User.ID, message.MessageID)
+	if !ok {
 		editResponseComponents := MessageModifyRoleComponents(i, parameters, "Le temps d'attente a été dépassé")
 		_, err := s.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
 			Components: &editResponseComponents,
@@ -784,6 +473,32 @@ func HandleSetReaction(
 		if err != nil {
 			s.Logger().Error("unable to send timed out reaction message", "error", err)
 		}
+		return
+	}
+
+	err := s.ChannelAPI().MessageReactionAdd(message.ChannelID, message.MessageID, emojiName)
+	if err != nil {
+		editResponseComponents := MessageModifyRoleComponents(i, parameters, "La réaction n'est pas utilisable. Cela peut être résolu en l'ajoutant à ce serveur")
+		_, err := s.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
+			Components: &editResponseComponents,
+		})
+		if err != nil {
+			s.Logger().Error("unable to send unusable reaction message", "error", err)
+		}
+		return
+	}
+	err = s.ChannelAPI().MessageReactionRemove(message.ChannelID, message.MessageID, emojiName, i.Member.User.ID)
+	if err != nil {
+		s.Logger().Warn("unable to remove author reaction from message", "error", err)
+	}
+	role.Reaction = emojiName
+	components := MessageModifyRoleComponents(i, parameters, "")
+	_, err = s.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
+		Flags:      channel.MessageFlagsIsComponentsV2 | channel.MessageFlagsEphemeral,
+		Components: &components,
+	})
+	if err != nil {
+		s.Logger().Error("Unable to edit original response", "error", err)
 	}
 }
 
@@ -824,32 +539,5 @@ func HandleDelRole(
 		})
 	if err != nil {
 		s.Logger().Error("Unable to send modify message message", "error", err)
-	}
-}
-
-func GetMessageFromEditID(i *event.InteractionCreate, editID uint) (*config.RoleReactMessage, bool) {
-	cfg := config.GetGuildConfig(i.GuildID)
-	m, ok := messageEdits[editID]
-	if !ok || m.GuildConfigID != cfg.ID {
-		return &config.RoleReactMessage{}, false
-	}
-	return m, true
-}
-
-func GetGuildConfigPreloaded(guildID string) *config.GuildConfig {
-	cfg := config.GuildConfig{GuildID: guildID}
-	// err := oldGokord.DB.Where("guild_id = ?", cfg.GuildID).Preload("XpRoles").Preload("RrMessages.Roles").FirstOrCreate(cfg).Error
-	err := oldGokord.DB.Where("guild_id = ?", cfg.GuildID).Preload("RrMessages.Roles").FirstOrCreate(&cfg).Error
-	if err != nil {
-		panic(err)
-	}
-	return &cfg
-}
-
-func FormatEmoji(apiName string) string {
-	if strings.Contains(apiName, ":") {
-		return fmt.Sprintf("<:%s>", apiName)
-	} else {
-		return apiName
 	}
 }
