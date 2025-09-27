@@ -137,7 +137,6 @@ func GetGuildConfigPreloaded(guildID string) *config.GuildConfig {
 func FormatEmoji(apiName string) string {
 	if strings.Contains(apiName, ":") {
 		return fmt.Sprintf("<:%s>", apiName)
-	} else {
-		return apiName
 	}
+	return apiName
 }
