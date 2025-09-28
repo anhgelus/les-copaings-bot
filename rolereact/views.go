@@ -13,14 +13,11 @@ import (
 	"github.com/nyttikord/gokord/interaction"
 )
 
-func MessageModifyData(i *event.InteractionCreate, parameters *EditID) *interaction.ResponseData {
+func MessageModifyComponents(i *event.InteractionCreate, parameters *EditID) []component.Message {
 	message, ok := GetMessageFromEditID(i, parameters.MessageEditID)
 	if !ok {
-		return &interaction.ResponseData{
-			Flags: channel.MessageFlagsIsComponentsV2,
-			Components: []component.Component{
-				&component.TextDisplay{Content: "Cette modification est trop vieille et a été oubliée."},
-			},
+		return []component.Message{
+			&component.TextDisplay{Content: "Cette modification est trop vieille et a été oubliée."},
 		}
 	}
 	var note string
@@ -104,13 +101,21 @@ func MessageModifyData(i *event.InteractionCreate, parameters *EditID) *interact
 				},
 			},
 		}}...)
-	responseData := &interaction.ResponseData{
-		Flags: channel.MessageFlagsIsComponentsV2 | channel.MessageFlagsEphemeral,
-		Components: []component.Component{
-			&component.Container{
-				Components: components,
-			},
+	return []component.Message{
+		&component.Container{
+			Components: components,
 		},
+	}
+}
+
+func MessageModifyData(i *event.InteractionCreate, parameters *EditID) *interaction.ResponseData {
+	components := []component.Component{}
+	for _, component := range MessageModifyComponents(i, parameters) {
+		components = append(components, component)
+	}
+	responseData := &interaction.ResponseData{
+		Flags:      channel.MessageFlagsIsComponentsV2 | channel.MessageFlagsEphemeral,
+		Components: components,
 	}
 	return responseData
 }

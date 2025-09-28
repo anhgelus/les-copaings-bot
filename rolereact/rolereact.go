@@ -50,8 +50,10 @@ func HandleCommand(
 	resp *cmd.ResponseBuilder,
 ) {
 	err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
-		Type: types.InteractionResponseDeferredMessageUpdate,
-		Data: &interaction.ResponseData{Flags: channel.MessageFlagsEphemeral},
+		Type: types.InteractionResponseDeferredChannelMessageWithSource,
+		Data: &interaction.ResponseData{
+			Flags: channel.MessageFlagsEphemeral,
+		},
 	})
 	if err != nil {
 		s.Logger().Error("unable to defer interaction", "error", err)
@@ -77,9 +79,9 @@ func HandleCommand(
 		},
 	)
 	if err != nil {
-		err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
-			Type: types.InteractionResponseChannelMessageWithSource,
-			Data: &interaction.ResponseData{Content: fmt.Sprintf("Error: %s", err.Error())},
+		_, err := s.InteractionAPI().FollowupMessageCreate(i.Interaction, false, &channel.WebhookParams{
+			Flags:      channel.MessageFlagsIsComponentsV2,
+			Components: []component.Message{&component.TextDisplay{Content: fmt.Sprintf("Impossible d'envoyer le message : %s", err.Error())}},
 		})
 		if err != nil {
 			s.Logger().Error("Unable to send message", "error", err)
@@ -92,12 +94,14 @@ func HandleCommand(
 	err = cfg.Save()
 	if err != nil {
 		s.Logger().Error("Unable to save rolereact message in database", "error", err)
-		err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
-			Type: types.InteractionResponseChannelMessageWithSource | types.InteractionResponseDeferredChannelMessageWithSource,
-			Data: &interaction.ResponseData{Content: "Unable to save message in database. Please retry later."},
+		_, err := s.InteractionAPI().FollowupMessageCreate(i.Interaction, false, &channel.WebhookParams{
+			Flags: channel.MessageFlagsIsComponentsV2,
+			Components: []component.Message{
+				&component.TextDisplay{Content: "Impossible d'enregistrer le message dans la base de données. Merci de contacter l'administrateur du bot."},
+			},
 		})
 		if err != nil {
-			s.Logger().Error("Unable to send message", "error", err)
+			s.Logger().Error("unable to send message", "error", err)
 		}
 		return
 	}
@@ -106,9 +110,13 @@ func HandleCommand(
 	editID := messageCounter
 	messageCounter++
 
-	err = s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
-		Type: types.InteractionResponseChannelMessageWithSource,
-		Data: MessageModifyData(i, &EditID{MessageEditID: editID}),
+	components := MessageModifyComponents(i, &EditID{MessageEditID: editID})
+	// Using this function here is deprecated as per discord documentation.
+	// That said, using the recommended EditResponse endpoint does not allow the use of
+	// version 2 components...
+	_, err = s.InteractionAPI().FollowupMessageCreate(i.Interaction, false, &channel.WebhookParams{
+		Flags:      channel.MessageFlagsIsComponentsV2,
+		Components: components,
 	})
 	if err != nil {
 		s.Logger().Error("Unable to send edit rolereact message", "error", err)
