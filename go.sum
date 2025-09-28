@@ -23,6 +23,8 @@ github.com/anhgelus/gokord v0.12.1-0.20250926161635-21b1b138fd90 h1:SNWUcYRXE5lg
 github.com/anhgelus/gokord v0.12.1-0.20250926161635-21b1b138fd90/go.mod h1:pcu6meTQQZRpDPhWuaJuDqa2NJ7iUPuVRD7+ffPmcmg=
 github.com/anhgelus/gokord v0.12.1-0.20250927153335-e73ec7a067f2 h1:ousL4ksXhHtIhAiBvzu4yH1whXe+m3quo86ON8X8M/E=
 github.com/anhgelus/gokord v0.12.1-0.20250927153335-e73ec7a067f2/go.mod h1:Mk9EPnkl8xlYV+nTxO1peU+206vI4biguUGp4/4U/AU=
+github.com/anhgelus/gokord v0.13.0 h1:Sv8DFPeirGqxQOubEzAwcIpMHexgCrxa5DWKkIaFfPA=
+github.com/anhgelus/gokord v0.13.0/go.mod h1:wfQU679RThU1c2c8/yMgeatC2RtEyiUDAM5zo4p+dgs=
 github.com/bsm/ginkgo/v2 v2.12.0 h1:Ny8MWAHyOepLGlLKYmXG4IEkioBysk6GpaRTLC8zwWs=
 github.com/bsm/ginkgo/v2 v2.12.0/go.mod h1:SwYbGRRDovPVboqFv0tPTcG1sN61LM1Z4ARdbAV9g4c=
 github.com/bsm/gomega v1.27.10 h1:yeMWxP2pV2fG3FgAODIY8EiRE3dy0aeFYt4l7wh6yKA=
@@ -61,6 +63,8 @@ github.com/nyttikord/gokord v0.31.1-0.20250926154959-93603cbc1df5 h1:cXvcOHc7C57
 github.com/nyttikord/gokord v0.31.1-0.20250926154959-93603cbc1df5/go.mod h1:Oi0y5sfiYa+hVuV5ZSJ9UMWAGkcaLOhM7xB1TiCdX3U=
 github.com/nyttikord/gokord v0.31.1-0.20250927153129-9bed7a4b26bf h1:d7saDF/eDtu95IgE4sfVoHdBQmqdvyJrc73mG4HoTJU=
 github.com/nyttikord/gokord v0.31.1-0.20250927153129-9bed7a4b26bf/go.mod h1:Oi0y5sfiYa+hVuV5ZSJ9UMWAGkcaLOhM7xB1TiCdX3U=
+github.com/nyttikord/gokord v0.32.0 h1:NuDKCm2nJ+UhW4tYsZyVUbBPHx4Qafdqdw68IgiqJoE=
+github.com/nyttikord/gokord v0.32.0/go.mod h1:Oi0y5sfiYa+hVuV5ZSJ9UMWAGkcaLOhM7xB1TiCdX3U=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
 github.com/pelletier/go-toml/v2 v2.2.4/go.mod h1:2gIqNv+qfxSVS7cM2xJQKtLSTLUE9V8t9Stt+h56mCY=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

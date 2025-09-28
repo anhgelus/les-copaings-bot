@@ -14,5 +14,8 @@ stop:
     podman stop postgres adminer
     podman network rm db
 
+clean-network:
+    podman network rm db
+
 build:
     go build .

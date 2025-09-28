@@ -5,10 +5,10 @@ go 1.24.0
 toolchain go1.24.6
 
 require (
-	github.com/anhgelus/gokord v0.12.1-0.20250927153335-e73ec7a067f2
+	github.com/anhgelus/gokord v0.13.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/joho/godotenv v1.5.1
-	github.com/nyttikord/gokord v0.31.1-0.20250927153129-9bed7a4b26bf
+	github.com/nyttikord/gokord v0.32.0
 	github.com/pelletier/go-toml/v2 v2.2.4
 	golang.org/x/image v0.30.0
 	gonum.org/v1/plot v0.16.0
