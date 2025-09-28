@@ -44,7 +44,9 @@
   {
     "version": "3.3.0",
     "commands": {
-      "added": [],
+      "added": [
+        "rolereact"
+      ],
       "removed": [],
       "updated": []
     },
