@@ -34,7 +34,7 @@ var (
 	updatesData []byte
 	Version     = gokord.Version{
 		Major: 3,
-		Minor: 2,
+		Minor: 3,
 		Patch: 0,
 	}
 
@@ -192,14 +192,17 @@ func main() {
 	}
 
 	// related to rolereact
+	// TEMP BECAUSE (OLD) GOKORD DOES NOT SUPPORT COMMAND MESSAGE
 	b.AddHandler(func(s bot.Session, e *event.Ready) {
-		var guildID string
-		gs, err := s.GuildAPI().UserGuilds(1, "", "", false)
-		if err != nil {
-			s.Logger().Error("fetching guilds for debug", "error", err)
-			return
-		} else {
-			guildID = gs[0].ID
+		guildID := ""
+		if gokord.Debug {
+			gs, err := s.GuildAPI().UserGuilds(1, "", "", false)
+			if err != nil {
+				s.Logger().Error("fetching guilds for debug", "error", err)
+				return
+			} else {
+				guildID = gs[0].ID
+			}
 		}
 
 		handleRolereactionMessageCmd := interaction.Command{
@@ -219,7 +222,7 @@ func main() {
 			return
 		}
 		data := i.CommandData()
-		if data.Name == "Modifier" {
+		if data.Name == "Modifier" && data.CommandType == types.CommandMessage {
 			resp := cmd.NewResponseBuilder(s, i)
 			rolereact.HandleModifyCommand(s, i, data, resp)
 		}
