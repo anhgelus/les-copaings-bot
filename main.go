@@ -37,6 +37,7 @@ var (
 		Minor: 3,
 		Patch: 0,
 	}
+	verbose bool
 
 	stopPeriodicReducer chan<- interface{}
 )
@@ -50,6 +51,7 @@ func init() {
 		slog.Error("error while loading .env file", "error", err)
 	}
 	flag.StringVar(&token, "token", os.Getenv("TOKEN"), "token of the bot")
+	flag.BoolVar(&verbose, "v", verbose, "verbose")
 
 	// Use a nicer font
 	fontTTF, parseErr := opentype.Parse(interTTF)
@@ -189,6 +191,7 @@ func main() {
 		Intents: discord.IntentsAllWithoutPrivileged |
 			discord.IntentsMessageContent |
 			discord.IntentGuildMembers,
+		Verbose: verbose,
 	}
 
 	// related to rolereact

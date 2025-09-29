@@ -17,12 +17,6 @@ github.com/ajstarks/deck v0.0.0-20200831202436-30c9fc6549a9/go.mod h1:JynElWSGnm
 github.com/ajstarks/deck/generate v0.0.0-20210309230005-c3f852c02e19/go.mod h1:T13YZdzov6OU0A1+RfKZiZN9ca6VeKdBdyDV+BY97Tk=
 github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b h1:slYM766cy2nI3BwyRiyQj/Ud48djTMtMebDqepE95rw=
 github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b/go.mod h1:1KcenG0jGWcpt8ov532z81sp/kMMUG485J2InIOyADM=
-github.com/anhgelus/gokord v0.12.0 h1:6315krG631amMYRBXkp0Uz7voBtbgEHJZKsNgulu+18=
-github.com/anhgelus/gokord v0.12.0/go.mod h1:AUguJsHtnNOozqQY8SCRDfXfoFX6c+LWL7lXNoeIRCk=
-github.com/anhgelus/gokord v0.12.1-0.20250926161635-21b1b138fd90 h1:SNWUcYRXE5lgs9ujd+sLxpZKQFw6X2AfkievuyfzpAg=
-github.com/anhgelus/gokord v0.12.1-0.20250926161635-21b1b138fd90/go.mod h1:pcu6meTQQZRpDPhWuaJuDqa2NJ7iUPuVRD7+ffPmcmg=
-github.com/anhgelus/gokord v0.12.1-0.20250927153335-e73ec7a067f2 h1:ousL4ksXhHtIhAiBvzu4yH1whXe+m3quo86ON8X8M/E=
-github.com/anhgelus/gokord v0.12.1-0.20250927153335-e73ec7a067f2/go.mod h1:Mk9EPnkl8xlYV+nTxO1peU+206vI4biguUGp4/4U/AU=
 github.com/anhgelus/gokord v0.13.0 h1:Sv8DFPeirGqxQOubEzAwcIpMHexgCrxa5DWKkIaFfPA=
 github.com/anhgelus/gokord v0.13.0/go.mod h1:wfQU679RThU1c2c8/yMgeatC2RtEyiUDAM5zo4p+dgs=
 github.com/bsm/ginkgo/v2 v2.12.0 h1:Ny8MWAHyOepLGlLKYmXG4IEkioBysk6GpaRTLC8zwWs=
@@ -57,12 +51,6 @@ github.com/jinzhu/now v1.1.5/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
 github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
-github.com/nyttikord/gokord v0.31.0 h1:64DeVCTQpSWj8/RtBm0GtHeh0Gqo3arJGtrSIn5/U0I=
-github.com/nyttikord/gokord v0.31.0/go.mod h1:Oi0y5sfiYa+hVuV5ZSJ9UMWAGkcaLOhM7xB1TiCdX3U=
-github.com/nyttikord/gokord v0.31.1-0.20250926154959-93603cbc1df5 h1:cXvcOHc7C57EFK8fLK5XWb+JJN2k/akpRklDqHsP0zg=
-github.com/nyttikord/gokord v0.31.1-0.20250926154959-93603cbc1df5/go.mod h1:Oi0y5sfiYa+hVuV5ZSJ9UMWAGkcaLOhM7xB1TiCdX3U=
-github.com/nyttikord/gokord v0.31.1-0.20250927153129-9bed7a4b26bf h1:d7saDF/eDtu95IgE4sfVoHdBQmqdvyJrc73mG4HoTJU=
-github.com/nyttikord/gokord v0.31.1-0.20250927153129-9bed7a4b26bf/go.mod h1:Oi0y5sfiYa+hVuV5ZSJ9UMWAGkcaLOhM7xB1TiCdX3U=
 github.com/nyttikord/gokord v0.32.0 h1:NuDKCm2nJ+UhW4tYsZyVUbBPHx4Qafdqdw68IgiqJoE=
 github.com/nyttikord/gokord v0.32.0/go.mod h1:Oi0y5sfiYa+hVuV5ZSJ9UMWAGkcaLOhM7xB1TiCdX3U=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
@@ -71,8 +59,6 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/redis/go-redis/v9 v9.14.0 h1:u4tNCjXOyzfgeLN+vAZaW1xUooqWDqVEsZN0U01jfAE=
 github.com/redis/go-redis/v9 v9.14.0/go.mod h1:huWgSWd8mW6+m0VPhJjSSQ+d6Nh1VICQ6Q5lHuCH/Iw=
-github.com/redis/go-redis/v9 v9.15.0 h1:2jdes0xJxer4h3NUZrZ4OGSntGlXp4WbXju2nOTRXto=
-github.com/redis/go-redis/v9 v9.15.0/go.mod h1:huWgSWd8mW6+m0VPhJjSSQ+d6Nh1VICQ6Q5lHuCH/Iw=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
