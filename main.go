@@ -191,6 +191,7 @@ func main() {
 		Intents: discord.IntentsAllWithoutPrivileged |
 			discord.IntentsMessageContent |
 			discord.IntentGuildMembers,
+		Verbose: verbose,
 	}
 
 	// related to rolereact
