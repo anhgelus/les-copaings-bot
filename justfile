@@ -18,4 +18,4 @@ clean-network:
     podman network rm db
 
 build:
-    go build .
+    go build -ldflags "-s" .
