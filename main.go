@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"errors"
 	"flag"
@@ -196,7 +197,7 @@ func main() {
 
 	// related to rolereact
 	// TEMP BECAUSE (OLD) GOKORD DOES NOT SUPPORT COMMAND MESSAGE
-	b.AddHandler(func(s bot.Session, e *event.Ready) {
+	b.AddHandler(func(_ context.Context, s bot.Session, e *event.Ready) {
 		guildID := ""
 		if gokord.Debug {
 			gs, err := s.GuildAPI().UserGuilds(1, "", "", false)
@@ -220,7 +221,7 @@ func main() {
 		}
 		s.Logger().Debug("pushed rolereaction message command", "CommandID", c.ID)
 	})
-	b.AddHandler(func(s bot.Session, i *event.InteractionCreate) {
+	b.AddHandler(func(_ context.Context, s bot.Session, i *event.InteractionCreate) {
 		if i.Type != types.InteractionApplicationCommand {
 			return
 		}
@@ -278,7 +279,7 @@ func main() {
 	b.AddHandler(OnVoiceUpdate)
 	b.AddHandler(OnLeave)
 
-	b.Start()
+	b.Start(context.Background())
 
 	if stopPeriodicReducer != nil {
 		stopPeriodicReducer <- true

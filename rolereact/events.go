@@ -1,6 +1,8 @@
 package rolereact
 
 import (
+	"context"
+
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	oldGokord "github.com/anhgelus/gokord"
 	"github.com/nyttikord/gokord/bot"
@@ -12,6 +14,7 @@ type RoleReact struct {
 }
 
 func HandleReactionAdd(
+	_ context.Context,
 	s bot.Session,
 	e *event.MessageReactionAdd,
 ) {
@@ -29,6 +32,7 @@ func HandleReactionAdd(
 }
 
 func HandleReactionRemove(
+	_ context.Context,
 	s bot.Session,
 	e *event.MessageReactionRemove,
 ) {

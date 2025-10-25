@@ -1,6 +1,7 @@
 package dynamicid
 
 import (
+	"context"
 	"strings"
 
 	"github.com/anhgelus/gokord"
@@ -21,7 +22,7 @@ func HandleDynamicMessageComponent[DynamicData any](
 	),
 	base string,
 ) {
-	b.AddHandler(func(s bot.Session, i *event.InteractionCreate) {
+	b.AddHandler(func(_ context.Context, s bot.Session, i *event.InteractionCreate) {
 		if i.Type != types.InteractionMessageComponent {
 			return
 		}
@@ -51,7 +52,7 @@ func HandleDynamicModalComponent[DynamicData any](
 	),
 	base string,
 ) {
-	b.AddHandler(func(s bot.Session, i *event.InteractionCreate) {
+	b.AddHandler(func(_ context.Context, s bot.Session, i *event.InteractionCreate) {
 		if i.Type != types.InteractionModalSubmit {
 			return
 		}

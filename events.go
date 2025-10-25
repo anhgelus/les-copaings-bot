@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -23,7 +24,7 @@ var (
 	connectedSince = map[string]int64{}
 )
 
-func OnMessage(s bot.Session, m *event.MessageCreate) {
+func OnMessage(_ context.Context, s bot.Session, m *event.MessageCreate) {
 	if m.Author.Bot {
 		return
 	}
@@ -49,7 +50,7 @@ func OnMessage(s bot.Session, m *event.MessageCreate) {
 	})
 }
 
-func OnVoiceUpdate(s bot.Session, e *event.VoiceStateUpdate) {
+func OnVoiceUpdate(_ context.Context, s bot.Session, e *event.VoiceStateUpdate) {
 	if e.Member.User.Bot {
 		return
 	}
@@ -112,7 +113,7 @@ func onDisconnect(s bot.Session, e *event.VoiceStateUpdate) {
 	})
 }
 
-func OnLeave(s bot.Session, e *event.GuildMemberRemove) {
+func OnLeave(_ context.Context, s bot.Session, e *event.GuildMemberRemove) {
 	s.Logger().Debug("leave event", "user", e.User.Username)
 	if e.User.Bot {
 		return
