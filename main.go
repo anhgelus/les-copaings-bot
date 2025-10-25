@@ -250,7 +250,6 @@ func main() {
 	b.HandleMessageComponent(config.HandleXpRoleNew, config.XpRoleNew)
 	b.HandleModal(config.HandleXpRoleAdd, config.XpRoleAdd)
 	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleEdit, config.XpRoleEdit)
-	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleEdit, config.XpRoleEdit)
 	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleEditRole, config.XpRoleEditRole)
 	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleEditLevelStart, config.XpRoleEditLevelStart)
 	dynamicid.HandleDynamicModalComponent(&b, config.HandleXpRoleEditLevel, config.XpRoleEditLevel)
