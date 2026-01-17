@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"image/color"
@@ -46,56 +47,58 @@ var colors = []color.RGBA{
 	{193, 18, 31, 255},
 }
 
-func Stats(s bot.Session, i *event.InteractionCreate, opt cmd.OptionMap, resp *cmd.ResponseBuilder) {
-	cfg := config.GetGuildConfig(i.GuildID)
-	days := 15
-	if gokord.Debug {
-		days = 90
-	}
-	if v, ok := opt["days"]; ok {
-		in := v.IntValue()
-		if in < 1 || uint(in) > cfg.DaysXPRemains {
-			msg := fmt.Sprintf("Nombre de jours invalide. Il doit être strictement positif et inférieur à %d", cfg.DaysXPRemains)
-			if err := resp.SetMessage(msg).IsEphemeral().Send(); err != nil {
-				s.Logger().Error("sending error invalid days", "error", err)
+func Stats(ctx context.Context) func(s bot.Session, i *event.InteractionCreate, opt cmd.OptionMap, resp *cmd.ResponseBuilder) {
+	return func(s bot.Session, i *event.InteractionCreate, opt cmd.OptionMap, resp *cmd.ResponseBuilder) {
+		cfg := config.GetGuildConfig(i.GuildID)
+		days := 15
+		if gokord.Debug {
+			days = 90
+		}
+		if v, ok := opt["days"]; ok {
+			in := v.IntValue()
+			if in < 1 || uint(in) > cfg.DaysXPRemains {
+				msg := fmt.Sprintf("Nombre de jours invalide. Il doit être strictement positif et inférieur à %d", cfg.DaysXPRemains)
+				if err := resp.SetMessage(msg).IsEphemeral().Send(); err != nil {
+					s.Logger().Error("sending error invalid days", "error", err)
+				}
+				return
 			}
+			days = int(in)
+		}
+		err := resp.IsDeferred().Send()
+		if err != nil {
+			s.Logger().Error("sending deferred", "error", err)
 			return
 		}
-		days = int(in)
-	}
-	err := resp.IsDeferred().Send()
-	if err != nil {
-		s.Logger().Error("sending deferred", "error", err)
-		return
-	}
-	go func() {
-		var w io.WriterTo
-		if v, ok := opt["user"]; ok {
-			w, err = statsMember(s, i, days, v.UserValue(s.UserAPI()).ID)
-		} else {
-			w, err = statsAll(s, i, days)
-		}
-		if err != nil {
-			s.Logger().Error("generating stats", "error", err, "guild", i.GuildID)
-			if err = resp.IsEphemeral().SetMessage("Il y a eu une erreur...").Send(); err != nil {
-				s.Logger().Error("sending error occurred", "error", err)
+		go func() {
+			var w io.WriterTo
+			if v, ok := opt["user"]; ok {
+				w, err = statsMember(ctx, s, i, days, v.UserValue(s.UserAPI()).ID)
+			} else {
+				w, err = statsAll(s, i, days)
 			}
-			return
-		}
-		b := new(bytes.Buffer)
-		_, err = w.WriteTo(b)
-		if err != nil {
-			s.Logger().Error("writing png", "error", err)
-		}
-		err = resp.AddFile(&channel.File{
-			Name:        "plot.png",
-			ContentType: "image/png",
-			Reader:      b,
-		}).Send()
-		if err != nil {
-			s.Logger().Error("sending stats", "error", err)
-		}
-	}()
+			if err != nil {
+				s.Logger().Error("generating stats", "error", err, "guild", i.GuildID)
+				if err = resp.IsEphemeral().SetMessage("Il y a eu une erreur...").Send(); err != nil {
+					s.Logger().Error("sending error occurred", "error", err)
+				}
+				return
+			}
+			b := new(bytes.Buffer)
+			_, err = w.WriteTo(b)
+			if err != nil {
+				s.Logger().Error("writing png", "error", err)
+			}
+			err = resp.AddFile(&channel.File{
+				Name:        "plot.png",
+				ContentType: "image/png",
+				Reader:      b,
+			}).Send()
+			if err != nil {
+				s.Logger().Error("sending stats", "error", err)
+			}
+		}()
+	}
 }
 
 func statsAll(s bot.Session, i *event.InteractionCreate, days int) (io.WriterTo, error) {
@@ -104,7 +107,7 @@ func statsAll(s bot.Session, i *event.InteractionCreate, days int) (io.WriterTo,
 	})
 }
 
-func statsMember(s bot.Session, i *event.InteractionCreate, days int, discordID string) (io.WriterTo, error) {
+func statsMember(ctx context.Context, s bot.Session, i *event.InteractionCreate, days int, discordID string) (io.WriterTo, error) {
 	_, err := s.GuildAPI().Member(i.GuildID, discordID)
 	if err != nil {
 		return nil, err
@@ -112,7 +115,7 @@ func statsMember(s bot.Session, i *event.InteractionCreate, days int, discordID 
 	return stats(s, i, days, func(before, after string) *gorm.DB {
 		return gokord.DB.Raw(
 			before+"WHERE guild_id = ? and created_at > ? and copaing_id = ?"+after,
-			i.GuildID, exp.TimeStampNDaysBefore(uint(days)), user.GetCopaing(discordID, i.GuildID).ID,
+			i.GuildID, exp.TimeStampNDaysBefore(uint(days)), user.GetCopaing(ctx, discordID, i.GuildID).ID,
 		)
 	})
 }

@@ -86,13 +86,15 @@ func main() {
 
 	adm := gokord.AdminPermission
 
+	ctx := user.SetState(context.Background(), user.NewState())
+
 	rankCmd := cmd.New("rank", "Affiche le niveau d'un copaing").
 		AddOption(cmd.NewOption(
 			types.CommandOptionUser,
 			"copaing",
 			"Le niveau du Copaing que vous souhaitez obtenir",
 		)).
-		SetHandler(commands.Rank)
+		SetHandler(commands.Rank(ctx))
 
 	configCmd := cmd.New("config", "Modifie la config").
 		SetPermission(&adm).
@@ -111,7 +113,7 @@ func main() {
 			"user",
 			"Copaing a reset",
 		).IsRequired()).
-		SetHandler(commands.ResetUser).
+		SetHandler(commands.ResetUser(ctx)).
 		SetPermission(&adm)
 
 	creditsCmd := cmd.New("credits", "Crédits").
@@ -128,7 +130,7 @@ func main() {
 			"user",
 			"Utilisateur à inspecter",
 		)).
-		SetHandler(commands.Stats)
+		SetHandler(commands.Stats(ctx))
 
 	rolereactCmd := cmd.New("rolereact", "Envoie un message permettant de récupérer des rôles grâce à des réactions").
 		SetPermission(&adm).
@@ -182,7 +184,7 @@ func main() {
 
 			user.PeriodicReducer(dg)
 
-			stopPeriodicReducer = gokord.NewTimer(d, func(stop chan<- interface{}) {
+			stopPeriodicReducer = gokord.NewTimer(d, func(stop chan<- any) {
 				dg.Logger().Debug("periodic reducer")
 				user.PeriodicReducer(dg)
 			})
@@ -279,7 +281,7 @@ func main() {
 	b.AddHandler(OnVoiceUpdate)
 	b.AddHandler(OnLeave)
 
-	b.Start(context.Background())
+	b.Start(ctx)
 
 	if stopPeriodicReducer != nil {
 		stopPeriodicReducer <- true

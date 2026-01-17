@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"log/slog"
 	"slices"
 	"sync"
@@ -25,17 +26,14 @@ func (c *cXP) GetXP() uint {
 	return c.Cxp
 }
 
-func (c *Copaing) AddXP(s bot.Session, m *user.Member, xp uint, fn func(uint, uint)) {
-	old, err := c.GetXP(s.Logger())
-	if err != nil {
-		s.Logger().Error("getting xp", "error", err, "user", m.DisplayName(), "guild", c.GuildID)
-		return
-	}
+func (cc *CopaingCached) AddXP(ctx context.Context, s bot.Session, m *user.Member, xp uint, fn func(uint, uint)) {
+	old := cc.XPs
 	pastLevel := exp.Level(old)
 	s.Logger().Debug("adding xp", "user", m.DisplayName(), "old", old, "to add", xp)
-	c.CopaingXPs = append(c.CopaingXPs, CopaingXP{CopaingID: c.ID, XP: xp, GuildID: c.GuildID})
-	if err = c.Save(); err != nil {
-		s.Logger().Error("saving user", "error", err, "user", m.DisplayName(), "xp", xp, "guild", c.GuildID)
+	cc.XPs += xp
+	cc.XPToAdd += xp
+	if err := cc.Save(ctx); err != nil {
+		s.Logger().Error("saving user in state", "error", err, "user", m.DisplayName(), "xp", xp, "guild", cc.GuildID)
 		return
 	}
 	newLevel := exp.Level(old + xp)
@@ -91,7 +89,7 @@ func GetBestXP(logger *slog.Logger, guildId string, n uint, d int) ([]CopaingAcc
 	}
 	defer rows.Close()
 	var l []*cXP
-	wg := sync.WaitGroup{}
+	var wg sync.WaitGroup
 	for rows.Next() {
 		var c Copaing
 		err = gokord.DB.ScanRows(rows, &c)
