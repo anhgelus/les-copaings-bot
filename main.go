@@ -99,7 +99,7 @@ func main() {
 		SetHandler(commands.ConfigCommand)
 
 	topCmd := cmd.New("top", "Copaings les plus actifs").
-		SetHandler(commands.Top)
+		SetHandler(commands.Top(ctx))
 
 	resetCmd := cmd.New("reset", "Reset l'xp").
 		SetHandler(commands.Reset).
@@ -292,5 +292,9 @@ func main() {
 
 	if stopPeriodicReducer != nil {
 		stopPeriodicReducer <- true
+	}
+
+	if stopPeriodicSaver != nil {
+		stopPeriodicSaver <- true
 	}
 }

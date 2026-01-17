@@ -78,10 +78,11 @@ func (c *Copaing) GetXPForDays(logger *slog.Logger, n uint) (uint, error) {
 // GetBestXP returns n Copaing with the best XP within d days (d <= cfg.DaysXPRemain; d < 0 <=> d = cfg.DaysXPRemain)
 //
 // This function is slow
-func GetBestXP(logger *slog.Logger, guildId string, n uint, d int) ([]CopaingAccess, error) {
+func GetBestXP(ctx context.Context, logger *slog.Logger, guildId string, n uint, d int) ([]CopaingCached, error) {
 	if d < 0 {
 		cfg := config.GetGuildConfig(guildId)
 		d = int(cfg.DaysXPRemains)
+		return getBestXPFull(ctx, guildId, n), nil
 	}
 	rows, err := gokord.DB.Model(&Copaing{}).Where("guild_id = ?", guildId).Rows()
 	if err != nil {
@@ -112,9 +113,18 @@ func GetBestXP(logger *slog.Logger, guildId string, n uint, d int) ([]CopaingAcc
 		return int(b.Cxp) - int(a.Cxp)
 	})
 	m := min(len(l), int(n))
-	cs := make([]CopaingAccess, m)
+	cs := make([]CopaingCached, m)
 	for i, c := range l[:m] {
-		cs[i] = c
+		cs[i] = CopaingCached{DiscordID: c.copaing.DiscordID, XPs: c.Cxp}
 	}
 	return cs, nil
+}
+
+func getBestXPFull(ctx context.Context, guildId string, n uint) []CopaingCached {
+	ccs := GetState(ctx).Copaings(guildId)
+	slices.SortFunc(ccs, func(a, b CopaingCached) int {
+		return int(b.XPs) - int(a.XPs)
+	})
+	m := min(len(ccs), int(n))
+	return ccs[:m]
 }

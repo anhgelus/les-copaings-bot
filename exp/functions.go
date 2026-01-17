@@ -11,7 +11,7 @@ import (
 	"github.com/anhgelus/gokord"
 )
 
-const DebugFactor = 30
+const DebugFactor = 5
 
 func MessageXP(length uint, diversity uint) uint {
 	return uint(math.Floor(

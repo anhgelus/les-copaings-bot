@@ -41,6 +41,7 @@ func (cc *CopaingCached) Sync(ctx context.Context) error {
 	synced := FromCopaing(cc.copaing())
 	synced.XPs += cc.XPToAdd
 	synced.XPToAdd = cc.XPToAdd
+	synced.lastSync = time.Now()
 	err := synced.Save(ctx)
 	if err != nil {
 		return err
@@ -144,12 +145,12 @@ func (s *State) Copaing(guildID, copaingID string) (*CopaingCached, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	c, err := s.storage.Get(KeyCopaingCachedRaw(guildID, copaingID))
+	raw, err := s.storage.Get(KeyCopaingCachedRaw(guildID, copaingID))
 	if err != nil {
 		return nil, err
 	}
-	mC := c.(CopaingCached)
-	return &mC, nil
+	c := raw.(CopaingCached)
+	return &c, nil
 }
 
 func (s *State) Copaings(guild string) []CopaingCached {
