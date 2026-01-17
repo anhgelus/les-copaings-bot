@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"slices"
 	"sync"
 	"time"
@@ -45,7 +46,7 @@ func onNewLevel(s bot.Session, m *user.Member, level uint) {
 	}
 }
 
-func (c *Copaing) OnNewLevel(s *discordgo.Session, level uint) {
+func (c *CopaingCached) onNewLevel(s *discordgo.Session, level uint) {
 	m, err := s.GuildAPI().Member(c.GuildID, c.DiscordID)
 	if err != nil {
 		s.Logger().Error("getting member for new level", "error", err, "user", c.DiscordID, "guild", c.GuildID)
@@ -54,66 +55,61 @@ func (c *Copaing) OnNewLevel(s *discordgo.Session, level uint) {
 	onNewLevel(s, m, level)
 }
 
-func PeriodicReducer(s *discordgo.Session) {
-	wg := &sync.WaitGroup{}
-	var cs []*Copaing
-	if err := gokord.DB.Find(&cs).Error; err != nil {
-		s.Logger().Error("fetching all copaings", "error", err)
-		return
-	}
-	cxps := make([]*cXP, len(cs))
-	for i, c := range cs {
-		if i%25 == 24 {
-			wg.Wait() // prevents spamming the DB
-		}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			xp, err := c.GetXP(s.Logger())
-			if err != nil {
-				s.Logger().Error("getting xp", "error", err, "copaing", c.ID, "guild", c.GuildID)
-				xp = 0
-			}
-			cxps[i] = &cXP{
-				Cxp:     xp,
-				copaing: c,
-			}
-		}()
-	}
-	wg.Wait()
-	i := 0
+func PeriodicReducer(ctx context.Context, s *discordgo.Session) {
+	PeriodicSaver(ctx, s)
+
+	s.Logger().Debug("periodic reducer")
+
+	state := GetState(ctx)
+
+	n := 0
+	var wg sync.WaitGroup
 	for _, g := range s.GuildAPI().State.Guilds() {
-		i++
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			cfg := config.GetGuildConfig(g)
-			res := gokord.DB.
-				Model(&CopaingXP{}).
-				Where("guild_id = ? and created_at < ?", g, exp.TimeStampNDaysBefore(cfg.DaysXPRemains)).
-				Delete(&CopaingXP{})
-			if res.Error != nil {
-				s.Logger().Error("removing old xp", "error", res.Error, "guild", g)
-			}
-			s.Logger().Debug("guild cleaned", "guild", g, "rows affected", res.RowsAffected)
-		}()
+		n++
+		cfg := config.GetGuildConfig(g)
+		res := gokord.DB.
+			Model(&CopaingXP{}).
+			Where("guild_id = ? and created_at < ?", g, exp.TimeStampNDaysBefore(cfg.DaysXPRemains)).
+			Delete(&CopaingXP{})
+		if res.Error != nil {
+			s.Logger().Error("removing old xp", "error", res.Error, "guild", g)
+			continue
+		}
+		s.Logger().Debug("guild cleaned", "guild", g, "rows affected", res.RowsAffected)
+
+		wg.Go(func() {
+			syncCopaings(ctx, s, state.Copaings(g))
+		})
 	}
+
 	wg.Wait()
-	for i, c := range cxps {
+
+	s.Logger().Debug("periodic reduce finished", "guilds affected", n)
+}
+
+func syncCopaings(ctx context.Context, s *discordgo.Session, ccs []CopaingCached) {
+	for i, cc := range ccs {
 		if i%50 == 49 {
 			s.Logger().Debug("sleeping...")
 			time.Sleep(15 * time.Second) // prevents spamming the API
 		}
-		oldXp := c.GetXP()
-		cp := c.Copaing()
-		xp, err := cp.GetXP(s.Logger())
+		oldXp := cc.XPs
+		err := cc.Sync(ctx)
 		if err != nil {
-			s.Logger().Error("getting xp of copaing", "error", err, "copaing", cp.ID, "guild", cp.GuildID)
+			s.Logger().Error("syncing copaing", "error", err, "copaing", cc.ID, "guild", cc.GuildID)
 			continue
 		}
+		xp := cc.XPs
 		if exp.Level(oldXp) != exp.Level(xp) {
-			cp.OnNewLevel(s, exp.Level(xp))
+			cc.onNewLevel(s, exp.Level(xp))
 		}
 	}
-	s.Logger().Debug("periodic reduce finished", "guilds affected", i)
+}
+
+func PeriodicSaver(ctx context.Context, s bot.Session) {
+	s.Logger().Debug("saving state in DB")
+	err := saveStateInDB(ctx)
+	if err != nil {
+		panic(err)
+	}
 }

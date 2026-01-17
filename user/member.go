@@ -32,7 +32,7 @@ func GetCopaing(ctx context.Context, discordID string, guildID string) *CopaingC
 	cc, err := state.Copaing(guildID, discordID)
 	if err != nil {
 		c := Copaing{DiscordID: discordID, GuildID: guildID}
-		if err := c.Load(ctx); err != nil {
+		if err := c.load(); err != nil {
 			panic(err)
 		}
 		cc = FromCopaing(&c)
@@ -40,7 +40,7 @@ func GetCopaing(ctx context.Context, discordID string, guildID string) *CopaingC
 	return cc
 }
 
-func (c *Copaing) Load(ctx context.Context) error {
+func (c *Copaing) load() error {
 	err := gokord.DB.
 		Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).
 		Preload("CopaingXPs").
@@ -49,8 +49,6 @@ func (c *Copaing) Load(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	state := GetState(ctx)
-	_, err = state.CopaingAdd(c, 0)
 	return err
 }
 

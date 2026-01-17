@@ -40,7 +40,8 @@ var (
 	}
 	verbose bool
 
-	stopPeriodicReducer chan<- interface{}
+	stopPeriodicReducer chan<- any
+	stopPeriodicSaver   chan<- any
 )
 
 //go:embed assets/inter-variable.ttf
@@ -60,13 +61,10 @@ func init() {
 		panic(err)
 	}
 	inter := font.Font{Typeface: "Inter"}
-	font.DefaultCache.Add(
-		[]font.Face{
-			{
-				Font: inter,
-				Face: fontTTF,
-			},
-		})
+	font.DefaultCache.Add([]font.Face{{
+		Font: inter,
+		Face: fontTTF,
+	}})
 	plot.DefaultFont = inter
 
 }
@@ -181,12 +179,18 @@ func main() {
 			if gokord.Debug {
 				d = 3 * exp.DebugFactor * time.Second
 			}
+			d2 := 30 * time.Minute
+			if gokord.Debug {
+				d2 = 1 * exp.DebugFactor * time.Second
+			}
 
-			user.PeriodicReducer(dg)
+			user.PeriodicReducer(ctx, dg)
 
 			stopPeriodicReducer = gokord.NewTimer(d, func(stop chan<- any) {
-				dg.Logger().Debug("periodic reducer")
-				user.PeriodicReducer(dg)
+				user.PeriodicReducer(ctx, dg)
+			})
+			stopPeriodicSaver = gokord.NewTimer(d2, func(c chan<- any) {
+				user.PeriodicSaver(ctx, dg)
 			})
 		},
 		Innovations: innovations,
@@ -222,6 +226,9 @@ func main() {
 			return
 		}
 		s.Logger().Debug("pushed rolereaction message command", "CommandID", c.ID)
+	})
+	b.AddHandler(func(ct context.Context, s bot.Session, _ *event.Disconnect) {
+		user.PeriodicSaver(ctx, s)
 	})
 	b.AddHandler(func(_ context.Context, s bot.Session, i *event.InteractionCreate) {
 		if i.Type != types.InteractionApplicationCommand {

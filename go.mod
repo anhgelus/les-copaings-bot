@@ -1,8 +1,6 @@
 module git.anhgelus.world/anhgelus/les-copaings-bot
 
-go 1.24.0
-
-toolchain go1.24.6
+go 1.25.0
 
 require (
 	github.com/anhgelus/gokord v0.13.2-0.20251025205525-12213d3f60bc

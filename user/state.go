@@ -2,31 +2,46 @@ package user
 
 import (
 	"context"
+	"errors"
 	"sync"
+	"time"
 
 	"github.com/nyttikord/gokord/state"
 )
 
+var ErrSyncingUnsavedData = errors.New("trying to sync unsaved data")
+
 type CopaingCached struct {
-	ID        uint   `gorm:"primarykey"`
-	DiscordID string `gorm:"not null"`
-	GuildID   string `gorm:"not null"`
+	ID        uint
+	DiscordID string
+	GuildID   string
 	XPs       uint
 	XPToAdd   uint
+	lastSync  time.Time // time.Time of the lastSync
 }
 
 // copaing turns a CopaingCached into a Copaing.
-// This operation is heavy.
-func (cc *CopaingCached) copaing(ctx context.Context) *Copaing {
-	c := Copaing{DiscordID: cc.DiscordID, GuildID: cc.GuildID}
-	if err := c.Load(ctx); err != nil {
+// This operation get the copaing synced with the database.
+// It doesn't:
+// - save the copaing in the database, use CopaingCached.SaveInDB for that;
+// - sync the copaing cached, use CopaingCached.Sync for that.
+// TL;DR: don't use this method, unless you know what are you doing.
+func (cc *CopaingCached) copaing() *Copaing {
+	c := &Copaing{DiscordID: cc.DiscordID, GuildID: cc.GuildID}
+	if err := c.load(); err != nil {
 		panic(err)
 	}
-	return &c
+	return c
 }
 
 func (cc *CopaingCached) Sync(ctx context.Context) error {
-	synced, err := GetState(ctx).CopaingAdd(cc.copaing(ctx), cc.XPToAdd)
+	if cc.mustSave() {
+		return ErrSyncingUnsavedData
+	}
+	synced := FromCopaing(cc.copaing())
+	synced.XPs += cc.XPToAdd
+	synced.XPToAdd = cc.XPToAdd
+	err := synced.Save(ctx)
 	if err != nil {
 		return err
 	}
@@ -44,7 +59,7 @@ func (cc *CopaingCached) Save(ctx context.Context) error {
 }
 
 func (cc *CopaingCached) SaveInDB(ctx context.Context) error {
-	c := cc.copaing(ctx)
+	c := cc.copaing()
 	c.CopaingXPs = append(c.CopaingXPs, CopaingXP{CopaingID: c.ID, XP: cc.XPToAdd, GuildID: c.GuildID})
 	err := c.Save()
 	if err != nil {
@@ -55,12 +70,33 @@ func (cc *CopaingCached) SaveInDB(ctx context.Context) error {
 }
 
 func (cc *CopaingCached) Delete(ctx context.Context) error {
-	c := cc.copaing(ctx)
+	c := cc.copaing()
 	err := c.Delete()
 	if err != nil {
 		return err
 	}
-	return GetState(ctx).CopaingRemove(c)
+	state := GetState(ctx)
+
+	state.mu.Lock()
+	defer state.mu.Unlock()
+
+	return state.storage.Delete(KeyCopaingCached(c))
+}
+
+func (cc *CopaingCached) mustSave() bool {
+	return cc.XPToAdd > 0
+}
+
+func saveStateInDB(ctx context.Context) error {
+	for _, v := range GetState(ctx).storage {
+		if v.mustSave() {
+			err := v.SaveInDB(ctx)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func FromCopaing(c *Copaing) *CopaingCached {
@@ -116,28 +152,17 @@ func (s *State) Copaing(guildID, copaingID string) (*CopaingCached, error) {
 	return &mC, nil
 }
 
-// CopaingAdd does not call Copaing.Load!
-func (s *State) CopaingAdd(c *Copaing, xpToAdd uint) (*CopaingCached, error) {
-	var err error
-	var cc *CopaingCached
-	if cc, err = s.Copaing(c.GuildID, c.DiscordID); err == nil {
-		cc.XPs = calcXP(c) + xpToAdd
-	} else {
-		cc = FromCopaing(c)
+func (s *State) Copaings(guild string) []CopaingCached {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var ccs []CopaingCached
+	for _, cc := range s.storage {
+		if cc.GuildID == guild {
+			ccs = append(ccs, cc)
+		}
 	}
-	cc.XPToAdd = xpToAdd
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	return cc, s.storage.Write(KeyCopaingCached(c), *cc)
-}
-
-func (s *State) CopaingRemove(c *Copaing) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	return s.storage.Delete(KeyCopaingCached(c))
+	return ccs
 }
 
 func calcXP(c *Copaing) uint {

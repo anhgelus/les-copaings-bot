@@ -97,16 +97,14 @@ func GetBestXP(logger *slog.Logger, guildId string, n uint, d int) ([]CopaingAcc
 			logger.Error("scanning rows", "error", err, "copaing", c.ID, "guild", c.GuildID)
 			continue
 		}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			xp, err := c.GetXPForDays(logger, uint(d))
 			if err != nil {
 				logger.Error("fetching xp", "error", err, "copaing", c.ID, "guild", c.GuildID)
 				return
 			}
 			l = append(l, &cXP{Cxp: xp, copaing: &c})
-		}()
+		})
 	}
 	wg.Wait()
 	slices.SortFunc(l, func(a, b *cXP) int {
