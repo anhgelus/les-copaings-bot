@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"errors"
+	"math"
 	"sync"
 	"time"
 
@@ -162,6 +163,19 @@ func SetState(ctx context.Context, state *State) context.Context {
 	return context.WithValue(ctx, ContextKeyState, state)
 }
 
+func deepCopy(src CopaingCached) CopaingCached {
+	res := CopaingCached{
+		ID:        src.ID,
+		DiscordID: src.DiscordID,
+		GuildID:   src.GuildID,
+		XP:        src.XP,
+		XPToAdd:   src.XPToAdd,
+		XPs:       make([]XPCached, len(src.XPs)),
+	}
+	copy(res.XPs, src.XPs)
+	return res
+}
+
 func (s *State) Copaing(guildID, copaingID string) (*CopaingCached, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -181,7 +195,7 @@ func (s *State) Copaings(guild string) []CopaingCached {
 	var ccs []CopaingCached
 	for _, cc := range s.storage {
 		if cc.GuildID == guild {
-			ccs = append(ccs, cc)
+			ccs = append(ccs, deepCopy(cc))
 		}
 	}
 	return ccs
@@ -197,15 +211,16 @@ func calcXP(c *Copaing) uint {
 
 func generateXPs(c *Copaing) []XPCached {
 	data := map[time.Duration]XPCached{}
-	sixH := 6 * time.Hour
+	var sumEach time.Duration = 6
 	for _, xp := range c.CopaingXPs {
-		// we add sixH at the end because we want it to be rounded to ceil
-		since := time.Since(xp.CreatedAt)/sixH + sixH
+		// we add sumEach at the end because we want it to be rounded to ceil
+		tmp := time.Since(xp.CreatedAt)/(sumEach*time.Hour) + sumEach
+		since := time.Duration(math.Floor(float64(tmp)))
 		if v, ok := data[since]; ok {
 			v.XP += xp.XP
 		} else {
 			data[since] = XPCached{
-				Time: since,
+				Time: since * time.Hour,
 				XP:   xp.XP,
 			}
 		}
@@ -214,7 +229,6 @@ func generateXPs(c *Copaing) []XPCached {
 	i := 0
 	for _, v := range data {
 		ccs[i] = v
-		println(v.Time.String(), v.XP)
 		i++
 	}
 	return ccs

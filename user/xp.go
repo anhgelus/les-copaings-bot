@@ -40,30 +40,28 @@ func (cc *CopaingCached) AddXP(ctx context.Context, s bot.Session, m *user.Membe
 	}
 }
 
-func (cc *CopaingCached) GetXPForDays(n uint) uint {
+func (cc *CopaingCached) GetXPForDays(d int) uint {
 	xp := uint(0)
 	for _, v := range cc.XPs {
-		if v.Time <= time.Duration(n*24)*time.Hour {
+		if v.Time <= time.Duration(d*24)*time.Hour {
 			xp += v.XP
 		}
 	}
 	return xp + cc.XPToAdd
 }
 
-// GetBestXP returns n Copaing with the best XP within d days (d <= cfg.DaysXPRemain; d < 0 <=> d = cfg.DaysXPRemain)
+// GetBestXP returns n Copaings with the best XP within d days (d <= cfg.DaysXPRemain; d < 0 <=> d = cfg.DaysXPRemain)
 func GetBestXP(ctx context.Context, guildId string, n uint, d int) []CopaingCached {
 	ccs := GetState(ctx).Copaings(guildId)
 	if d > 0 {
-		for _, v := range ccs {
-			v.XP = v.GetXPForDays(n)
+		for i, cc := range ccs {
+			cc.XP = cc.GetXPForDays(d)
+			ccs[i] = cc
 		}
 	}
 	slices.SortFunc(ccs, func(a, b CopaingCached) int {
 		// desc order
 		return int(b.XP) - int(a.XP)
 	})
-	m := min(len(ccs), int(n))
-	res := make([]CopaingCached, m)
-	copy(ccs[:m], res)
-	return res
+	return ccs[:min(len(ccs), int(n))]
 }
