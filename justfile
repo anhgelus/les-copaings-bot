@@ -18,4 +18,4 @@ clean-network:
     podman network rm db
 
 build:
-    go build -ldflags "-s" .
+    GOAMD64=v3 go build -ldflags "-s" .
