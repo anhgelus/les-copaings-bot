@@ -12,6 +12,7 @@ import (
 
 func Reset(s bot.Session, i *event.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	var copaings []*user.Copaing
+	//TODO: delete everything from cache
 	gokord.DB.Where("guild_id = ?", i.GuildID).Delete(&copaings)
 	if err := resp.IsEphemeral().SetMessage("L'XP a été reset.").Send(); err != nil {
 		s.Logger().Error("sending reset success", "error", err)
@@ -35,7 +36,7 @@ func ResetUser(ctx context.Context) func(s bot.Session, i *event.InteractionCrea
 			}
 			return
 		}
-		err := user.GetCopaing(ctx, m.ID, i.GuildID).Copaing(ctx).Delete(ctx)
+		err := user.GetCopaing(ctx, m.ID, i.GuildID).Delete(ctx)
 		if err != nil {
 			s.Logger().Error("deleting copaing", "error", err, "user", m.Username, "guild", i.GuildID)
 			err = resp.SetMessage("Erreur : impossible de reset l'utilisateur").Send()

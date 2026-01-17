@@ -76,7 +76,7 @@ func PeriodicReducer(s *discordgo.Session) {
 			}
 			cxps[i] = &cXP{
 				Cxp:     xp,
-				Copaing: c,
+				copaing: c,
 			}
 		}()
 	}
@@ -105,13 +105,14 @@ func PeriodicReducer(s *discordgo.Session) {
 			time.Sleep(15 * time.Second) // prevents spamming the API
 		}
 		oldXp := c.GetXP()
-		xp, err := c.ToCopaing().GetXP(s.Logger())
+		cp := c.Copaing()
+		xp, err := cp.GetXP(s.Logger())
 		if err != nil {
-			s.Logger().Error("getting xp of copaing", "error", err, "copaing", c.ID, "guild", c.GuildID)
+			s.Logger().Error("getting xp of copaing", "error", err, "copaing", cp.ID, "guild", cp.GuildID)
 			continue
 		}
 		if exp.Level(oldXp) != exp.Level(xp) {
-			c.OnNewLevel(s, exp.Level(xp))
+			cp.OnNewLevel(s, exp.Level(xp))
 		}
 	}
 	s.Logger().Debug("periodic reduce finished", "guilds affected", i)

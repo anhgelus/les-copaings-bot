@@ -23,7 +23,7 @@ type CopaingXP struct {
 }
 
 type CopaingAccess interface {
-	ToCopaing() *Copaing
+	Copaing() *Copaing
 	GetXP() uint
 }
 
@@ -54,18 +54,15 @@ func (c *Copaing) Load(ctx context.Context) error {
 	return err
 }
 
-func (c *Copaing) Save(ctx context.Context) error {
-	state := GetState(ctx)
-	_, err := state.CopaingAdd(c, 0)
-	if err != nil {
-		return err
-	}
+func (c *Copaing) Save() error {
 	return gokord.DB.Save(c).Error
 }
 
-func (c *Copaing) Delete(ctx context.Context) error {
-	state := GetState(ctx)
-	err := state.CopaingRemove(c)
+func (c *Copaing) Delete() error {
+	err := gokord.DB.
+		Where("copaing_id = ? and guild_id = ?", c.ID, c.GuildID).
+		Delete(&CopaingXP{}).
+		Error
 	if err != nil {
 		return err
 	}

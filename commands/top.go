@@ -68,7 +68,7 @@ func Top(s bot.Session, i *event.InteractionCreate, _ cmd.OptionMap, resp *cmd.R
 func genTopsMessage(tops []user.CopaingAccess) string {
 	msg := ""
 	for i, c := range tops {
-		msg += fmt.Sprintf("%d. **<@%s>** - niveau %d", i+1, c.ToCopaing().DiscordID, exp.Level(c.GetXP()))
+		msg += fmt.Sprintf("%d. **<@%s>** - niveau %d", i+1, c.Copaing().DiscordID, exp.Level(c.GetXP()))
 		if i != len(tops)-1 {
 			msg += "\n"
 		}

@@ -15,14 +15,23 @@ type CopaingCached struct {
 	XPToAdd   uint
 }
 
-// Copaing turns a CopaingCached into a Copaing.
+// copaing turns a CopaingCached into a Copaing.
 // This operation is heavy.
-func (cc *CopaingCached) Copaing(ctx context.Context) *Copaing {
+func (cc *CopaingCached) copaing(ctx context.Context) *Copaing {
 	c := Copaing{DiscordID: cc.DiscordID, GuildID: cc.GuildID}
 	if err := c.Load(ctx); err != nil {
 		panic(err)
 	}
 	return &c
+}
+
+func (cc *CopaingCached) Sync(ctx context.Context) error {
+	synced, err := GetState(ctx).CopaingAdd(cc.copaing(ctx), cc.XPToAdd)
+	if err != nil {
+		return err
+	}
+	*cc = *synced
+	return nil
 }
 
 func (cc *CopaingCached) Save(ctx context.Context) error {
@@ -32,6 +41,26 @@ func (cc *CopaingCached) Save(ctx context.Context) error {
 	defer state.mu.Unlock()
 
 	return state.storage.Write(KeyCopaingCachedRaw(cc.GuildID, cc.DiscordID), *cc)
+}
+
+func (cc *CopaingCached) SaveInDB(ctx context.Context) error {
+	c := cc.copaing(ctx)
+	c.CopaingXPs = append(c.CopaingXPs, CopaingXP{CopaingID: c.ID, XP: cc.XPToAdd, GuildID: c.GuildID})
+	err := c.Save()
+	if err != nil {
+		return err
+	}
+	cc.XPToAdd = 0
+	return cc.Save(ctx)
+}
+
+func (cc *CopaingCached) Delete(ctx context.Context) error {
+	c := cc.copaing(ctx)
+	err := c.Delete()
+	if err != nil {
+		return err
+	}
+	return GetState(ctx).CopaingRemove(c)
 }
 
 func FromCopaing(c *Copaing) *CopaingCached {
@@ -92,11 +121,12 @@ func (s *State) CopaingAdd(c *Copaing, xpToAdd uint) (*CopaingCached, error) {
 	var err error
 	var cc *CopaingCached
 	if cc, err = s.Copaing(c.GuildID, c.DiscordID); err == nil {
-		cc.XPs = calcXP(c)
-		cc.XPToAdd = xpToAdd
+		cc.XPs = calcXP(c) + xpToAdd
 	} else {
 		cc = FromCopaing(c)
 	}
+	cc.XPToAdd = xpToAdd
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

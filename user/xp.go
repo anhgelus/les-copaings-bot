@@ -14,12 +14,12 @@ import (
 )
 
 type cXP struct {
-	Cxp uint
-	*Copaing
+	Cxp     uint
+	copaing *Copaing
 }
 
-func (c *cXP) ToCopaing() *Copaing {
-	return c.Copaing
+func (c *cXP) Copaing() *Copaing {
+	return c.copaing
 }
 
 func (c *cXP) GetXP() uint {
@@ -105,19 +105,13 @@ func GetBestXP(logger *slog.Logger, guildId string, n uint, d int) ([]CopaingAcc
 				logger.Error("fetching xp", "error", err, "copaing", c.ID, "guild", c.GuildID)
 				return
 			}
-			l = append(l, &cXP{Cxp: xp, Copaing: &c})
+			l = append(l, &cXP{Cxp: xp, copaing: &c})
 		}()
 	}
 	wg.Wait()
 	slices.SortFunc(l, func(a, b *cXP) int {
 		// desc order
-		if a.Cxp < b.Cxp {
-			return 1
-		}
-		if a.Cxp > b.Cxp {
-			return -1
-		}
-		return 0
+		return int(b.Cxp) - int(a.Cxp)
 	})
 	m := min(len(l), int(n))
 	cs := make([]CopaingAccess, m)
