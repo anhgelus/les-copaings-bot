@@ -8,7 +8,7 @@ require (
 	github.com/anhgelus/gokord v0.13.2-0.20251025205525-12213d3f60bc
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/joho/godotenv v1.5.1
-	github.com/nyttikord/gokord v0.32.2-0.20251025205355-aa6d1b6f6cf8
+	github.com/nyttikord/gokord v0.32.2-0.20260117124048-1bfc0b91d490
 	github.com/pelletier/go-toml/v2 v2.2.4
 	golang.org/x/image v0.30.0
 	gonum.org/v1/plot v0.16.0
@@ -34,8 +34,8 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/redis/go-redis/v9 v9.16.0 // indirect
-	golang.org/x/crypto v0.43.0 // indirect
-	golang.org/x/sync v0.17.0 // indirect
-	golang.org/x/sys v0.37.0 // indirect
-	golang.org/x/text v0.30.0 // indirect
+	golang.org/x/crypto v0.47.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 )
