@@ -38,15 +38,12 @@ func Rank(ctx context.Context) func(s bot.Session, i *event.InteractionCreate, o
 			c = user.GetCopaing(ctx, u.ID, i.GuildID) // current user = member targeted by member who wrote /rank
 			msg = fmt.Sprintf("Le niveau de %s", m.DisplayName())
 		}
-		xp := c.XPs
+		xp := c.XP
 		lvl := exp.Level(xp)
 		nxtLvlXP := exp.LevelXP(lvl + 1)
 		err = resp.SetMessage(fmt.Sprintf(
 			"%s : **%d**\n> XP : %d\n> Prochain niveau dans %d XP",
-			msg,
-			lvl,
-			xp,
-			nxtLvlXP-xp,
+			msg, lvl, xp, nxtLvlXP-xp,
 		)).Send()
 		if err != nil {
 			s.Logger().Error("sending rank", "error", err)

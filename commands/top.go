@@ -16,17 +16,12 @@ import (
 
 func Top(ctx context.Context) func(s bot.Session, i *event.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	return func(s bot.Session, i *event.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
-		err := resp.IsDeferred().Send()
-		if err != nil {
-			s.Logger().Error("sending deferred", "error", err)
-			return
-		}
 		embeds := make([]*channel.MessageEmbed, 3)
 		wg := sync.WaitGroup{}
 
 		fn := func(str string, n uint, d int, id int) {
 			defer wg.Done()
-			tops, err := user.GetBestXP(ctx, s.Logger(), i.GuildID, n, d)
+			tops, err := user.GetBestXP(ctx, i.GuildID, n, d)
 			if err != nil {
 				s.Logger().Error("fetching best xp", "error", err, "n", n, "d", d, "id", id, "guild", i.GuildID)
 				embeds[id] = &channel.MessageEmbed{
@@ -60,7 +55,7 @@ func Top(ctx context.Context) func(s bot.Session, i *event.InteractionCreate, _ 
 				resp.AddEmbed(embeds[1]).
 					AddEmbed(embeds[2])
 			}
-			err = resp.Send()
+			err := resp.Send()
 			if err != nil {
 				s.Logger().Error("sending response top", "error", err)
 			}
@@ -71,7 +66,7 @@ func Top(ctx context.Context) func(s bot.Session, i *event.InteractionCreate, _ 
 func genTopsMessage(tops []user.CopaingCached) string {
 	msg := ""
 	for i, c := range tops {
-		msg += fmt.Sprintf("%d. **<@%s>** - niveau %d", i+1, c.DiscordID, exp.Level(c.XPs))
+		msg += fmt.Sprintf("%d. **<@%s>** - niveau %d", i+1, c.DiscordID, exp.Level(c.XP))
 		if i != len(tops)-1 {
 			msg += "\n"
 		}

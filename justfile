@@ -12,10 +12,7 @@ update:
     go run .
 
 stop:
-    podman stop postgres adminer || (echo "no container"; exit 0)
-    podman network rm db
-
-clean-network:
+    podman stop postgres adminer || (echo "no container")
     podman network rm db || echo "no network"
 
 build:

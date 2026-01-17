@@ -6,18 +6,24 @@ import (
 	"sync"
 	"time"
 
+	"github.com/anhgelus/gokord"
 	"github.com/nyttikord/gokord/state"
 )
 
 var ErrSyncingUnsavedData = errors.New("trying to sync unsaved data")
 
+type XPCached struct {
+	XP   uint
+	Time time.Duration
+}
+
 type CopaingCached struct {
 	ID        uint
 	DiscordID string
 	GuildID   string
-	XPs       uint
+	XP        uint
+	XPs       []XPCached
 	XPToAdd   uint
-	lastSync  time.Time // time.Time of the lastSync
 }
 
 // copaing turns a CopaingCached into a Copaing.
@@ -39,9 +45,8 @@ func (cc *CopaingCached) Sync(ctx context.Context) error {
 		return ErrSyncingUnsavedData
 	}
 	synced := FromCopaing(cc.copaing())
-	synced.XPs += cc.XPToAdd
+	synced.XP += cc.XPToAdd
 	synced.XPToAdd = cc.XPToAdd
-	synced.lastSync = time.Now()
 	err := synced.Save(ctx)
 	if err != nil {
 		return err
@@ -89,7 +94,12 @@ func (cc *CopaingCached) mustSave() bool {
 }
 
 func saveStateInDB(ctx context.Context) error {
-	for _, v := range GetState(ctx).storage {
+	state := GetState(ctx)
+
+	state.saveInDB.Lock()
+	defer state.saveInDB.Unlock()
+
+	for _, v := range state.storage {
 		if v.mustSave() {
 			err := v.SaveInDB(ctx)
 			if err != nil {
@@ -105,7 +115,8 @@ func FromCopaing(c *Copaing) *CopaingCached {
 		ID:        c.ID,
 		DiscordID: c.DiscordID,
 		GuildID:   c.GuildID,
-		XPs:       calcXP(c),
+		XP:        calcXP(c),
+		XPs:       generateXPs(c),
 		XPToAdd:   0,
 	}
 }
@@ -121,14 +132,24 @@ func KeyCopaingCachedRaw(guildID, copaingID string) state.Key {
 }
 
 type State struct {
-	mu      sync.RWMutex
-	storage state.MapStorage[CopaingCached]
+	mu       sync.RWMutex
+	saveInDB sync.Mutex
+	storage  state.MapStorage[CopaingCached]
 }
 
 func NewState() *State {
-	return &State{
+	state := &State{
 		storage: state.MapStorage[CopaingCached]{},
 	}
+	var cs []*Copaing
+	err := gokord.DB.Find(&cs).Error
+	if err != nil {
+		panic(err)
+	}
+	for _, v := range cs {
+		FromCopaing(v).Save(SetState(context.Background(), state))
+	}
+	return state
 }
 
 const ContextKeyState = "state"
@@ -172,4 +193,28 @@ func calcXP(c *Copaing) uint {
 		sum += entry.XP
 	}
 	return sum
+}
+
+func generateXPs(c *Copaing) []XPCached {
+	data := map[time.Duration]XPCached{}
+	sixH := 6 * time.Hour
+	for _, xp := range c.CopaingXPs {
+		// we add sixH at the end because we want it to be rounded to ceil
+		since := time.Since(xp.CreatedAt)/sixH + sixH
+		if v, ok := data[since]; ok {
+			v.XP += xp.XP
+		} else {
+			data[since] = XPCached{
+				Time: since,
+				XP:   xp.XP,
+			}
+		}
+	}
+	ccs := make([]XPCached, len(data))
+	i := 0
+	for _, v := range data {
+		ccs[i] = v
+		i++
+	}
+	return ccs
 }

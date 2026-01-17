@@ -93,13 +93,13 @@ func syncCopaings(ctx context.Context, s *discordgo.Session, ccs []CopaingCached
 			s.Logger().Debug("sleeping...")
 			time.Sleep(15 * time.Second) // prevents spamming the API
 		}
-		oldXp := cc.XPs
+		oldXp := cc.XP
 		err := cc.Sync(ctx)
 		if err != nil {
 			s.Logger().Error("syncing copaing", "error", err, "copaing", cc.ID, "guild", cc.GuildID)
 			continue
 		}
-		xp := cc.XPs
+		xp := cc.XP
 		if exp.Level(oldXp) != exp.Level(xp) {
 			cc.onNewLevel(s, exp.Level(xp))
 		}
