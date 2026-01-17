@@ -214,6 +214,7 @@ func generateXPs(c *Copaing) []XPCached {
 	i := 0
 	for _, v := range data {
 		ccs[i] = v
+		println(v.Time.String(), v.XP)
 		i++
 	}
 	return ccs

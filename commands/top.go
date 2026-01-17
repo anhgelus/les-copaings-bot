@@ -17,49 +17,44 @@ import (
 func Top(ctx context.Context) func(s bot.Session, i *event.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
 	return func(s bot.Session, i *event.InteractionCreate, _ cmd.OptionMap, resp *cmd.ResponseBuilder) {
 		embeds := make([]*channel.MessageEmbed, 3)
-		wg := sync.WaitGroup{}
+		var wg sync.WaitGroup
 
 		fn := func(str string, n uint, d int, id int) {
-			defer wg.Done()
-			tops, err := user.GetBestXP(ctx, i.GuildID, n, d)
-			if err != nil {
-				s.Logger().Error("fetching best xp", "error", err, "n", n, "d", d, "id", id, "guild", i.GuildID)
-				embeds[id] = &channel.MessageEmbed{
-					Title:       str,
-					Description: "Erreur : impossible de récupérer la liste",
-					Color:       0x831010,
-				}
-				return
-			}
+			tops := user.GetBestXP(ctx, i.GuildID, n, d)
 			embeds[id] = &channel.MessageEmbed{
 				Title:       str,
 				Description: genTopsMessage(tops),
 				Color:       0x10E6AD,
 			}
 		}
+
 		cfg := config.GetGuildConfig(i.GuildID)
 		if cfg.DaysXPRemains > 30 {
-			wg.Add(1)
-			go fn(fmt.Sprintf("Top %d jours", cfg.DaysXPRemains), 10, -1, 0)
+			wg.Go(func() {
+				fn(fmt.Sprintf("Top %d jours", cfg.DaysXPRemains), 10, -1, 0)
+			})
 		}
-		wg.Add(2)
-		go fn("Top 30 jours", 5, 30, 1)
-		go fn("Top 7 jours", 5, 7, 2)
-		go func() {
-			wg.Wait()
-			if cfg.DaysXPRemains > 30 {
-				resp.AddEmbed(embeds[0]).
-					AddEmbed(embeds[1]).
-					AddEmbed(embeds[2])
-			} else {
-				resp.AddEmbed(embeds[1]).
-					AddEmbed(embeds[2])
-			}
-			err := resp.Send()
-			if err != nil {
-				s.Logger().Error("sending response top", "error", err)
-			}
-		}()
+
+		wg.Go(func() {
+			fn("Top 30 jours", 5, 30, 1)
+		})
+		wg.Go(func() {
+			fn("Top 7 jours", 5, 7, 2)
+		})
+
+		wg.Wait()
+		if cfg.DaysXPRemains > 30 {
+			resp.AddEmbed(embeds[0]).
+				AddEmbed(embeds[1]).
+				AddEmbed(embeds[2])
+		} else {
+			resp.AddEmbed(embeds[1]).
+				AddEmbed(embeds[2])
+		}
+		err := resp.Send()
+		if err != nil {
+			s.Logger().Error("sending response top", "error", err)
+		}
 	}
 }
 

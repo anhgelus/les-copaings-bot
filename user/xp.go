@@ -51,7 +51,7 @@ func (cc *CopaingCached) GetXPForDays(n uint) uint {
 }
 
 // GetBestXP returns n Copaing with the best XP within d days (d <= cfg.DaysXPRemain; d < 0 <=> d = cfg.DaysXPRemain)
-func GetBestXP(ctx context.Context, guildId string, n uint, d int) ([]CopaingCached, error) {
+func GetBestXP(ctx context.Context, guildId string, n uint, d int) []CopaingCached {
 	ccs := GetState(ctx).Copaings(guildId)
 	if d > 0 {
 		for _, v := range ccs {
@@ -62,5 +62,8 @@ func GetBestXP(ctx context.Context, guildId string, n uint, d int) ([]CopaingCac
 		// desc order
 		return int(b.XP) - int(a.XP)
 	})
-	return ccs[:min(len(ccs), int(n))], nil
+	m := min(len(ccs), int(n))
+	res := make([]CopaingCached, m)
+	copy(ccs[:m], res)
+	return res
 }
