@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"time"
 
 	"github.com/anhgelus/gokord"
@@ -22,24 +23,33 @@ type CopaingXP struct {
 }
 
 type CopaingAccess interface {
-	ToCopaing() *Copaing
+	Copaing() *Copaing
 	GetXP() uint
 }
 
-func GetCopaing(discordID string, guildID string) *Copaing {
-	c := Copaing{DiscordID: discordID, GuildID: guildID}
-	if err := c.Load(); err != nil {
-		panic(err)
+func GetCopaing(ctx context.Context, discordID string, guildID string) *CopaingCached {
+	state := GetState(ctx)
+	cc, err := state.Copaing(guildID, discordID)
+	if err != nil {
+		c := Copaing{DiscordID: discordID, GuildID: guildID}
+		if err := c.load(); err != nil {
+			panic(err)
+		}
+		cc = FromCopaing(&c)
 	}
-	return &c
+	return cc
 }
 
-func (c *Copaing) Load() error {
-	return gokord.DB.
+func (c *Copaing) load() error {
+	err := gokord.DB.
 		Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).
 		Preload("CopaingXPs").
 		FirstOrCreate(c).
 		Error
+	if err != nil {
+		return err
+	}
+	return err
 }
 
 func (c *Copaing) Save() error {
@@ -47,5 +57,12 @@ func (c *Copaing) Save() error {
 }
 
 func (c *Copaing) Delete() error {
+	err := gokord.DB.
+		Where("copaing_id = ? and guild_id = ?", c.ID, c.GuildID).
+		Delete(&CopaingXP{}).
+		Error
+	if err != nil {
+		return err
+	}
 	return gokord.DB.Where("guild_id = ? AND discord_id = ?", c.GuildID, c.DiscordID).Delete(c).Error
 }

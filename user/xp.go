@@ -1,41 +1,36 @@
 package user
 
 import (
-	"log/slog"
+	"context"
 	"slices"
-	"sync"
+	"time"
 
-	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
-	"github.com/anhgelus/gokord"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/user"
 )
 
 type cXP struct {
-	Cxp uint
-	*Copaing
+	Cxp     uint
+	copaing *Copaing
 }
 
-func (c *cXP) ToCopaing() *Copaing {
-	return c.Copaing
+func (c *cXP) Copaing() *Copaing {
+	return c.copaing
 }
 
 func (c *cXP) GetXP() uint {
 	return c.Cxp
 }
 
-func (c *Copaing) AddXP(s bot.Session, m *user.Member, xp uint, fn func(uint, uint)) {
-	old, err := c.GetXP(s.Logger())
-	if err != nil {
-		s.Logger().Error("getting xp", "error", err, "user", m.DisplayName(), "guild", c.GuildID)
-		return
-	}
+func (cc *CopaingCached) AddXP(ctx context.Context, s bot.Session, m *user.Member, xp uint, fn func(uint, uint)) {
+	old := cc.XP
 	pastLevel := exp.Level(old)
 	s.Logger().Debug("adding xp", "user", m.DisplayName(), "old", old, "to add", xp)
-	c.CopaingXPs = append(c.CopaingXPs, CopaingXP{CopaingID: c.ID, XP: xp, GuildID: c.GuildID})
-	if err = c.Save(); err != nil {
-		s.Logger().Error("saving user", "error", err, "user", m.DisplayName(), "xp", xp, "guild", c.GuildID)
+	cc.XP += xp
+	cc.XPToAdd += xp
+	if err := cc.Save(ctx); err != nil {
+		s.Logger().Error("saving user in state", "error", err, "user", m.DisplayName(), "xp", xp, "guild", cc.GuildID)
 		return
 	}
 	newLevel := exp.Level(old + xp)
@@ -45,86 +40,27 @@ func (c *Copaing) AddXP(s bot.Session, m *user.Member, xp uint, fn func(uint, ui
 	}
 }
 
-func (c *Copaing) GetXP(logger *slog.Logger) (uint, error) {
-	cfg := config.GetGuildConfig(c.GuildID)
-	return c.GetXPForDays(logger, cfg.DaysXPRemains)
-}
-
-func (c *Copaing) GetXPForDays(logger *slog.Logger, n uint) (uint, error) {
+func (cc *CopaingCached) GetXPForDays(n uint) uint {
 	xp := uint(0)
-	rows, err := gokord.DB.
-		Model(&CopaingXP{}).
-		Where(
-			"created_at >= ? and guild_id = ? and copaing_id = ?",
-			exp.TimeStampNDaysBefore(n),
-			c.GuildID,
-			c.ID,
-		).
-		Rows()
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var cxp CopaingXP
-		err = gokord.DB.ScanRows(rows, &cxp)
-		if err != nil {
-			logger.Error("scanning rows", "error", err, "copaing", c.ID, "guild", c.GuildID)
-			continue
+	for _, v := range cc.XPs {
+		if v.Time <= time.Duration(n*24)*time.Hour {
+			xp += v.XP
 		}
-		xp += cxp.XP
 	}
-	return xp, nil
+	return xp + cc.XPToAdd
 }
 
 // GetBestXP returns n Copaing with the best XP within d days (d <= cfg.DaysXPRemain; d < 0 <=> d = cfg.DaysXPRemain)
-//
-// This function is slow
-func GetBestXP(logger *slog.Logger, guildId string, n uint, d int) ([]CopaingAccess, error) {
-	if d < 0 {
-		cfg := config.GetGuildConfig(guildId)
-		d = int(cfg.DaysXPRemains)
-	}
-	rows, err := gokord.DB.Model(&Copaing{}).Where("guild_id = ?", guildId).Rows()
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var l []*cXP
-	wg := sync.WaitGroup{}
-	for rows.Next() {
-		var c Copaing
-		err = gokord.DB.ScanRows(rows, &c)
-		if err != nil {
-			logger.Error("scanning rows", "error", err, "copaing", c.ID, "guild", c.GuildID)
-			continue
+func GetBestXP(ctx context.Context, guildId string, n uint, d int) ([]CopaingCached, error) {
+	ccs := GetState(ctx).Copaings(guildId)
+	if d > 0 {
+		for _, v := range ccs {
+			v.XP = v.GetXPForDays(n)
 		}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			xp, err := c.GetXPForDays(logger, uint(d))
-			if err != nil {
-				logger.Error("fetching xp", "error", err, "copaing", c.ID, "guild", c.GuildID)
-				return
-			}
-			l = append(l, &cXP{Cxp: xp, Copaing: &c})
-		}()
 	}
-	wg.Wait()
-	slices.SortFunc(l, func(a, b *cXP) int {
+	slices.SortFunc(ccs, func(a, b CopaingCached) int {
 		// desc order
-		if a.Cxp < b.Cxp {
-			return 1
-		}
-		if a.Cxp > b.Cxp {
-			return -1
-		}
-		return 0
+		return int(b.XP) - int(a.XP)
 	})
-	m := min(len(l), int(n))
-	cs := make([]CopaingAccess, m)
-	for i, c := range l[:m] {
-		cs[i] = c
-	}
-	return cs, nil
+	return ccs[:min(len(ccs), int(n))], nil
 }

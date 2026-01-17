@@ -40,7 +40,8 @@ var (
 	}
 	verbose bool
 
-	stopPeriodicReducer chan<- interface{}
+	stopPeriodicReducer chan<- any
+	stopPeriodicSaver   chan<- any
 )
 
 //go:embed assets/inter-variable.ttf
@@ -60,13 +61,10 @@ func init() {
 		panic(err)
 	}
 	inter := font.Font{Typeface: "Inter"}
-	font.DefaultCache.Add(
-		[]font.Face{
-			{
-				Font: inter,
-				Face: fontTTF,
-			},
-		})
+	font.DefaultCache.Add([]font.Face{{
+		Font: inter,
+		Face: fontTTF,
+	}})
 	plot.DefaultFont = inter
 
 }
@@ -86,20 +84,22 @@ func main() {
 
 	adm := gokord.AdminPermission
 
+	ctx := user.SetState(context.Background(), user.NewState())
+
 	rankCmd := cmd.New("rank", "Affiche le niveau d'un copaing").
 		AddOption(cmd.NewOption(
 			types.CommandOptionUser,
 			"copaing",
 			"Le niveau du Copaing que vous souhaitez obtenir",
 		)).
-		SetHandler(commands.Rank)
+		SetHandler(commands.Rank(ctx))
 
 	configCmd := cmd.New("config", "Modifie la config").
 		SetPermission(&adm).
 		SetHandler(commands.ConfigCommand)
 
 	topCmd := cmd.New("top", "Copaings les plus actifs").
-		SetHandler(commands.Top)
+		SetHandler(commands.Top(ctx))
 
 	resetCmd := cmd.New("reset", "Reset l'xp").
 		SetHandler(commands.Reset).
@@ -111,7 +111,7 @@ func main() {
 			"user",
 			"Copaing a reset",
 		).IsRequired()).
-		SetHandler(commands.ResetUser).
+		SetHandler(commands.ResetUser(ctx)).
 		SetPermission(&adm)
 
 	creditsCmd := cmd.New("credits", "Crédits").
@@ -128,7 +128,7 @@ func main() {
 			"user",
 			"Utilisateur à inspecter",
 		)).
-		SetHandler(commands.Stats)
+		SetHandler(commands.Stats(ctx))
 
 	rolereactCmd := cmd.New("rolereact", "Envoie un message permettant de récupérer des rôles grâce à des réactions").
 		SetPermission(&adm).
@@ -179,12 +179,18 @@ func main() {
 			if gokord.Debug {
 				d = 3 * exp.DebugFactor * time.Second
 			}
+			d2 := 30 * time.Minute
+			if gokord.Debug {
+				d2 = 1 * exp.DebugFactor * time.Second
+			}
 
-			user.PeriodicReducer(dg)
+			user.PeriodicReducer(ctx, dg)
 
-			stopPeriodicReducer = gokord.NewTimer(d, func(stop chan<- interface{}) {
-				dg.Logger().Debug("periodic reducer")
-				user.PeriodicReducer(dg)
+			stopPeriodicReducer = gokord.NewTimer(d, func(stop chan<- any) {
+				user.PeriodicReducer(ctx, dg)
+			})
+			stopPeriodicSaver = gokord.NewTimer(d2, func(c chan<- any) {
+				user.PeriodicSaver(ctx, dg)
 			})
 		},
 		Innovations: innovations,
@@ -220,6 +226,9 @@ func main() {
 			return
 		}
 		s.Logger().Debug("pushed rolereaction message command", "CommandID", c.ID)
+	})
+	b.AddHandler(func(ct context.Context, s bot.Session, _ *event.Disconnect) {
+		user.PeriodicSaver(ctx, s)
 	})
 	b.AddHandler(func(_ context.Context, s bot.Session, i *event.InteractionCreate) {
 		if i.Type != types.InteractionApplicationCommand {
@@ -279,9 +288,13 @@ func main() {
 	b.AddHandler(OnVoiceUpdate)
 	b.AddHandler(OnLeave)
 
-	b.Start(context.Background())
+	b.Start(ctx)
 
 	if stopPeriodicReducer != nil {
 		stopPeriodicReducer <- true
+	}
+
+	if stopPeriodicSaver != nil {
+		stopPeriodicSaver <- true
 	}
 }

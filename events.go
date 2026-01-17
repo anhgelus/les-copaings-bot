@@ -9,7 +9,6 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
-	"github.com/anhgelus/gokord"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/event"
 )
@@ -24,7 +23,7 @@ var (
 	connectedSince = map[string]int64{}
 )
 
-func OnMessage(_ context.Context, s bot.Session, m *event.MessageCreate) {
+func OnMessage(ctx context.Context, s bot.Session, m *event.MessageCreate) {
 	if m.Author.Bot {
 		return
 	}
@@ -32,13 +31,13 @@ func OnMessage(_ context.Context, s bot.Session, m *event.MessageCreate) {
 	if cfg.IsDisabled(s, m.ChannelID) {
 		return
 	}
-	c := user.GetCopaing(m.Author.ID, m.GuildID)
+	cc := user.GetCopaing(ctx, m.Author.ID, m.GuildID)
 	// add exp
 	trimmed := exp.TrimMessage(strings.ToLower(m.Content))
 	m.Member.User = m.Author
 	m.Member.GuildID = m.GuildID
 	xp := min(exp.MessageXP(uint(len(trimmed)), exp.CalcDiversity(trimmed)), MaxXpPerMessage)
-	c.AddXP(s, m.Member, xp, func(_ uint, _ uint) {
+	cc.AddXP(ctx, s, m.Member, xp, func(_ uint, _ uint) {
 		if err := s.ChannelAPI().MessageReactionAdd(m.ChannelID, m.Message.ID, "⬆"); err != nil {
 			s.Logger().Error(
 				"add reaction for new level",
@@ -50,7 +49,7 @@ func OnMessage(_ context.Context, s bot.Session, m *event.MessageCreate) {
 	})
 }
 
-func OnVoiceUpdate(_ context.Context, s bot.Session, e *event.VoiceStateUpdate) {
+func OnVoiceUpdate(ctx context.Context, s bot.Session, e *event.VoiceStateUpdate) {
 	if e.Member.User.Bot {
 		return
 	}
@@ -64,7 +63,7 @@ func OnVoiceUpdate(_ context.Context, s bot.Session, e *event.VoiceStateUpdate) 
 		if cfg.IsDisabled(s, e.BeforeUpdate.ChannelID) {
 			return
 		}
-		onDisconnect(s, e)
+		onDisconnect(ctx, s, e)
 	}
 }
 
@@ -77,9 +76,9 @@ func onConnection(s bot.Session, e *event.VoiceStateUpdate) {
 	connectedSince[genMapKey(e.GuildID, e.UserID)] = time.Now().Unix()
 }
 
-func onDisconnect(s bot.Session, e *event.VoiceStateUpdate) {
+func onDisconnect(ctx context.Context, s bot.Session, e *event.VoiceStateUpdate) {
 	now := time.Now().Unix()
-	c := user.GetCopaing(e.UserID, e.GuildID)
+	cc := user.GetCopaing(ctx, e.UserID, e.GuildID)
 	// check the validity of user
 	con, ok := connectedSince[genMapKey(e.GuildID, e.UserID)]
 	if !ok || con == NotConnected {
@@ -99,7 +98,7 @@ func onDisconnect(s bot.Session, e *event.VoiceStateUpdate) {
 	}
 	timeInVocal = min(timeInVocal, MaxTimeInVocal)
 	e.Member.GuildID = e.GuildID
-	c.AddXP(s, e.Member, exp.VocalXP(uint(timeInVocal)), func(_ uint, newLevel uint) {
+	cc.AddXP(ctx, s, e.Member, exp.VocalXP(uint(timeInVocal)), func(_ uint, newLevel uint) {
 		cfg := config.GetGuildConfig(e.GuildID)
 		if len(cfg.FallbackChannel) == 0 {
 			return
@@ -113,20 +112,13 @@ func onDisconnect(s bot.Session, e *event.VoiceStateUpdate) {
 	})
 }
 
-func OnLeave(_ context.Context, s bot.Session, e *event.GuildMemberRemove) {
+func OnLeave(ctx context.Context, s bot.Session, e *event.GuildMemberRemove) {
 	s.Logger().Debug("leave event", "user", e.User.Username)
 	if e.User.Bot {
 		return
 	}
-	c := user.GetCopaing(e.User.ID, e.GuildID)
-	err := gokord.DB.
-		Where("copaing_id = ? and guild_id = ?", c.ID, e.GuildID).
-		Delete(&user.CopaingXP{}).
-		Error
-	if err != nil {
-		s.Logger().Error("deleting user xp from DB", "user", e.User.Username, "guild", e.GuildID)
-	}
-	if err = c.Delete(); err != nil {
-		s.Logger().Error("deleting user from DB", "user", e.User.Username, "guild", e.GuildID)
+	c := user.GetCopaing(ctx, e.User.ID, e.GuildID)
+	if err := c.Delete(ctx); err != nil {
+		s.Logger().Error("deleting user", "user", e.User.Username, "guild", e.GuildID)
 	}
 }

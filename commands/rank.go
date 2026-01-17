@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
@@ -10,51 +11,42 @@ import (
 	"github.com/nyttikord/gokord/event"
 )
 
-func Rank(s bot.Session, i *event.InteractionCreate, optMap cmd.OptionMap, resp *cmd.ResponseBuilder) {
-	c := user.GetCopaing(i.Member.User.ID, i.GuildID) // current user = member who used /rank
-	msg := "Votre niveau"
-	m := i.Member
-	var err error
-	if v, ok := optMap["copaing"]; ok {
-		u := v.UserValue(s.UserAPI())
-		if u.Bot {
-			err = resp.SetMessage("Imagine si les bots avaient un niveau :rolling_eyes:").IsEphemeral().Send()
-			if err != nil {
-				s.Logger().Error("reply error user is a bot", "error", err)
+func Rank(ctx context.Context) func(s bot.Session, i *event.InteractionCreate, optMap cmd.OptionMap, resp *cmd.ResponseBuilder) {
+	return func(s bot.Session, i *event.InteractionCreate, optMap cmd.OptionMap, resp *cmd.ResponseBuilder) {
+		c := user.GetCopaing(ctx, i.Member.User.ID, i.GuildID) // current user = member who used /rank
+		msg := "Votre niveau"
+		m := i.Member
+		var err error
+		if v, ok := optMap["copaing"]; ok {
+			u := v.UserValue(s.UserAPI())
+			if u.Bot {
+				err = resp.SetMessage("Imagine si les bots avaient un niveau :rolling_eyes:").IsEphemeral().Send()
+				if err != nil {
+					s.Logger().Error("reply error user is a bot", "error", err)
+				}
+				return
 			}
-			return
-		}
-		m, err = s.GuildAPI().Member(i.GuildID, u.ID)
-		if err != nil {
-			s.Logger().Error("fetching guild member", "error", err, "user", u.Username, "guild", i.GuildID)
-			err = resp.SetMessage("Erreur : impossible de récupérer le membre").IsEphemeral().Send()
+			m, err = s.GuildAPI().Member(i.GuildID, u.ID)
 			if err != nil {
-				s.Logger().Error("reply error fetching guild member", "error", err)
+				s.Logger().Error("fetching guild member", "error", err, "user", u.Username, "guild", i.GuildID)
+				err = resp.SetMessage("Erreur : impossible de récupérer le membre").IsEphemeral().Send()
+				if err != nil {
+					s.Logger().Error("reply error fetching guild member", "error", err)
+				}
+				return
 			}
-			return
+			c = user.GetCopaing(ctx, u.ID, i.GuildID) // current user = member targeted by member who wrote /rank
+			msg = fmt.Sprintf("Le niveau de %s", m.DisplayName())
 		}
-		c = user.GetCopaing(u.ID, i.GuildID) // current user = member targeted by member who wrote /rank
-		msg = fmt.Sprintf("Le niveau de %s", m.DisplayName())
-	}
-	xp, err := c.GetXP(s.Logger())
-	if err != nil {
-		s.Logger().Error("fetching xp", "error", err, "copaing", c.ID, "guild", i.GuildID)
-		err = resp.SetMessage("Erreur : impossible de récupérer l'XP").IsEphemeral().Send()
+		xp := c.XP
+		lvl := exp.Level(xp)
+		nxtLvlXP := exp.LevelXP(lvl + 1)
+		err = resp.SetMessage(fmt.Sprintf(
+			"%s : **%d**\n> XP : %d\n> Prochain niveau dans %d XP",
+			msg, lvl, xp, nxtLvlXP-xp,
+		)).Send()
 		if err != nil {
-			s.Logger().Error("reply error fetching xp", "error", err)
+			s.Logger().Error("sending rank", "error", err)
 		}
-		return
-	}
-	lvl := exp.Level(xp)
-	nxtLvlXP := exp.LevelXP(lvl + 1)
-	err = resp.SetMessage(fmt.Sprintf(
-		"%s : **%d**\n> XP : %d\n> Prochain niveau dans %d XP",
-		msg,
-		lvl,
-		xp,
-		nxtLvlXP-xp,
-	)).Send()
-	if err != nil {
-		s.Logger().Error("sending rank", "error", err)
 	}
 }
