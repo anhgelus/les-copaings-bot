@@ -51,10 +51,8 @@ github.com/jinzhu/now v1.1.5/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
 github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
-github.com/nyttikord/gokord v0.32.2-0.20260117124048-1bfc0b91d490 h1:90OWX+zZ1z1w0M41OrknofWSEMH3ZqHXcKVkD6jV/+0=
-github.com/nyttikord/gokord v0.32.2-0.20260117124048-1bfc0b91d490/go.mod h1:PS/ntyzpniZyArWmFa5OvOn6qJ5VnzRlRdDlTlcK3+c=
-github.com/nyttikord/gokord v0.33.0 h1:35GLEchFowBbz2vPqM55K8zOzch53340406RuMHJ9N8=
-github.com/nyttikord/gokord v0.33.0/go.mod h1:PS/ntyzpniZyArWmFa5OvOn6qJ5VnzRlRdDlTlcK3+c=
+github.com/nyttikord/gokord v0.33.1-0.20260121194558-1301f0b4ade8 h1:15R7rkrb3SKWffkU/3NMRYxcGzVDPLOR0Z47uWNb8fc=
+github.com/nyttikord/gokord v0.33.1-0.20260121194558-1301f0b4ade8/go.mod h1:PS/ntyzpniZyArWmFa5OvOn6qJ5VnzRlRdDlTlcK3+c=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
 github.com/pelletier/go-toml/v2 v2.2.4/go.mod h1:2gIqNv+qfxSVS7cM2xJQKtLSTLUE9V8t9Stt+h56mCY=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
