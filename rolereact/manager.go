@@ -13,6 +13,7 @@ import (
 	"github.com/nyttikord/gokord/channel"
 	"github.com/nyttikord/gokord/emoji"
 	"github.com/nyttikord/gokord/event"
+	"github.com/nyttikord/gokord/interaction"
 )
 
 func MessageContent(message *config.RoleReactMessage) string {
@@ -31,34 +32,28 @@ func MessageContent(message *config.RoleReactMessage) string {
 	return content
 }
 
-func ApplyMessageChange(s bot.Session, i *event.InteractionCreate, message *config.RoleReactMessage) string {
+func ApplyMessageChange(ctx context.Context, s bot.Session, i *interaction.Interaction, message *config.RoleReactMessage) string {
 	messageContent := MessageContent(message)
-	_, err := s.ChannelAPI().MessageEditComplex(
-		&channel.MessageEdit{
-			Content:         &messageContent,
-			AllowedMentions: &channel.MessageAllowedMentions{},
-			Channel:         message.ChannelID,
-			ID:              message.MessageID,
-		},
-	)
+	_, err := s.ChannelAPI().MessageEditComplex(&channel.MessageEdit{
+		Content:         &messageContent,
+		AllowedMentions: &channel.MessageAllowedMentions{},
+		Channel:         message.ChannelID,
+		ID:              message.MessageID,
+	}).Do(ctx)
 	if err != nil {
-		s.Logger().Error("unable to update rolereact message", "error", err)
+		bot.Logger(ctx).Error("unable to update rolereact message", "error", err)
 		return "Impossible de mettre à jour le message."
 	}
 	for _, role := range message.Roles {
 		if role.Reaction != "" && role.RoleID != "" && err == nil {
-			err = s.ChannelAPI().MessageReactionAdd(
-				message.ChannelID,
-				message.MessageID,
-				role.Reaction,
-			)
+			err = s.ChannelAPI().MessageReactionAdd(message.ChannelID, message.MessageID, role.Reaction).Do(ctx)
 		}
 	}
 	if err != nil {
-		s.Logger().Error("unable to update reactions on rolereact message", "error", err)
+		bot.Logger(ctx).Error("unable to update reactions on rolereact message", "error", err)
 		return "Impossible de mettre à jour le message."
 	}
-	cfg := GetGuildConfigPreloaded(i.GuildID)
+	cfg := GetGuildConfigPreloaded(ctx, i.GuildID)
 	messageIndex := slices.IndexFunc(cfg.RrMessages, func(m config.RoleReactMessage) bool { return m.ID == message.ID })
 	if messageIndex != -1 {
 		oldMessage := cfg.RrMessages[messageIndex]
@@ -71,7 +66,7 @@ func ApplyMessageChange(s bot.Session, i *event.InteractionCreate, message *conf
 			if !ok {
 				err := oldGokord.DB.Delete(role).Error
 				if err != nil {
-					s.Logger().Error("unable to delete reaction role from database", "error", err)
+					bot.Logger(ctx).Error("unable to delete reaction role from database", "error", err)
 					return "Impossible de sauvegarder le message de rôle. Merci de contacter l'administrateur du bot."
 				}
 			}
@@ -79,13 +74,13 @@ func ApplyMessageChange(s bot.Session, i *event.InteractionCreate, message *conf
 		cfg.RrMessages[messageIndex] = *message
 		err := oldGokord.DB.Save(cfg.RrMessages[messageIndex]).Error
 		if err != nil {
-			s.Logger().Error("unable to save rolereaction message in database", "error", err)
+			bot.Logger(ctx).Error("unable to save rolereaction message in database", "error", err)
 			return "Impossible de sauvegarder le message de rôle. Merci de contacter l'administrateur du bot."
 		}
 		for _, role := range cfg.RrMessages[messageIndex].Roles {
 			err = oldGokord.DB.Save(role).Error
 			if err != nil {
-				s.Logger().Error("unable to save rolereaction role in database", "error", err)
+				bot.Logger(ctx).Error("unable to save rolereaction role in database", "error", err)
 				return "Impossible de sauvegarder le message de rôle. Merci de contacter l'administrateur du bot."
 			}
 		}
@@ -93,8 +88,8 @@ func ApplyMessageChange(s bot.Session, i *event.InteractionCreate, message *conf
 	return "Message de réaction mis à jour avec succès !"
 }
 
-func WaitForEmoji(s bot.Session, userID string, messageID string) (string, bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+func WaitForEmoji(ctx context.Context, s bot.Session, userID string, messageID string) (string, bool) {
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
 	defer cancel()
 
 	emojiChann := make(chan emoji.Emoji)
@@ -115,7 +110,7 @@ func WaitForEmoji(s bot.Session, userID string, messageID string) (string, bool)
 	}
 }
 
-func GetMessageFromEditID(i *event.InteractionCreate, editID uint) (*config.RoleReactMessage, bool) {
+func GetMessageFromEditID(i *interaction.Interaction, editID uint) (*config.RoleReactMessage, bool) {
 	cfg := config.GetGuildConfig(i.GuildID)
 	m, ok := messageEdits[editID]
 	if !ok || m.GuildConfigID != cfg.ID {
@@ -124,7 +119,7 @@ func GetMessageFromEditID(i *event.InteractionCreate, editID uint) (*config.Role
 	return m, true
 }
 
-func GetGuildConfigPreloaded(guildID string) *config.GuildConfig {
+func GetGuildConfigPreloaded(ctx context.Context, guildID string) *config.GuildConfig {
 	cfg := config.GuildConfig{GuildID: guildID}
 	// err := oldGokord.DB.Where("guild_id = ?", cfg.GuildID).Preload("XpRoles").Preload("RrMessages.Roles").FirstOrCreate(cfg).Error
 	err := oldGokord.DB.Where("guild_id = ?", cfg.GuildID).Preload("RrMessages.Roles").FirstOrCreate(&cfg).Error

@@ -1,18 +1,17 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
-	"github.com/anhgelus/gokord/cmd"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/channel"
 	"github.com/nyttikord/gokord/component"
 	"github.com/nyttikord/gokord/discord/types"
-	"github.com/nyttikord/gokord/event"
 	"github.com/nyttikord/gokord/interaction"
 )
 
@@ -21,8 +20,8 @@ const (
 	OpenConfig   = "config"
 )
 
-func ConfigResponse(i *event.InteractionCreate) *interaction.Response {
-	cfg := config.GetGuildConfig(i.GuildID)
+func ConfigResponse(guildID string) *interaction.Response {
+	cfg := config.GetGuildConfig(guildID)
 	roles := ""
 	l := len(cfg.XpRoles) - 1
 	slices.SortFunc(cfg.XpRoles, func(xp1, xp2 config.XpRole) int {
@@ -121,45 +120,30 @@ func ConfigResponse(i *event.InteractionCreate) *interaction.Response {
 	}
 }
 
-func ConfigCommand(
-	s bot.Session,
-	i *event.InteractionCreate,
-	_ cmd.OptionMap,
-	resp *cmd.ResponseBuilder,
-) {
-	err := s.InteractionAPI().Respond(i.Interaction, ConfigResponse(i))
+func ConfigCommand(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand) {
+	err := dg.InteractionAPI().Respond(i.Interaction, ConfigResponse(i.GuildID))
 
 	if err != nil {
-		s.Logger().Error("sending config", "error", err)
+		bot.Logger(ctx).Error("sending config", "error", err)
 	}
 }
 
-func ConfigMessageComponent(
-	s bot.Session,
-	i *event.InteractionCreate,
-	_ *interaction.MessageComponentData,
-	_ *cmd.ResponseBuilder,
-) {
-	response := ConfigResponse(i)
+func ConfigMessageComponent(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) {
+	response := ConfigResponse(i.GuildID)
 	response.Type = types.InteractionResponseUpdateMessage
-	err := s.InteractionAPI().Respond(i.Interaction, response)
+	err := dg.InteractionAPI().Respond(i.Interaction, response)
 
 	if err != nil {
-		s.Logger().Error("sending config", "error", err)
+		bot.Logger(ctx).Error("sending config", "error", err)
 	}
 }
 
-func ConfigModal(
-	s bot.Session,
-	i *event.InteractionCreate,
-	_ *interaction.ModalSubmitData,
-	_ *cmd.ResponseBuilder,
-) {
-	response := ConfigResponse(i)
+func ConfigModal(ctx context.Context, dg bot.Session, i *interaction.ModalSubmit) {
+	response := ConfigResponse(i.GuildID)
 	response.Type = types.InteractionResponseUpdateMessage
-	err := s.InteractionAPI().Respond(i.Interaction, response)
+	err := dg.InteractionAPI().Respond(i.Interaction, response)
 
 	if err != nil {
-		s.Logger().Error("sending config", "error", err)
+		bot.Logger(ctx).Error("sending config", "error", err)
 	}
 }

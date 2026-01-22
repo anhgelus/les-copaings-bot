@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strconv"
@@ -8,12 +9,10 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/dynamicid"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord"
-	"github.com/anhgelus/gokord/cmd"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/channel"
 	"github.com/nyttikord/gokord/component"
 	"github.com/nyttikord/gokord/discord/types"
-	"github.com/nyttikord/gokord/event"
 	"github.com/nyttikord/gokord/interaction"
 )
 
@@ -39,12 +38,7 @@ const (
 	XpRoleDel            = `xp_role_del`
 )
 
-func HandleXpRole(
-	s bot.Session,
-	i *event.InteractionCreate,
-	_ *interaction.MessageComponentData,
-	_ *cmd.ResponseBuilder,
-) {
+func HandleXpRole(ctx context.Context, dg bot.Session, i *interaction.Interaction) {
 	cfg := GetGuildConfig(i.GuildID)
 	container := component.Container{
 		Components: []component.Message{
@@ -95,65 +89,50 @@ func HandleXpRole(
 			Flags:      channel.MessageFlagsIsComponentsV2,
 		},
 	}
-	err := s.InteractionAPI().Respond(i.Interaction, response)
+	err := dg.InteractionAPI().Respond(i, response).Do(ctx)
 	if err != nil {
-		s.Logger().Error("sending config", "error", err)
+		bot.Logger(ctx).Error("sending config", "error", err)
 	}
 }
 
-func HandleXpRoleNew(
-	s bot.Session,
-	i *event.InteractionCreate,
-	_ *interaction.MessageComponentData,
-	_ *cmd.ResponseBuilder,
-) {
+func HandleXpRoleNew(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) {
 	one := 1
-	response := &interaction.Response{
-		Type: types.InteractionResponseModal,
-		Data: &interaction.ResponseData{
-			Title:    "Nouveau rôle de niveau",
-			CustomID: XpRoleAdd,
-			Components: []component.Component{
-				&component.Label{
-					Label: "Niveau",
-					Component: &component.TextInput{
-						CustomID:    "level",
-						Style:       component.TextInputShort,
-						Placeholder: "5",
-						MinLength:   1,
-						MaxLength:   5,
-						Required:    true,
-					},
-				},
-				&component.Label{
-					Label: "Rôle",
-					Component: &component.SelectMenu{
-						MenuType:  types.SelectMenuRole,
-						CustomID:  "role",
-						MinValues: &one,
-						MaxValues: one,
-					},
-				},
+	resp := interaction.NewModalResponse().
+		Title("Nouveau rôle de niveau").
+		CustomID(XpRoleAdd).
+		AddComponent(&component.Label{
+			Label: "Niveau",
+			Component: &component.TextInput{
+				CustomID:    "level",
+				Style:       component.TextInputShort,
+				Placeholder: "5",
+				MinLength:   1,
+				MaxLength:   5,
+				Required:    true,
 			},
-		},
-	}
-	err := s.InteractionAPI().Respond(i.Interaction, response)
+		}).
+		AddComponent(&component.Label{
+			Label: "Rôle",
+			Component: &component.SelectMenu{
+				MenuType:  types.SelectMenuRole,
+				CustomID:  "role",
+				MinValues: &one,
+				MaxValues: one,
+			},
+		}).
+		Response()
+	err := dg.InteractionAPI().Respond(i.Interaction, resp)
 	if err != nil {
-		s.Logger().Error("sending modal to add", "error", err)
+		bot.Logger(ctx).Error("sending modal to add", "error", err)
 	}
 }
 
-func HandleXpRoleEdit(
-	s bot.Session,
-	i *event.InteractionCreate,
-	_ *interaction.MessageComponentData,
-	parameters *XpRoleId, resp *cmd.ResponseBuilder,
-) {
+func HandleXpRoleEdit(ctx context.Context, dg bot.Session, i *interaction.Interaction, params *XpRoleId) {
 	config := GetGuildConfig(i.GuildID)
-	id := parameters.ID
+	id := params.ID
 	_, role := config.FindXpRoleID(id)
 	if role == nil {
-		HandleXpRole(s, i, &interaction.MessageComponentData{}, resp)
+		HandleXpRole(ctx, dg, i)
 		return
 	}
 
@@ -202,24 +181,19 @@ func HandleXpRoleEdit(
 		},
 	}
 
-	err := s.InteractionAPI().Respond(i.Interaction, response)
+	err := dg.InteractionAPI().Respond(i, response)
 	if err != nil {
-		s.Logger().Error("sending xp_role config", "error", err)
+		bot.Logger(ctx).Error("sending xp_role config", "error", err)
 	}
 }
 
-func HandleXpRoleEditRole(
-	s bot.Session,
-	i *event.InteractionCreate,
-	data *interaction.MessageComponentData,
-	parameters *XpRoleId, resp *cmd.ResponseBuilder,
-) {
-	id := parameters.ID
-	role := data.Values[0]
+func HandleXpRoleEditRole(ctx context.Context, dg bot.Session, i *interaction.MessageComponent, params *XpRoleId) {
+	id := params.ID
+	role := i.Data.Values[0]
 	cfg := GetGuildConfig(i.GuildID)
 	_, xpRole := cfg.FindXpRoleID(id)
 	if xpRole == nil {
-		err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Flags:   channel.MessageFlagsEphemeral,
@@ -227,30 +201,24 @@ func HandleXpRoleEditRole(
 			},
 		})
 		if err != nil {
-			s.Logger().Error("sending unable to get role message", "error", err)
+			bot.Logger(ctx).Error("sending unable to get role message", "error", err)
 		}
 		return
 	}
 	xpRole.RoleID = role
 	err := gokord.DB.Save(xpRole).Error
 	if err != nil {
-		s.Logger().Error("saving config", "error", err, "guild", i.GuildID, "id", id, "type", "add")
+		bot.Logger(ctx).Error("saving config", "error", err, "guild", i.GuildID, "id", id, "type", "add")
 	}
-	HandleXpRoleEdit(s, i, &interaction.MessageComponentData{}, parameters, resp)
+	HandleXpRoleEdit(ctx, dg, i.Interaction, params)
 }
 
-func HandleXpRoleEditLevelStart(
-	s bot.Session,
-	i *event.InteractionCreate,
-	_ *interaction.MessageComponentData,
-	parameters *XpRoleId,
-	_ *cmd.ResponseBuilder,
-) {
-	id := parameters.ID
+func HandleXpRoleEditLevelStart(ctx context.Context, dg bot.Session, i *interaction.MessageComponent, params *XpRoleId) {
+	id := params.ID
 	cfg := GetGuildConfig(i.GuildID)
 	_, xpRole := cfg.FindXpRoleID(id)
 	if xpRole == nil {
-		err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Flags:   channel.MessageFlagsEphemeral,
@@ -258,7 +226,7 @@ func HandleXpRoleEditLevelStart(
 			},
 		})
 		if err != nil {
-			s.Logger().Error("sending unable to get role message", "error", err)
+			bot.Logger(ctx).Error("sending unable to get role message", "error", err)
 		}
 		return
 	}
@@ -283,31 +251,25 @@ func HandleXpRoleEditLevelStart(
 			},
 		},
 	}
-	err := s.InteractionAPI().Respond(i.Interaction, response)
+	err := dg.InteractionAPI().Respond(i.Interaction, response)
 	if err != nil {
-		s.Logger().Error("sending edit level modal", "error", err)
+		bot.Logger(ctx).Error("sending edit level modal", "error", err)
 	}
 }
 
-func HandleXpRoleEditLevel(
-	s bot.Session,
-	i *event.InteractionCreate,
-	data *interaction.ModalSubmitData,
-	parameters *XpRoleId,
-	resp *cmd.ResponseBuilder,
-) {
-	id := parameters.ID
+func HandleXpRoleEditLevel(ctx context.Context, dg bot.Session, i *interaction.ModalSubmit, params *XpRoleId) {
+	id := params.ID
 
-	levelInput := data.Components[0].(*component.Label).Component.(*component.TextInput)
+	levelInput := i.Data.Components[0].(*component.Label).Component.(*component.TextInput)
 	level, err := strconv.Atoi(levelInput.Value)
 	if err != nil || level < 0 {
-		err = resp.IsEphemeral().
-			SetMessage(
-				fmt.Sprintf("Le niveau doit être un nombre entier positif.\n-# Trouvé : %s", levelInput.Value),
-			).
-			Send()
+		resp := interaction.NewMessageResponse().
+			IsEphemeral().
+			Message(fmt.Sprintf("Le niveau doit être un nombre entier positif.\n-# Trouvé : %s", levelInput.Value)).
+			Response()
+		err = dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
 		if err != nil {
-			s.Logger().Error("sending bad number warning message", "error", err)
+			bot.Logger(ctx).Error("sending bad number warning message", "error", err)
 		}
 		return
 	}
@@ -316,38 +278,32 @@ func HandleXpRoleEditLevel(
 	cfg := GetGuildConfig(i.GuildID)
 	_, xpRole := cfg.FindXpRoleID(id)
 	if xpRole == nil {
-		err = s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err = dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Flags:   channel.MessageFlagsEphemeral,
 				Content: "Impossible de modifier le rôle. Peut-être a-t-il été supprimé ?",
 			},
-		})
+		}).Do(ctx)
 		if err != nil {
-			s.Logger().Error("sending unable to modify role message", "error", err)
+			bot.Logger(ctx).Error("sending unable to modify role message", "error", err)
 		}
 		return
 	}
 	xpRole.XP = xp
 	err = gokord.DB.Save(xpRole).Error
 	if err != nil {
-		s.Logger().Error("saving config", "guild", i.GuildID, "id", id, "type", "edit")
+		bot.Logger(ctx).Error("saving config", "guild", i.GuildID, "id", id, "type", "edit")
 	}
-	HandleXpRoleEdit(s, i, &interaction.MessageComponentData{}, parameters, resp)
+	HandleXpRoleEdit(ctx, dg, i.Interaction, params)
 }
 
-func HandleXpRoleDel(
-	s bot.Session,
-	i *event.InteractionCreate,
-	_ *interaction.MessageComponentData,
-	parameters *XpRoleId,
-	resp *cmd.ResponseBuilder,
-) {
+func HandleXpRoleDel(ctx context.Context, dg bot.Session, i *interaction.MessageComponent, parameters *XpRoleId) {
 	id := parameters.ID
 	cfg := GetGuildConfig(i.GuildID)
 	_, role := cfg.FindXpRoleID(id)
 	if role == nil {
-		err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Content: "Rôle introuvable. Peut-être a-t-il déjà été supprimé ?",
@@ -355,41 +311,36 @@ func HandleXpRoleDel(
 			},
 		})
 		if err != nil {
-			s.Logger().Error("sending role not found message", "error", err)
+			bot.Logger(ctx).Error("sending role not found message", "error", err)
 		}
 		return
 	}
 	err := gokord.DB.Delete(role).Error
 	if err != nil {
-		s.Logger().Error("deleting entry", "error", err, "guild", i.GuildID, "id", id, "type", "del")
+		bot.Logger(ctx).Error("deleting entry", "error", err, "guild", i.GuildID, "id", id, "type", "del")
 	}
 
-	HandleXpRole(s, i, &interaction.MessageComponentData{}, resp)
+	HandleXpRole(ctx, dg, i.Interaction)
 }
 
-func HandleXpRoleAdd(
-	s bot.Session,
-	i *event.InteractionCreate,
-	data *interaction.ModalSubmitData,
-	resp *cmd.ResponseBuilder,
-) {
-	levelInput := data.Components[0].(*component.Label).Component.(*component.TextInput)
+func HandleXpRoleAdd(ctx context.Context, dg bot.Session, i *interaction.ModalSubmit) {
+	levelInput := i.Data.Components[0].(*component.Label).Component.(*component.TextInput)
 
 	in, err := strconv.Atoi(levelInput.Value)
 	if err != nil || in < 0 {
-		err = resp.IsEphemeral().
-			SetMessage(
-				fmt.Sprintf("Le niveau doit être un nombre entier positif.\n-# Trouvé : %s", levelInput.Value),
-			).
-			Send()
+		resp := interaction.NewMessageResponse().
+			IsEphemeral().
+			Message(fmt.Sprintf("Le niveau doit être un nombre entier positif.\n-# Trouvé : %s", levelInput.Value)).
+			Response()
+		err = dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
 		if err != nil {
-			s.Logger().Error("sending bad number warning message", "error", err)
+			bot.Logger(ctx).Error("sending bad number warning message", "error", err)
 		}
 		return
 	}
 	xp := exp.LevelXP(uint(in))
 
-	roleId := data.Components[1].(*component.Label).Component.(*component.SelectMenu).Values[0]
+	roleId := i.Data.Components[1].(*component.Label).Component.(*component.SelectMenu).Values[0]
 
 	cfg := GetGuildConfig(i.GuildID)
 	cfg.XpRoles = append(cfg.XpRoles, XpRole{
@@ -398,9 +349,9 @@ func HandleXpRoleAdd(
 	})
 	err = cfg.Save()
 	if err != nil {
-		s.Logger().Error("saving config", "error", err, "role", roleId, "guild", i.GuildID)
+		bot.Logger(ctx).Error("saving config", "error", err, "role", roleId, "guild", i.GuildID)
 		return
 	}
 
-	HandleXpRole(s, i, &interaction.MessageComponentData{}, resp)
+	HandleXpRole(ctx, dg, i.Interaction)
 }

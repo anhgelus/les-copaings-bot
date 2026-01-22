@@ -1,6 +1,7 @@
 package rolereact
 
 import (
+	"context"
 	"fmt"
 	"slices"
 
@@ -9,12 +10,11 @@ import (
 	"github.com/nyttikord/gokord/channel"
 	"github.com/nyttikord/gokord/component"
 	"github.com/nyttikord/gokord/discord/types"
-	"github.com/nyttikord/gokord/event"
 	"github.com/nyttikord/gokord/interaction"
 )
 
-func MessageModifyComponents(i *event.InteractionCreate, parameters *EditID) []component.Message {
-	message, ok := GetMessageFromEditID(i, parameters.MessageEditID)
+func MessageModifyComponents(i *interaction.Interaction, params *EditID) []component.Message {
+	message, ok := GetMessageFromEditID(i, params.MessageEditID)
 	if !ok {
 		return []component.Message{
 			&component.TextDisplay{Content: "Cette modification est trop vieille et a été oubliée."},
@@ -34,7 +34,7 @@ func MessageModifyComponents(i *event.InteractionCreate, parameters *EditID) []c
 			Accessory: &component.Button{
 				Label:    "Modifier",
 				Style:    component.ButtonStyleSecondary,
-				CustomID: dynamicid.FormatCustomID(SetNote, *parameters),
+				CustomID: dynamicid.FormatCustomID(SetNote, *params),
 			},
 		},
 		&component.Separator{},
@@ -61,7 +61,7 @@ func MessageModifyComponents(i *event.InteractionCreate, parameters *EditID) []c
 			Accessory: &component.Button{
 				Label:    "Modifier",
 				Style:    component.ButtonStyleSecondary,
-				CustomID: dynamicid.FormatCustomID(OpenRole, EditIDWithRole{parameters.MessageEditID, role.CounterID}),
+				CustomID: dynamicid.FormatCustomID(OpenRole, EditIDWithRole{params.MessageEditID, role.CounterID}),
 			},
 		})
 	}
@@ -76,7 +76,7 @@ func MessageModifyComponents(i *event.InteractionCreate, parameters *EditID) []c
 				&component.Button{
 					Style:    component.ButtonStylePrimary,
 					Label:    "Ajouter",
-					CustomID: dynamicid.FormatCustomID(NewRole, EditID{MessageEditID: parameters.MessageEditID}),
+					CustomID: dynamicid.FormatCustomID(NewRole, EditID{MessageEditID: params.MessageEditID}),
 					Disabled: len(message.Roles) >= 20,
 				},
 			},
@@ -87,12 +87,12 @@ func MessageModifyComponents(i *event.InteractionCreate, parameters *EditID) []c
 				&component.Button{
 					Label:    "Appliquer",
 					Style:    component.ButtonStylePrimary,
-					CustomID: dynamicid.FormatCustomID(ApplyMessage, EditID{MessageEditID: parameters.MessageEditID}),
+					CustomID: dynamicid.FormatCustomID(ApplyMessage, EditID{MessageEditID: params.MessageEditID}),
 				},
 				&component.Button{
 					Label:    "Réinitialiser",
 					Style:    component.ButtonStyleDanger,
-					CustomID: dynamicid.FormatCustomID(ResetMessage, *parameters),
+					CustomID: dynamicid.FormatCustomID(ResetMessage, *params),
 				},
 				&component.Button{
 					Label: "Message",
@@ -108,9 +108,9 @@ func MessageModifyComponents(i *event.InteractionCreate, parameters *EditID) []c
 	}
 }
 
-func MessageModifyData(i *event.InteractionCreate, parameters *EditID) *interaction.ResponseData {
+func MessageModifyData(ctx context.Context, i *interaction.Interaction, params *EditID) *interaction.ResponseData {
 	components := []component.Component{}
-	for _, component := range MessageModifyComponents(i, parameters) {
+	for _, component := range MessageModifyComponents(i, params) {
 		components = append(components, component)
 	}
 	responseData := &interaction.ResponseData{
@@ -120,11 +120,11 @@ func MessageModifyData(i *event.InteractionCreate, parameters *EditID) *interact
 	return responseData
 }
 
-func MessageModifyRoleComponents(i *event.InteractionCreate, parameters *EditIDWithRole, emojiMessage string) []component.Message {
-	message, ok := GetMessageFromEditID(i, parameters.MessageEditID)
+func MessageModifyRoleComponents(i *interaction.Interaction, params *EditIDWithRole, emojiMessage string) []component.Message {
+	message, ok := GetMessageFromEditID(i, params.MessageEditID)
 	var role *config.RoleReact
 	if ok {
-		roleIndex := slices.IndexFunc(message.Roles, func(role *config.RoleReact) bool { return role.CounterID == parameters.RoleCounterID })
+		roleIndex := slices.IndexFunc(message.Roles, func(role *config.RoleReact) bool { return role.CounterID == params.RoleCounterID })
 		if roleIndex != -1 {
 			role = message.Roles[roleIndex]
 		}
@@ -145,7 +145,7 @@ func MessageModifyRoleComponents(i *event.InteractionCreate, parameters *EditIDW
 		reactionButton = component.Button{Label: "Ajouter", Style: component.ButtonStylePrimary}
 		disableBack = true
 	}
-	reactionButton.CustomID = dynamicid.FormatCustomID(SetRoleReaction, *parameters)
+	reactionButton.CustomID = dynamicid.FormatCustomID(SetRoleReaction, *params)
 	defaultRoleValues := make([]component.SelectMenuDefaultValue, 0)
 	if role.RoleID != "" {
 		defaultRoleValues = append(defaultRoleValues, component.SelectMenuDefaultValue{
@@ -173,7 +173,7 @@ func MessageModifyRoleComponents(i *event.InteractionCreate, parameters *EditIDW
 			&component.ActionsRow{Components: []component.Message{
 				&component.SelectMenu{
 					MenuType:  types.SelectMenuRole,
-					CustomID:  dynamicid.FormatCustomID(SetRoleRoleID, *parameters),
+					CustomID:  dynamicid.FormatCustomID(SetRoleRoleID, *params),
 					MinValues: &one, MaxValues: 1,
 					Placeholder:   "Sélectionner un rôle",
 					DefaultValues: defaultRoleValues,
@@ -183,7 +183,7 @@ func MessageModifyRoleComponents(i *event.InteractionCreate, parameters *EditIDW
 				&component.Button{
 					Style:    component.ButtonStyleDanger,
 					Label:    "Supprimer",
-					CustomID: dynamicid.FormatCustomID(DelRole, *parameters),
+					CustomID: dynamicid.FormatCustomID(DelRole, *params),
 				},
 			}},
 			&component.Separator{},
@@ -192,7 +192,7 @@ func MessageModifyRoleComponents(i *event.InteractionCreate, parameters *EditIDW
 					Label:    "Retour",
 					Style:    component.ButtonStyleSecondary,
 					Disabled: disableBack,
-					CustomID: dynamicid.FormatCustomID(OpenMessage, EditID{MessageEditID: parameters.MessageEditID}),
+					CustomID: dynamicid.FormatCustomID(OpenMessage, EditID{MessageEditID: params.MessageEditID}),
 				},
 				&component.Button{
 					Label: "Message", Style: component.ButtonStyleLink,
@@ -205,9 +205,9 @@ func MessageModifyRoleComponents(i *event.InteractionCreate, parameters *EditIDW
 	}}
 }
 
-func MessageModifyRoleData(i *event.InteractionCreate, parameters *EditIDWithRole, emojiMessage string) interaction.ResponseData {
+func MessageModifyRoleData(i *interaction.Interaction, params *EditIDWithRole, emojiMessage string) interaction.ResponseData {
 	components := []component.Component{}
-	for _, component := range MessageModifyRoleComponents(i, parameters, emojiMessage) {
+	for _, component := range MessageModifyRoleComponents(i, params, emojiMessage) {
 		components = append(components, component)
 	}
 	return interaction.ResponseData{

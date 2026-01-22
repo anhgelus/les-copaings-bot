@@ -18,9 +18,8 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/rolereact"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
-	"github.com/anhgelus/gokord/cmd"
 	_ "github.com/joho/godotenv/autoload"
-	discordgo "github.com/nyttikord/gokord"
+	"github.com/nyttikord/gokord"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/discord"
 	"github.com/nyttikord/gokord/discord/types"
@@ -150,13 +149,14 @@ func main() {
 	if verbose {
 		logLevel = slog.LevelDebug
 	}
-	dg := discordgo.NewWithLogLevel("Bot "+token, logLevel)
+	dg := gokord.NewWithLogLevel("Bot "+token, logLevel)
 
 	dg.Identify.Intents = discord.IntentsAllWithoutPrivileged |
 		discord.IntentsMessageContent |
 		discord.IntentGuildMembers
 
 	events := dg.EventManager()
+	intrs := dg.InteractionManager()
 	events.AddHandler(ready)
 
 	// related to rolereact
@@ -202,46 +202,50 @@ func main() {
 	})
 	events.AddHandler(rolereact.HandleReactionAdd)
 	events.AddHandler(rolereact.HandleReactionRemove)
-	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleModifyComponent, rolereact.OpenMessage)
-	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleApplyMessage, rolereact.ApplyMessage)
-	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleResetMessage, rolereact.ResetMessage)
-	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleStartSetNote, rolereact.SetNote)
-	dynamicid.HandleDynamicModalComponent(&b, rolereact.HandleSetNote, rolereact.SetNote)
-	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleNewRole, rolereact.NewRole)
-	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleOpenRole, rolereact.OpenRole)
-	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleSetRole, rolereact.SetRoleRoleID)
-	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleSetReaction, rolereact.SetRoleReaction)
-	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleDelRole, rolereact.DelRole)
+	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleModifyComponent, rolereact.OpenMessage)
+	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleApplyMessage, rolereact.ApplyMessage)
+	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleResetMessage, rolereact.ResetMessage)
+	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleStartSetNote, rolereact.SetNote)
+	dynamicid.HandleDynamicModalComponent(events, rolereact.HandleSetNote, rolereact.SetNote)
+	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleNewRole, rolereact.NewRole)
+	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleOpenRole, rolereact.OpenRole)
+	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleSetRole, rolereact.SetRoleRoleID)
+	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleSetReaction, rolereact.SetRoleReaction)
+	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleDelRole, rolereact.DelRole)
 
 	// interaction: /config
-	b.HandleMessageComponent(commands.ConfigMessageComponent, commands.OpenConfig)
+	intrs.HandleMessageComponent(commands.OpenConfig, commands.ConfigMessageComponent)
 	// xp role related
-	b.HandleMessageComponent(config.HandleXpRole, config.ModifyXpRole)
-	b.HandleMessageComponent(config.HandleXpRoleNew, config.XpRoleNew)
-	b.HandleModal(config.HandleXpRoleAdd, config.XpRoleAdd)
-	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleEdit, config.XpRoleEdit)
-	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleEditRole, config.XpRoleEditRole)
-	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleEditLevelStart, config.XpRoleEditLevelStart)
-	dynamicid.HandleDynamicModalComponent(&b, config.HandleXpRoleEditLevel, config.XpRoleEditLevel)
-	dynamicid.HandleDynamicMessageComponent(&b, config.HandleXpRoleDel, config.XpRoleDel)
+	intrs.HandleMessageComponent(config.ModifyXpRole, func(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) {
+		config.HandleXpRole(ctx, dg, i.Interaction)
+	})
+	intrs.HandleMessageComponent(config.XpRoleNew, config.HandleXpRoleNew)
+	intrs.HandleModalSubmit(config.XpRoleAdd, config.HandleXpRoleAdd)
+	dynamicid.HandleDynamicMessageComponent(events, func(ctx context.Context, dg bot.Session, i *interaction.MessageComponent, params *config.XpRoleId) {
+		config.HandleXpRoleEdit(ctx, dg, i.Interaction, params)
+	}, config.XpRoleEdit)
+	dynamicid.HandleDynamicMessageComponent(events, config.HandleXpRoleEditRole, config.XpRoleEditRole)
+	dynamicid.HandleDynamicMessageComponent(events, config.HandleXpRoleEditLevelStart, config.XpRoleEditLevelStart)
+	dynamicid.HandleDynamicModalComponent(events, config.HandleXpRoleEditLevel, config.XpRoleEditLevel)
+	dynamicid.HandleDynamicMessageComponent(events, config.HandleXpRoleDel, config.XpRoleDel)
 	// channel related
-	b.HandleMessageComponent(func(s bot.Session, i *event.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
-		if config.HandleModifyFallbackChannel(s, i, data, resp) {
-			commands.ConfigMessageComponent(s, i, data, resp)
+	intrs.HandleMessageComponent(config.ModifyFallbackChannel, func(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) {
+		if config.HandleModifyFallbackChannel(ctx, dg, i) {
+			commands.ConfigMessageComponent(ctx, dg, i)
 		}
-	}, config.ModifyFallbackChannel)
-	b.HandleMessageComponent(func(s bot.Session, i *event.InteractionCreate, data *interaction.MessageComponentData, resp *cmd.ResponseBuilder) {
-		if config.HandleModifyDisChannel(s, i, data, resp) {
-			commands.ConfigMessageComponent(s, i, data, resp)
+	})
+	intrs.HandleMessageComponent(config.ModifyDisChannel, func(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) {
+		if config.HandleModifyDisChannel(ctx, dg, i) {
+			commands.ConfigMessageComponent(ctx, dg, i)
 		}
-	}, config.ModifyDisChannel)
+	})
 	// reduce related
-	b.HandleMessageComponent(config.HandleModifyPeriodicReduceCommand, config.ModifyTimeReduce)
-	b.HandleModal(func(s bot.Session, i *event.InteractionCreate, data *interaction.ModalSubmitData, resp *cmd.ResponseBuilder) {
-		if config.HandleTimeReduceSet(s, i, data, resp) {
-			commands.ConfigModal(s, i, data, resp)
+	intrs.HandleMessageComponent(config.ModifyTimeReduce, config.HandleModifyPeriodicReduceCommand)
+	intrs.HandleModalSubmit(config.TimeReduceSet, func(ctx context.Context, dg bot.Session, i *interaction.ModalSubmit) {
+		if config.HandleTimeReduceSet(ctx, dg, i) {
+			commands.ConfigModal(ctx, dg, i)
 		}
-	}, config.TimeReduceSet)
+	})
 
 	// xp handlers
 	events.AddHandler(OnMessage)
@@ -275,7 +279,7 @@ func main() {
 	}
 }
 
-func setupTimers(ctx context.Context, dg *discordgo.Session) {
+func setupTimers(ctx context.Context, dg *gokord.Session) {
 	d := 24 * time.Hour
 	debug := common.IsDebug(ctx)
 	if debug {

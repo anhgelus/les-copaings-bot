@@ -1,11 +1,10 @@
 package config
 
 import (
+	"context"
 	"strings"
 
-	"github.com/anhgelus/gokord/cmd"
 	"github.com/nyttikord/gokord/bot"
-	"github.com/nyttikord/gokord/event"
 
 	"github.com/nyttikord/gokord/interaction"
 )
@@ -20,27 +19,27 @@ const (
 	DisChannelDelSet = "disabled_channel_del_set"
 )
 
-func HandleModifyFallbackChannel(s bot.Session, i *event.InteractionCreate, data *interaction.MessageComponentData, _ *cmd.ResponseBuilder) bool {
+func HandleModifyFallbackChannel(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) bool {
 	cfg := GetGuildConfig(i.GuildID)
 	var channelID string
-	if len(data.Values) > 0 {
-		channelID = data.Values[0]
+	if len(i.Data.Values) > 0 {
+		channelID = i.Data.Values[0]
 	}
 	cfg.FallbackChannel = channelID
 	err := cfg.Save()
 	if err != nil {
-		s.Logger().Error("saving fallback channel", "error", err)
+		bot.Logger(ctx).Error("saving fallback channel", "error", err)
 		return false
 	}
 	return true
 }
 
-func HandleModifyDisChannel(s bot.Session, i *event.InteractionCreate, data *interaction.MessageComponentData, _ *cmd.ResponseBuilder) bool {
+func HandleModifyDisChannel(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) bool {
 	cfg := GetGuildConfig(i.GuildID)
-	cfg.DisabledChannels = strings.Join(data.Values, ";")
+	cfg.DisabledChannels = strings.Join(i.Data.Values, ";")
 	err := cfg.Save()
 	if err != nil {
-		s.Logger().Error("unable to save disabled channel", "error", err)
+		bot.Logger(ctx).Error("unable to save disabled channel", "error", err)
 		return false
 	}
 	return true
