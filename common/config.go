@@ -1,4 +1,4 @@
-package main
+package common
 
 import (
 	"fmt"
@@ -54,7 +54,7 @@ func (c *Config) SetDefaultValues() {
 	c.Database.SetDefaultValues()
 }
 
-func getConfig(path string) (*Config, error) {
+func LoadConfig(path string) (*Config, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

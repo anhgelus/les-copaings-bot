@@ -18,7 +18,6 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/rolereact"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
-	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
 	_ "github.com/joho/godotenv/autoload"
 	discordgo "github.com/nyttikord/gokord"
@@ -72,7 +71,7 @@ func init() {
 func main() {
 	flag.Parse()
 
-	cfg, err := getConfig(cfgPath)
+	cfg, err := common.LoadConfig(cfgPath)
 	if err != nil {
 		panic(err)
 	}
@@ -90,6 +89,9 @@ func main() {
 	adm := int64(discord.PermissionManageGuild)
 
 	ctx := user.SetState(context.Background(), user.NewState())
+	ctx = common.SetDB(ctx, db)
+	ctx = common.SetDebug(ctx, cfg.Debug)
+	ctx = common.SetAuthor(ctx, cfg.Author)
 
 	/*rankCmd := cmd.New("rank", "Affiche le niveau d'un copaing").
 		AddOption(cmd.NewOption(
@@ -162,7 +164,7 @@ func main() {
 	events.AddHandler(func(ctx context.Context, s bot.Session, e *event.Ready) {
 		guildID := ""
 		logger := bot.Logger(ctx)
-		if gokord.Debug {
+		if common.IsDebug(ctx) {
 			gs, err := s.GuildAPI().UserGuilds(1, "", "", false).Do(ctx)
 			if err != nil {
 				logger.Error("fetching guilds for debug", "error", err)
@@ -273,16 +275,19 @@ func main() {
 	}
 }
 
-func setupTimers(ctx context.Context, dg bot.Session) {
+func setupTimers(ctx context.Context, dg *discordgo.Session) {
 	d := 24 * time.Hour
-	if gokord.Debug {
+	debug := common.IsDebug(ctx)
+	if debug {
 		d = 3 * exp.DebugFactor * time.Second
 	}
 	d2 := 30 * time.Minute
-	if gokord.Debug {
+	if debug {
 		d2 = 1 * exp.DebugFactor * time.Second
 	}
 
+	// because logger was never set in this context
+	ctx = bot.SetLogger(ctx, dg.Logger())
 	user.PeriodicReducer(ctx, dg)
 
 	stopPeriodicReducer = common.NewTimer(ctx, d, func(ctx context.Context, _ context.CancelFunc) {
