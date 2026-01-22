@@ -11,15 +11,15 @@ import (
 	"slices"
 	"time"
 
+	"git.anhgelus.world/anhgelus/les-copaings-bot/common"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord"
-	"github.com/anhgelus/gokord/cmd"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/nyttikord/gokord/bot"
-	"github.com/nyttikord/gokord/channel"
-	"github.com/nyttikord/gokord/event"
+	"github.com/nyttikord/gokord/discord/request"
+	"github.com/nyttikord/gokord/interaction"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
@@ -47,72 +47,72 @@ var colors = []color.RGBA{
 	{193, 18, 31, 255},
 }
 
-func Stats(ctx context.Context) func(s bot.Session, i *event.InteractionCreate, opt cmd.OptionMap, resp *cmd.ResponseBuilder) {
-	return func(s bot.Session, i *event.InteractionCreate, opt cmd.OptionMap, resp *cmd.ResponseBuilder) {
-		cfg := config.GetGuildConfig(i.GuildID)
-		days := 15
-		if gokord.Debug {
-			days = 90
-		}
-		if v, ok := opt["days"]; ok {
-			in := v.IntValue()
-			if in < 1 || uint(in) > cfg.DaysXPRemains {
-				msg := fmt.Sprintf("Nombre de jours invalide. Il doit être strictement positif et inférieur à %d", cfg.DaysXPRemains)
-				if err := resp.SetMessage(msg).IsEphemeral().Send(); err != nil {
-					s.Logger().Error("sending error invalid days", "error", err)
-				}
-				return
-			}
-			days = int(in)
-		}
-		err := resp.IsDeferred().Send()
+func Stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand) {
+	cfg := config.GetGuildConfig(i.GuildID)
+	days := 15
+	if common.IsDebug(ctx) {
+		days = 90
+	}
+
+	resp := interaction.NewMessageResponse()
+	defer func() {
+		err := dg.InteractionAPI().Respond(i.Interaction, resp.Response()).Do(ctx)
 		if err != nil {
-			s.Logger().Error("sending deferred", "error", err)
+			bot.Logger(ctx).Error("replying to interaction", "error", err)
+		}
+	}()
+
+	opts := i.OptionMap()
+	if v, ok := opts["days"]; ok {
+		in := v.IntValue()
+		if in < 1 || uint(in) > cfg.DaysXPRemains {
+			msg := fmt.Sprintf("Nombre de jours invalide. Il doit être strictement positif et inférieur à %d", cfg.DaysXPRemains)
+			resp.Message(msg)
 			return
 		}
-		go func() {
-			var w io.WriterTo
-			if v, ok := opt["user"]; ok {
-				w, err = statsMember(ctx, s, i, days, v.UserValue(s.UserAPI()).ID)
-			} else {
-				w, err = statsAll(s, i, days)
-			}
-			if err != nil {
-				s.Logger().Error("generating stats", "error", err, "guild", i.GuildID)
-				if err = resp.IsEphemeral().SetMessage("Il y a eu une erreur...").Send(); err != nil {
-					s.Logger().Error("sending error occurred", "error", err)
-				}
-				return
-			}
-			b := new(bytes.Buffer)
-			_, err = w.WriteTo(b)
-			if err != nil {
-				s.Logger().Error("writing png", "error", err)
-			}
-			err = resp.AddFile(&channel.File{
-				Name:        "plot.png",
-				ContentType: "image/png",
-				Reader:      b,
-			}).Send()
-			if err != nil {
-				s.Logger().Error("sending stats", "error", err)
-			}
-		}()
+		days = int(in)
 	}
+	err := dg.InteractionAPI().Respond(i.Interaction, interaction.NewDeferredResponse()).Do(ctx)
+	if err != nil {
+		bot.Logger(ctx).Error("sending deferred", "error", err)
+	}
+	var w io.WriterTo
+	if v, ok := opts["user"]; ok {
+		w, err = statsMember(ctx, dg, i, days, v.UserValue(ctx).ID)
+	} else {
+		w, err = statsAll(ctx, dg, i, days)
+	}
+	if err != nil {
+		bot.Logger(ctx).Error("generating stats", "error", err, "guild", i.GuildID)
+		resp.Message("Il y a eu une erreur...")
+		return
+	}
+	b := new(bytes.Buffer)
+	_, err = w.WriteTo(b)
+	if err != nil {
+		bot.Logger(ctx).Error("writing png", "error", err)
+		resp.Message("Il y a eu une erreur...")
+		return
+	}
+	resp.AddFile(&request.File{
+		Name:        "plot.png",
+		ContentType: "image/png",
+		Reader:      b,
+	})
 }
 
-func statsAll(s bot.Session, i *event.InteractionCreate, days int) (io.WriterTo, error) {
-	return stats(s, i, days, func(before, after string) *gorm.DB {
+func statsAll(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand, days int) (io.WriterTo, error) {
+	return stats(ctx, dg, i, days, func(before, after string) *gorm.DB {
 		return gokord.DB.Raw(before+"WHERE guild_id = ? and created_at > ?"+after, i.GuildID, exp.TimeStampNDaysBefore(uint(days)))
 	})
 }
 
-func statsMember(ctx context.Context, s bot.Session, i *event.InteractionCreate, days int, discordID string) (io.WriterTo, error) {
-	_, err := s.GuildAPI().Member(i.GuildID, discordID)
+func statsMember(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand, days int, discordID string) (io.WriterTo, error) {
+	_, err := dg.GuildAPI().Member(i.GuildID, discordID).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return stats(s, i, days, func(before, after string) *gorm.DB {
+	return stats(ctx, dg, i, days, func(before, after string) *gorm.DB {
 		return gokord.DB.Raw(
 			before+"WHERE guild_id = ? and created_at > ? and copaing_id = ?"+after,
 			i.GuildID, exp.TimeStampNDaysBefore(uint(days)), user.GetCopaing(ctx, discordID, i.GuildID).ID,
@@ -120,12 +120,12 @@ func statsMember(ctx context.Context, s bot.Session, i *event.InteractionCreate,
 	})
 }
 
-func stats(s bot.Session, i *event.InteractionCreate, days int, execSql func(before, after string) *gorm.DB) (io.WriterTo, error) {
+func stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand, days int, execSql func(before, after string) *gorm.DB) (io.WriterTo, error) {
 	var rawData []*data
-	if gokord.Debug {
+	if common.IsDebug(ctx) {
 		var rawCopaingData []*user.CopaingXP
 		if err := execSql("SELECT * FROM copaing_xps ", "").Scan(&rawCopaingData).Error; err != nil {
-			s.Logger().Error("fetching result", "error", err)
+			bot.Logger(ctx).Error("fetching result", "error", err)
 			return nil, err
 		}
 		rawData = make([]*data, len(rawCopaingData))
@@ -141,7 +141,7 @@ func stats(s bot.Session, i *event.InteractionCreate, days int, execSql func(bef
 		if err := execSql(
 			`SELECT "created_at"::date::text, sum("xp") as xp, "copaing_id" FROM copaing_xps `, ` GROUP BY "created_at"::date, "copaing_id"`,
 		).Scan(&rawDbData).Error; err != nil {
-			s.Logger().Error("fetching result", "error", err)
+			bot.Logger(ctx).Error("fetching result", "error", err)
 			return nil, err
 		}
 		rawData = make([]*data, len(rawDbData))
@@ -163,10 +163,10 @@ func stats(s bot.Session, i *event.InteractionCreate, days int, execSql func(bef
 			var cp user.Copaing
 			if err := gokord.DB.First(&cp, raw.CopaingID).Error; err != nil {
 				if !errors.Is(err, gorm.ErrRecordNotFound) {
-					s.Logger().Error("finding copaing", "error", err, "copaing", raw.CopaingID)
+					bot.Logger(ctx).Error("finding copaing", "error", err, "copaing", raw.CopaingID)
 					return nil, err
 				}
-				s.Logger().Warn("copaing not found, skipping", "copaing", raw.CopaingID)
+				bot.Logger(ctx).Warn("copaing not found, skipping", "copaing", raw.CopaingID)
 				continue
 			}
 			copaings[raw.CopaingID] = &cp
@@ -184,7 +184,7 @@ func stats(s bot.Session, i *event.InteractionCreate, days int, execSql func(bef
 			stats[raw.CopaingID] = pts
 		}
 		t := raw.CreatedAt.Unix() - now
-		if !gokord.Debug {
+		if !common.IsDebug(ctx) {
 			t = int64(math.Ceil(float64(t) / (24 * 60 * 60)))
 		} else {
 			t = int64(math.Ceil(float64(t) / exp.DebugFactor))
@@ -194,10 +194,10 @@ func stats(s bot.Session, i *event.InteractionCreate, days int, execSql func(bef
 			Y: float64(raw.XP),
 		}
 	}
-	return generatePlot(s, i, copaings, stats)
+	return generatePlot(ctx, dg, i, copaings, stats)
 }
 
-func generatePlot(s bot.Session, i *event.InteractionCreate, copaings map[int]*user.Copaing, stats map[int][]plotter.XY) (io.WriterTo, error) {
+func generatePlot(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand, copaings map[int]*user.Copaing, stats map[int][]plotter.XY) (io.WriterTo, error) {
 	p := plot.New()
 	fontSizeTitle := vg.Length(16)
 	fontSize := vg.Length(12)
@@ -223,9 +223,9 @@ func generatePlot(s bot.Session, i *event.InteractionCreate, copaings map[int]*u
 
 	cnt := 0
 	for in, c := range copaings {
-		m, err := s.GuildAPI().Member(i.GuildID, c.DiscordID)
+		m, err := dg.GuildAPI().Member(i.GuildID, c.DiscordID).Do(ctx)
 		if err != nil {
-			s.Logger().Error("fetching guild member", "error", err)
+			bot.Logger(ctx).Error("fetching guild member", "error", err)
 			return nil, err
 		}
 		slices.SortFunc(stats[in], func(a, b plotter.XY) int {

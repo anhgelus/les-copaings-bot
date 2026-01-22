@@ -26,17 +26,20 @@ func (c *cXP) GetXP() uint {
 func (cc *CopaingCached) AddXP(ctx context.Context, s bot.Session, m *user.Member, xp uint, fn func(uint, uint)) {
 	old := cc.XP
 	pastLevel := exp.Level(old)
-	s.Logger().Debug("adding xp", "user", m.DisplayName(), "old", old, "to add", xp)
+	bot.Logger(ctx).Debug("adding xp", "user", m.DisplayName(), "old", old, "to add", xp)
 	cc.XP += xp
 	cc.XPToAdd += xp
 	if err := cc.Save(ctx); err != nil {
-		s.Logger().Error("saving user in state", "error", err, "user", m.DisplayName(), "xp", xp, "guild", cc.GuildID)
+		bot.Logger(ctx).Error(
+			"saving user in state",
+			"error", err, "user", m.DisplayName(), "xp", xp, "guild", cc.GuildID,
+		)
 		return
 	}
 	newLevel := exp.Level(old + xp)
 	if newLevel > pastLevel {
 		fn(old+xp, newLevel)
-		onNewLevel(s, m, newLevel)
+		onNewLevel(ctx, s, m, newLevel)
 	}
 }
 

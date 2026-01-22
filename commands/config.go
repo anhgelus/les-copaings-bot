@@ -121,8 +121,7 @@ func ConfigResponse(guildID string) *interaction.Response {
 }
 
 func ConfigCommand(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand) {
-	err := dg.InteractionAPI().Respond(i.Interaction, ConfigResponse(i.GuildID))
-
+	err := dg.InteractionAPI().Respond(i.Interaction, ConfigResponse(i.GuildID)).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending config", "error", err)
 	}
@@ -131,8 +130,8 @@ func ConfigCommand(ctx context.Context, dg bot.Session, i *interaction.Applicati
 func ConfigMessageComponent(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) {
 	response := ConfigResponse(i.GuildID)
 	response.Type = types.InteractionResponseUpdateMessage
-	err := dg.InteractionAPI().Respond(i.Interaction, response)
 
+	err := dg.InteractionAPI().Respond(i.Interaction, response).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending config", "error", err)
 	}
@@ -141,8 +140,8 @@ func ConfigMessageComponent(ctx context.Context, dg bot.Session, i *interaction.
 func ConfigModal(ctx context.Context, dg bot.Session, i *interaction.ModalSubmit) {
 	response := ConfigResponse(i.GuildID)
 	response.Type = types.InteractionResponseUpdateMessage
-	err := dg.InteractionAPI().Respond(i.Interaction, response)
 
+	err := dg.InteractionAPI().Respond(i.Interaction, response).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending config", "error", err)
 	}

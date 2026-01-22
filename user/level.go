@@ -13,32 +13,26 @@ import (
 	"github.com/nyttikord/gokord/user"
 )
 
-func onNewLevel(s bot.Session, m *user.Member, level uint) {
+func onNewLevel(ctx context.Context, s bot.Session, m *user.Member, level uint) {
 	cfg := config.GetGuildConfig(m.GuildID)
 	xpForLevel := exp.LevelXP(level)
 	for _, role := range cfg.XpRoles {
 		if role.XP <= xpForLevel && !slices.Contains(m.Roles, role.RoleID) {
-			s.Logger().Debug("add role", "role", role.RoleID, "user", m.DisplayName(), "guild", m.GuildID)
+			bot.Logger(ctx).Debug("add role", "role", role.RoleID, "user", m.DisplayName(), "guild", m.GuildID)
 			err := s.GuildAPI().MemberRoleAdd(m.GuildID, m.User.ID, role.RoleID)
 			if err != nil {
-				s.Logger().Error(
+				bot.Logger(ctx).Error(
 					"adding role",
-					"error", err,
-					"role", role.RoleID,
-					"user", m.DisplayName(),
-					"guild", m.GuildID,
+					"error", err, "role", role.RoleID, "user", m.DisplayName(), "guild", m.GuildID,
 				)
 			}
 		} else if role.XP > xpForLevel && slices.Contains(m.Roles, role.RoleID) {
-			s.Logger().Debug("remove role", "role", role.RoleID, "user", m.DisplayName(), "guild", m.GuildID)
+			bot.Logger(ctx).Debug("remove role", "role", role.RoleID, "user", m.DisplayName(), "guild", m.GuildID)
 			err := s.GuildAPI().MemberRoleRemove(m.GuildID, m.User.ID, role.RoleID)
 			if err != nil {
-				s.Logger().Error(
+				bot.Logger(ctx).Error(
 					"removing role",
-					"error", err,
-					"role", role.RoleID,
-					"user", m.DisplayName(),
-					"guild", m.GuildID,
+					"error", err, "role", role.RoleID, "user", m.DisplayName(), "guild", m.GuildID,
 				)
 			}
 		}
@@ -51,7 +45,7 @@ func (c *CopaingCached) onNewLevel(ctx context.Context, s bot.Session, level uin
 		bot.Logger(ctx).Error("getting member for new level", "error", err, "user", c.DiscordID, "guild", c.GuildID)
 		return
 	}
-	onNewLevel(s, m, level)
+	onNewLevel(ctx, s, m, level)
 }
 
 func PeriodicReducer(ctx context.Context, s bot.Session) {

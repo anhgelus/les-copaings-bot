@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"strings"
 
 	"github.com/anhgelus/gokord"
@@ -51,21 +52,21 @@ func (cfg *GuildConfig) Save() error {
 	return gokord.DB.Save(cfg).Error
 }
 
-func (cfg *GuildConfig) IsDisabled(s bot.Session, channelID string) bool {
+func (cfg *GuildConfig) IsDisabled(ctx context.Context, s bot.Session, channelID string) bool {
 	ok := true
 	for channelID != "" && ok {
 		ok = !strings.Contains(cfg.DisabledChannels, channelID)
 		c, err := s.ChannelAPI().State.Channel(channelID)
 		if err != nil {
-			s.Logger().Error("unable to find channel %s in state", "error", err, "channel", c)
-			c, err = s.ChannelAPI().Channel(channelID)
+			bot.Logger(ctx).Error("unable to find channel %s in state", "error", err, "channel", c)
+			c, err = s.ChannelAPI().Channel(channelID).Do(ctx)
 			if err == nil {
 				err = s.ChannelAPI().State.ChannelAdd(c)
 				if err != nil {
-					s.Logger().Error("unable to add channel to state", "error", err, "channel", c)
+					bot.Logger(ctx).Error("unable to add channel to state", "error", err, "channel", c)
 				}
 			} else {
-				s.Logger().Error("unable to fetch channel", "error", err, "channel", c)
+				bot.Logger(ctx).Error("unable to fetch channel", "error", err, "channel", c)
 				return false
 			}
 		}

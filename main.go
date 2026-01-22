@@ -213,6 +213,15 @@ func main() {
 	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleSetReaction, rolereact.SetRoleReaction)
 	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleDelRole, rolereact.DelRole)
 
+	// commands
+	intrs.HandleCommand("rank", commands.Rank)
+	intrs.HandleCommand("config", commands.ConfigCommand)
+	intrs.HandleCommand("top", commands.Top)
+	intrs.HandleCommand("reset", commands.Reset)
+	intrs.HandleCommand("reset-user", commands.ResetUser)
+	intrs.HandleCommand("credits", commands.Credits)
+	intrs.HandleCommand("rolereact", rolereact.HandleCommand)
+
 	// interaction: /config
 	intrs.HandleMessageComponent(commands.OpenConfig, commands.ConfigMessageComponent)
 	// xp role related

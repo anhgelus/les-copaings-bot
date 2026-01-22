@@ -13,11 +13,7 @@ type RoleReact struct {
 	RoleID string
 }
 
-func HandleReactionAdd(
-	_ context.Context,
-	s bot.Session,
-	e *event.MessageReactionAdd,
-) {
+func HandleReactionAdd(ctx context.Context, s bot.Session, e *event.MessageReactionAdd) {
 	results := []RoleReact{}
 	oldGokord.DB.Model(&config.RoleReact{}).
 		Joins("JOIN role_react_messages ON role_reacts.role_react_message_id = role_react_messages.id").
@@ -26,16 +22,12 @@ func HandleReactionAdd(
 	for _, role := range results {
 		err := s.GuildAPI().MemberRoleAdd(e.GuildID, e.UserID, role.RoleID)
 		if err != nil {
-			s.Logger().Error("Unable to add role after member added reaction", "error", err)
+			bot.Logger(ctx).Error("Unable to add role after member added reaction", "error", err)
 		}
 	}
 }
 
-func HandleReactionRemove(
-	_ context.Context,
-	s bot.Session,
-	e *event.MessageReactionRemove,
-) {
+func HandleReactionRemove(ctx context.Context, s bot.Session, e *event.MessageReactionRemove) {
 	results := []RoleReact{}
 	oldGokord.DB.Model(&config.RoleReact{}).
 		Joins("JOIN role_react_messages ON role_reacts.role_react_message_id = role_react_messages.id").
@@ -44,7 +36,7 @@ func HandleReactionRemove(
 	for _, role := range results {
 		err := s.GuildAPI().MemberRoleRemove(e.GuildID, e.UserID, role.RoleID)
 		if err != nil {
-			s.Logger().Error("Unable to remove role after member removed reaction", "error", err)
+			bot.Logger(ctx).Error("Unable to remove role after member removed reaction", "error", err)
 		}
 	}
 }

@@ -28,7 +28,7 @@ func OnMessage(ctx context.Context, s bot.Session, m *event.MessageCreate) {
 		return
 	}
 	cfg := config.GetGuildConfig(m.GuildID)
-	if cfg.IsDisabled(s, m.ChannelID) {
+	if cfg.IsDisabled(ctx, s, m.ChannelID) {
 		return
 	}
 	cc := user.GetCopaing(ctx, m.Author.ID, m.GuildID)
@@ -39,7 +39,7 @@ func OnMessage(ctx context.Context, s bot.Session, m *event.MessageCreate) {
 	xp := min(exp.MessageXP(uint(len(trimmed)), exp.CalcDiversity(trimmed)), MaxXpPerMessage)
 	cc.AddXP(ctx, s, m.Member, xp, func(_ uint, _ uint) {
 		if err := s.ChannelAPI().MessageReactionAdd(m.ChannelID, m.Message.ID, "⬆"); err != nil {
-			s.Logger().Error(
+			bot.Logger(ctx).Error(
 				"add reaction for new level",
 				"error", err,
 				"channel", m.ChannelID,
@@ -54,13 +54,14 @@ func OnVoiceUpdate(ctx context.Context, s bot.Session, e *event.VoiceStateUpdate
 		return
 	}
 	cfg := config.GetGuildConfig(e.GuildID)
-	if (e.BeforeUpdate == nil || cfg.IsDisabled(s, e.BeforeUpdate.ChannelID)) && e.ChannelID != "" {
-		if cfg.IsDisabled(s, e.ChannelID) {
+	dis := cfg.IsDisabled(ctx, s, e.BeforeUpdate.ChannelID)
+	if (e.BeforeUpdate == nil || dis) && e.ChannelID != "" {
+		if dis {
 			return
 		}
-		onConnection(s, e)
-	} else if e.BeforeUpdate != nil && (e.ChannelID == "" || cfg.IsDisabled(s, e.ChannelID)) {
-		if cfg.IsDisabled(s, e.BeforeUpdate.ChannelID) {
+		onConnection(ctx, s, e)
+	} else if e.BeforeUpdate != nil && (e.ChannelID == "" || dis) {
+		if dis {
 			return
 		}
 		onDisconnect(ctx, s, e)
@@ -71,8 +72,8 @@ func genMapKey(guildID string, userID string) string {
 	return fmt.Sprintf("%s:%s", guildID, userID)
 }
 
-func onConnection(s bot.Session, e *event.VoiceStateUpdate) {
-	s.Logger().Debug("user connected", "user", e.Member.DisplayName())
+func onConnection(ctx context.Context, s bot.Session, e *event.VoiceStateUpdate) {
+	bot.Logger(ctx).Debug("user connected", "user", e.Member.DisplayName())
 	connectedSince[genMapKey(e.GuildID, e.UserID)] = time.Now().Unix()
 }
 
@@ -82,18 +83,18 @@ func onDisconnect(ctx context.Context, s bot.Session, e *event.VoiceStateUpdate)
 	// check the validity of user
 	con, ok := connectedSince[genMapKey(e.GuildID, e.UserID)]
 	if !ok || con == NotConnected {
-		s.Logger().Warn(
+		bot.Logger(ctx).Warn(
 			"user disconnect from a vocal but was registered as not connected",
 			"user", e.Member.DisplayName(),
 		)
 		return
 	}
 	timeInVocal := now - con
-	s.Logger().Debug("user disconnected", "user", e.Member.DisplayName(), "time in vocal", timeInVocal)
+	bot.Logger(ctx).Debug("user disconnected", "user", e.Member.DisplayName(), "time in vocal", timeInVocal)
 	connectedSince[genMapKey(e.GuildID, e.UserID)] = NotConnected
 	// add exp
 	if timeInVocal < 0 {
-		s.Logger().Warn("time spent in vocal is negative", "user", e.Member.DisplayName(), "guild", e.GuildID)
+		bot.Logger(ctx).Warn("time spent in vocal is negative", "user", e.Member.DisplayName(), "guild", e.GuildID)
 		return
 	}
 	timeInVocal = min(timeInVocal, MaxTimeInVocal)
@@ -105,20 +106,20 @@ func onDisconnect(ctx context.Context, s bot.Session, e *event.VoiceStateUpdate)
 		}
 		_, err := s.ChannelAPI().MessageSend(cfg.FallbackChannel, fmt.Sprintf(
 			"%s est maintenant niveau %d", e.Member.Mention(), newLevel,
-		))
+		)).Do(ctx)
 		if err != nil {
-			s.Logger().Error("sending new level in fallback channel", "error", err)
+			bot.Logger(ctx).Error("sending new level in fallback channel", "error", err)
 		}
 	})
 }
 
 func OnLeave(ctx context.Context, s bot.Session, e *event.GuildMemberRemove) {
-	s.Logger().Debug("leave event", "user", e.User.Username)
+	bot.Logger(ctx).Debug("leave event", "user", e.User.Username)
 	if e.User.Bot {
 		return
 	}
 	c := user.GetCopaing(ctx, e.User.ID, e.GuildID)
 	if err := c.Delete(ctx); err != nil {
-		s.Logger().Error("deleting user", "user", e.User.Username, "guild", e.GuildID)
+		bot.Logger(ctx).Error("deleting user", "user", e.User.Username, "guild", e.GuildID)
 	}
 }
