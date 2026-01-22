@@ -6,7 +6,7 @@ require (
 	github.com/anhgelus/gokord v0.13.2-0.20251025205525-12213d3f60bc
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/joho/godotenv v1.5.1
-	github.com/nyttikord/gokord v0.33.1-0.20260121194558-1301f0b4ade8
+	github.com/nyttikord/gokord v0.33.1
 	github.com/pelletier/go-toml/v2 v2.2.4
 	golang.org/x/image v0.30.0
 	gonum.org/v1/plot v0.16.0
