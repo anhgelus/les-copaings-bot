@@ -20,8 +20,8 @@ const (
 	OpenConfig   = "config"
 )
 
-func ConfigResponse(guildID string) *interaction.Response {
-	cfg := config.GetGuildConfig(guildID)
+func ConfigResponse(ctx context.Context, guildID string) *interaction.Response {
+	cfg := config.GetGuildConfig(ctx, guildID)
 	roles := ""
 	l := len(cfg.XpRoles) - 1
 	slices.SortFunc(cfg.XpRoles, func(xp1, xp2 config.XpRole) int {
@@ -121,14 +121,14 @@ func ConfigResponse(guildID string) *interaction.Response {
 }
 
 func ConfigCommand(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand) {
-	err := dg.InteractionAPI().Respond(i.Interaction, ConfigResponse(i.GuildID)).Do(ctx)
+	err := dg.InteractionAPI().Respond(i.Interaction, ConfigResponse(ctx, i.GuildID)).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending config", "error", err)
 	}
 }
 
 func ConfigMessageComponent(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) {
-	response := ConfigResponse(i.GuildID)
+	response := ConfigResponse(ctx, i.GuildID)
 	response.Type = types.InteractionResponseUpdateMessage
 
 	err := dg.InteractionAPI().Respond(i.Interaction, response).Do(ctx)
@@ -138,7 +138,7 @@ func ConfigMessageComponent(ctx context.Context, dg bot.Session, i *interaction.
 }
 
 func ConfigModal(ctx context.Context, dg bot.Session, i *interaction.ModalSubmit) {
-	response := ConfigResponse(i.GuildID)
+	response := ConfigResponse(ctx, i.GuildID)
 	response.Type = types.InteractionResponseUpdateMessage
 
 	err := dg.InteractionAPI().Respond(i.Interaction, response).Do(ctx)

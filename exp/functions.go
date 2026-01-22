@@ -1,6 +1,7 @@
 package exp
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"regexp"
@@ -8,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anhgelus/gokord"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/common"
 )
 
 const DebugFactor = 30
@@ -66,9 +67,9 @@ func LevelXP(level uint) uint {
 }
 
 // TimeStampNDaysBefore returns the timestamp (year-month-day) n days before today
-func TimeStampNDaysBefore(n uint) string {
+func TimeStampNDaysBefore(ctx context.Context, n uint) string {
 	var unix time.Time
-	if gokord.Debug {
+	if common.IsDebug(ctx) {
 		unix = time.Unix(time.Now().Unix()-int64(DebugFactor*n), 0) // reduce time for debug
 	} else {
 		unix = time.Unix(time.Now().Unix()-int64(n*24*60*60), 0)

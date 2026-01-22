@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"git.anhgelus.world/anhgelus/les-copaings-bot/common"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
-	oldGokord "github.com/anhgelus/gokord"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/channel"
 	"github.com/nyttikord/gokord/emoji"
@@ -32,9 +32,9 @@ func MessageContent(message *config.RoleReactMessage) string {
 	return content
 }
 
-func ApplyMessageChange(ctx context.Context, s bot.Session, i *interaction.Interaction, message *config.RoleReactMessage) string {
+func ApplyMessageChange(ctx context.Context, dg bot.Session, i *interaction.Interaction, message *config.RoleReactMessage) string {
 	messageContent := MessageContent(message)
-	_, err := s.ChannelAPI().MessageEditComplex(&channel.MessageEdit{
+	_, err := dg.ChannelAPI().MessageEditComplex(&channel.MessageEdit{
 		Content:         &messageContent,
 		AllowedMentions: &channel.MessageAllowedMentions{},
 		Channel:         message.ChannelID,
@@ -46,7 +46,7 @@ func ApplyMessageChange(ctx context.Context, s bot.Session, i *interaction.Inter
 	}
 	for _, role := range message.Roles {
 		if role.Reaction != "" && role.RoleID != "" && err == nil {
-			err = s.ChannelAPI().MessageReactionAdd(message.ChannelID, message.MessageID, role.Reaction).Do(ctx)
+			err = dg.ChannelAPI().MessageReactionAdd(message.ChannelID, message.MessageID, role.Reaction).Do(ctx)
 		}
 	}
 	if err != nil {
@@ -55,46 +55,49 @@ func ApplyMessageChange(ctx context.Context, s bot.Session, i *interaction.Inter
 	}
 	cfg := GetGuildConfigPreloaded(ctx, i.GuildID)
 	messageIndex := slices.IndexFunc(cfg.RrMessages, func(m config.RoleReactMessage) bool { return m.ID == message.ID })
-	if messageIndex != -1 {
-		oldMessage := cfg.RrMessages[messageIndex]
-		roles := make(map[uint]config.RoleReact, len(message.Roles))
-		for _, role := range message.Roles {
-			roles[role.ID] = *role
-		}
-		for _, role := range oldMessage.Roles {
-			_, ok := roles[role.ID]
-			if !ok {
-				err := oldGokord.DB.Delete(role).Error
-				if err != nil {
-					bot.Logger(ctx).Error("unable to delete reaction role from database", "error", err)
-					return "Impossible de sauvegarder le message de rôle. Merci de contacter l'administrateur du bot."
-				}
-			}
-		}
-		cfg.RrMessages[messageIndex] = *message
-		err := oldGokord.DB.Save(cfg.RrMessages[messageIndex]).Error
-		if err != nil {
-			bot.Logger(ctx).Error("unable to save rolereaction message in database", "error", err)
-			return "Impossible de sauvegarder le message de rôle. Merci de contacter l'administrateur du bot."
-		}
-		for _, role := range cfg.RrMessages[messageIndex].Roles {
-			err = oldGokord.DB.Save(role).Error
+	if messageIndex == -1 {
+		// should log it?
+		return "Impossible de mmettre à jour le message."
+	}
+	oldMessage := cfg.RrMessages[messageIndex]
+	roles := make(map[uint]config.RoleReact, len(message.Roles))
+	for _, role := range message.Roles {
+		roles[role.ID] = *role
+	}
+	db := common.GetDB(ctx)
+	for _, role := range oldMessage.Roles {
+		_, ok := roles[role.ID]
+		if !ok {
+			err := db.Delete(role).Error
 			if err != nil {
-				bot.Logger(ctx).Error("unable to save rolereaction role in database", "error", err)
+				bot.Logger(ctx).Error("unable to delete reaction role from database", "error", err)
 				return "Impossible de sauvegarder le message de rôle. Merci de contacter l'administrateur du bot."
 			}
+		}
+	}
+	cfg.RrMessages[messageIndex] = *message
+	err = db.Save(cfg.RrMessages[messageIndex]).Error
+	if err != nil {
+		bot.Logger(ctx).Error("unable to save rolereaction message in database", "error", err)
+		return "Impossible de sauvegarder le message de rôle. Merci de contacter l'administrateur du bot."
+	}
+	for _, role := range cfg.RrMessages[messageIndex].Roles {
+		err = db.Save(role).Error
+		if err != nil {
+			bot.Logger(ctx).Error("unable to save rolereaction role in database", "error", err)
+			return "Impossible de sauvegarder le message de rôle. Merci de contacter l'administrateur du bot."
 		}
 	}
 	return "Message de réaction mis à jour avec succès !"
 }
 
-func WaitForEmoji(ctx context.Context, s bot.Session, userID string, messageID string) (string, bool) {
+func WaitForEmoji(ctx context.Context, dg bot.Session, userID string, messageID string) (string, bool) {
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
 	defer cancel()
 
 	emojiChann := make(chan emoji.Emoji)
 
-	cancelHandler := s.EventManager().AddHandler(func(s bot.Session, e *event.MessageReactionAdd) {
+	cancelHandler := dg.EventManager().AddHandler(func(_ bot.Session, e *event.MessageReactionAdd) {
 		if e.MessageID == messageID && e.UserID == userID {
 			emojiChann <- e.Emoji
 		}
@@ -110,8 +113,8 @@ func WaitForEmoji(ctx context.Context, s bot.Session, userID string, messageID s
 	}
 }
 
-func GetMessageFromEditID(i *interaction.Interaction, editID uint) (*config.RoleReactMessage, bool) {
-	cfg := config.GetGuildConfig(i.GuildID)
+func GetMessageFromEditID(ctx context.Context, i *interaction.Interaction, editID uint) (*config.RoleReactMessage, bool) {
+	cfg := config.GetGuildConfig(ctx, i.GuildID)
 	m, ok := messageEdits[editID]
 	if !ok || m.GuildConfigID != cfg.ID {
 		return &config.RoleReactMessage{}, false
@@ -119,10 +122,10 @@ func GetMessageFromEditID(i *interaction.Interaction, editID uint) (*config.Role
 	return m, true
 }
 
-func GetGuildConfigPreloaded(ctx context.Context, guildID string) *config.GuildConfig {
-	cfg := config.GuildConfig{GuildID: guildID}
+func GetGuildConfigPreloaded(ctx context.Context, guildID string) *config.Guild {
+	cfg := config.Guild{GuildID: guildID}
 	// err := oldGokord.DB.Where("guild_id = ?", cfg.GuildID).Preload("XpRoles").Preload("RrMessages.Roles").FirstOrCreate(cfg).Error
-	err := oldGokord.DB.Where("guild_id = ?", cfg.GuildID).Preload("RrMessages.Roles").FirstOrCreate(&cfg).Error
+	err := common.GetDB(ctx).Where("guild_id = ?", cfg.GuildID).Preload("RrMessages.Roles").FirstOrCreate(&cfg).Error
 	if err != nil {
 		panic(err)
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/anhgelus/gokord"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/common"
 )
 
 type Copaing struct {
@@ -32,7 +32,7 @@ func GetCopaing(ctx context.Context, discordID string, guildID string) *CopaingC
 	cc, err := state.Copaing(guildID, discordID)
 	if err != nil {
 		c := Copaing{DiscordID: discordID, GuildID: guildID}
-		if err := c.load(); err != nil {
+		if err := c.load(ctx); err != nil {
 			panic(err)
 		}
 		cc = FromCopaing(&c)
@@ -40,8 +40,8 @@ func GetCopaing(ctx context.Context, discordID string, guildID string) *CopaingC
 	return cc
 }
 
-func (c *Copaing) load() error {
-	err := gokord.DB.
+func (c *Copaing) load(ctx context.Context) error {
+	err := common.GetDB(ctx).
 		Where("discord_id = ? and guild_id = ?", c.DiscordID, c.GuildID).
 		Preload("CopaingXPs").
 		FirstOrCreate(c).
@@ -52,17 +52,18 @@ func (c *Copaing) load() error {
 	return err
 }
 
-func (c *Copaing) Save() error {
-	return gokord.DB.Save(c).Error
+func (c *Copaing) Save(ctx context.Context) error {
+	return common.GetDB(ctx).Save(c).Error
 }
 
-func (c *Copaing) Delete() error {
-	err := gokord.DB.
+func (c *Copaing) Delete(ctx context.Context) error {
+	db := common.GetDB(ctx)
+	err := db.
 		Where("copaing_id = ? and guild_id = ?", c.ID, c.GuildID).
 		Delete(&CopaingXP{}).
 		Error
 	if err != nil {
 		return err
 	}
-	return gokord.DB.Where("guild_id = ? AND discord_id = ?", c.GuildID, c.DiscordID).Delete(c).Error
+	return db.Where("guild_id = ? AND discord_id = ?", c.GuildID, c.DiscordID).Delete(c).Error
 }

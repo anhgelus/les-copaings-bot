@@ -13,8 +13,8 @@ import (
 	"github.com/nyttikord/gokord/interaction"
 )
 
-func MessageModifyComponents(i *interaction.Interaction, params *EditID) []component.Message {
-	message, ok := GetMessageFromEditID(i, params.MessageEditID)
+func MessageModifyComponents(ctx context.Context, i *interaction.Interaction, params *EditID) []component.Message {
+	message, ok := GetMessageFromEditID(ctx, i, params.MessageEditID)
 	if !ok {
 		return []component.Message{
 			&component.TextDisplay{Content: "Cette modification est trop vieille et a été oubliée."},
@@ -110,7 +110,7 @@ func MessageModifyComponents(i *interaction.Interaction, params *EditID) []compo
 
 func MessageModifyData(ctx context.Context, i *interaction.Interaction, params *EditID) *interaction.ResponseData {
 	components := []component.Component{}
-	for _, component := range MessageModifyComponents(i, params) {
+	for _, component := range MessageModifyComponents(ctx, i, params) {
 		components = append(components, component)
 	}
 	responseData := &interaction.ResponseData{
@@ -120,8 +120,8 @@ func MessageModifyData(ctx context.Context, i *interaction.Interaction, params *
 	return responseData
 }
 
-func MessageModifyRoleComponents(i *interaction.Interaction, params *EditIDWithRole, emojiMessage string) []component.Message {
-	message, ok := GetMessageFromEditID(i, params.MessageEditID)
+func MessageModifyRoleComponents(ctx context.Context, i *interaction.Interaction, params *EditIDWithRole, emojiMessage string) []component.Message {
+	message, ok := GetMessageFromEditID(ctx, i, params.MessageEditID)
 	var role *config.RoleReact
 	if ok {
 		roleIndex := slices.IndexFunc(message.Roles, func(role *config.RoleReact) bool { return role.CounterID == params.RoleCounterID })
@@ -205,9 +205,9 @@ func MessageModifyRoleComponents(i *interaction.Interaction, params *EditIDWithR
 	}}
 }
 
-func MessageModifyRoleData(i *interaction.Interaction, params *EditIDWithRole, emojiMessage string) interaction.ResponseData {
+func MessageModifyRoleData(ctx context.Context, i *interaction.Interaction, params *EditIDWithRole, emojiMessage string) interaction.ResponseData {
 	components := []component.Component{}
-	for _, component := range MessageModifyRoleComponents(i, params, emojiMessage) {
+	for _, component := range MessageModifyRoleComponents(ctx, i, params, emojiMessage) {
 		components = append(components, component)
 	}
 	return interaction.ResponseData{

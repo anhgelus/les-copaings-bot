@@ -15,7 +15,6 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
-	"github.com/anhgelus/gokord"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/discord/request"
@@ -48,7 +47,7 @@ var colors = []color.RGBA{
 }
 
 func Stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand) {
-	cfg := config.GetGuildConfig(i.GuildID)
+	cfg := config.GetGuildConfig(ctx, i.GuildID)
 	days := 15
 	if common.IsDebug(ctx) {
 		days = 90
@@ -103,7 +102,10 @@ func Stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationComman
 
 func statsAll(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand, days int) (io.WriterTo, error) {
 	return stats(ctx, dg, i, days, func(before, after string) *gorm.DB {
-		return gokord.DB.Raw(before+"WHERE guild_id = ? and created_at > ?"+after, i.GuildID, exp.TimeStampNDaysBefore(uint(days)))
+		return common.GetDB(ctx).Raw(
+			before+"WHERE guild_id = ? and created_at > ?"+after,
+			i.GuildID, exp.TimeStampNDaysBefore(ctx, uint(days)),
+		)
 	})
 }
 
@@ -113,9 +115,9 @@ func statsMember(ctx context.Context, dg bot.Session, i *interaction.Application
 		return nil, err
 	}
 	return stats(ctx, dg, i, days, func(before, after string) *gorm.DB {
-		return gokord.DB.Raw(
+		return common.GetDB(ctx).Raw(
 			before+"WHERE guild_id = ? and created_at > ? and copaing_id = ?"+after,
-			i.GuildID, exp.TimeStampNDaysBefore(uint(days)), user.GetCopaing(ctx, discordID, i.GuildID).ID,
+			i.GuildID, exp.TimeStampNDaysBefore(ctx, uint(days)), user.GetCopaing(ctx, discordID, i.GuildID).ID,
 		)
 	})
 }
@@ -161,7 +163,7 @@ func stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationComman
 		_, ok := copaings[raw.CopaingID]
 		if !ok {
 			var cp user.Copaing
-			if err := gokord.DB.First(&cp, raw.CopaingID).Error; err != nil {
+			if err := common.GetDB(ctx).First(&cp, raw.CopaingID).Error; err != nil {
 				if !errors.Is(err, gorm.ErrRecordNotFound) {
 					bot.Logger(ctx).Error("finding copaing", "error", err, "copaing", raw.CopaingID)
 					return nil, err
@@ -213,7 +215,7 @@ func generatePlot(ctx context.Context, dg bot.Session, i *interaction.Applicatio
 	// set scales
 	p.Title.Text = "XP gagnées"
 	p.X.Label.Text = "Jours"
-	if gokord.Debug {
+	if common.IsDebug(ctx) {
 		p.X.Label.Text = fmt.Sprintf("%d secondes", exp.DebugFactor)
 	}
 	p.Y.Label.Text = "XP"

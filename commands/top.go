@@ -26,7 +26,7 @@ func Top(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand)
 		}
 	}
 
-	cfg := config.GetGuildConfig(i.GuildID)
+	cfg := config.GetGuildConfig(ctx, i.GuildID)
 	if cfg.DaysXPRemains > 30 {
 		wg.Go(func() {
 			fn(fmt.Sprintf("Top %d jours", cfg.DaysXPRemains), 10, -1, 0)

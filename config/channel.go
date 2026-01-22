@@ -20,13 +20,13 @@ const (
 )
 
 func HandleModifyFallbackChannel(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) bool {
-	cfg := GetGuildConfig(i.GuildID)
+	cfg := GetGuildConfig(ctx, i.GuildID)
 	var channelID string
 	if len(i.Data.Values) > 0 {
 		channelID = i.Data.Values[0]
 	}
 	cfg.FallbackChannel = channelID
-	err := cfg.Save()
+	err := cfg.Save(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("saving fallback channel", "error", err)
 		return false
@@ -35,9 +35,9 @@ func HandleModifyFallbackChannel(ctx context.Context, dg bot.Session, i *interac
 }
 
 func HandleModifyDisChannel(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) bool {
-	cfg := GetGuildConfig(i.GuildID)
+	cfg := GetGuildConfig(ctx, i.GuildID)
 	cfg.DisabledChannels = strings.Join(i.Data.Values, ";")
-	err := cfg.Save()
+	err := cfg.Save(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("unable to save disabled channel", "error", err)
 		return false

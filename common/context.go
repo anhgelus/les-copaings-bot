@@ -6,12 +6,13 @@ import (
 	"gorm.io/gorm"
 )
 
-type key uint8
+type Key uint8
 
 const (
-	keyDB     key = 0
-	keyDebug  key = 1
-	keyAuthor key = 2
+	keyDB           Key = 0
+	keyDebug        Key = 1
+	keyAuthor       Key = 2
+	KeyCopaingState Key = 3
 )
 
 func SetDB(ctx context.Context, db *gorm.DB) context.Context {

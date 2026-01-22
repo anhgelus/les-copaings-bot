@@ -3,7 +3,6 @@ module git.anhgelus.world/anhgelus/les-copaings-bot
 go 1.25.0
 
 require (
-	github.com/anhgelus/gokord v0.13.2-0.20251025205525-12213d3f60bc
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/joho/godotenv v1.5.1
 	github.com/nyttikord/gokord v0.33.1

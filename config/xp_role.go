@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strconv"
 
+	"git.anhgelus.world/anhgelus/les-copaings-bot/common"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/dynamicid"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
-	"github.com/anhgelus/gokord"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/channel"
 	"github.com/nyttikord/gokord/component"
@@ -39,7 +39,7 @@ const (
 )
 
 func HandleXpRole(ctx context.Context, dg bot.Session, i *interaction.Interaction) {
-	cfg := GetGuildConfig(i.GuildID)
+	cfg := GetGuildConfig(ctx, i.GuildID)
 	container := component.Container{
 		Components: []component.Message{
 			&component.TextDisplay{Content: "## Configuration / Rôles de niveaux"},
@@ -121,14 +121,14 @@ func HandleXpRoleNew(ctx context.Context, dg bot.Session, i *interaction.Message
 			},
 		}).
 		Response()
-	err := dg.InteractionAPI().Respond(i.Interaction, resp)
+	err := dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending modal to add", "error", err)
 	}
 }
 
 func HandleXpRoleEdit(ctx context.Context, dg bot.Session, i *interaction.Interaction, params *XpRoleId) {
-	config := GetGuildConfig(i.GuildID)
+	config := GetGuildConfig(ctx, i.GuildID)
 	id := params.ID
 	_, role := config.FindXpRoleID(id)
 	if role == nil {
@@ -181,7 +181,7 @@ func HandleXpRoleEdit(ctx context.Context, dg bot.Session, i *interaction.Intera
 		},
 	}
 
-	err := dg.InteractionAPI().Respond(i, response)
+	err := dg.InteractionAPI().Respond(i, response).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending xp_role config", "error", err)
 	}
@@ -190,7 +190,7 @@ func HandleXpRoleEdit(ctx context.Context, dg bot.Session, i *interaction.Intera
 func HandleXpRoleEditRole(ctx context.Context, dg bot.Session, i *interaction.MessageComponent, params *XpRoleId) {
 	id := params.ID
 	role := i.Data.Values[0]
-	cfg := GetGuildConfig(i.GuildID)
+	cfg := GetGuildConfig(ctx, i.GuildID)
 	_, xpRole := cfg.FindXpRoleID(id)
 	if xpRole == nil {
 		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
@@ -199,14 +199,14 @@ func HandleXpRoleEditRole(ctx context.Context, dg bot.Session, i *interaction.Me
 				Flags:   channel.MessageFlagsEphemeral,
 				Content: "Impossible de modifier le rôle. Peut-être a-t-il été supprimé ?",
 			},
-		})
+		}).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("sending unable to get role message", "error", err)
 		}
 		return
 	}
 	xpRole.RoleID = role
-	err := gokord.DB.Save(xpRole).Error
+	err := common.GetDB(ctx).Save(xpRole).Error
 	if err != nil {
 		bot.Logger(ctx).Error("saving config", "error", err, "guild", i.GuildID, "id", id, "type", "add")
 	}
@@ -215,7 +215,7 @@ func HandleXpRoleEditRole(ctx context.Context, dg bot.Session, i *interaction.Me
 
 func HandleXpRoleEditLevelStart(ctx context.Context, dg bot.Session, i *interaction.MessageComponent, params *XpRoleId) {
 	id := params.ID
-	cfg := GetGuildConfig(i.GuildID)
+	cfg := GetGuildConfig(ctx, i.GuildID)
 	_, xpRole := cfg.FindXpRoleID(id)
 	if xpRole == nil {
 		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
@@ -224,7 +224,7 @@ func HandleXpRoleEditLevelStart(ctx context.Context, dg bot.Session, i *interact
 				Flags:   channel.MessageFlagsEphemeral,
 				Content: "Impossible de trouver le rôle. Peut-être a-t-il été supprimé ?",
 			},
-		})
+		}).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("sending unable to get role message", "error", err)
 		}
@@ -251,7 +251,7 @@ func HandleXpRoleEditLevelStart(ctx context.Context, dg bot.Session, i *interact
 			},
 		},
 	}
-	err := dg.InteractionAPI().Respond(i.Interaction, response)
+	err := dg.InteractionAPI().Respond(i.Interaction, response).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending edit level modal", "error", err)
 	}
@@ -275,7 +275,7 @@ func HandleXpRoleEditLevel(ctx context.Context, dg bot.Session, i *interaction.M
 	}
 	xp := exp.LevelXP(uint(level))
 
-	cfg := GetGuildConfig(i.GuildID)
+	cfg := GetGuildConfig(ctx, i.GuildID)
 	_, xpRole := cfg.FindXpRoleID(id)
 	if xpRole == nil {
 		err = dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
@@ -291,7 +291,7 @@ func HandleXpRoleEditLevel(ctx context.Context, dg bot.Session, i *interaction.M
 		return
 	}
 	xpRole.XP = xp
-	err = gokord.DB.Save(xpRole).Error
+	err = common.GetDB(ctx).Save(xpRole).Error
 	if err != nil {
 		bot.Logger(ctx).Error("saving config", "guild", i.GuildID, "id", id, "type", "edit")
 	}
@@ -300,7 +300,7 @@ func HandleXpRoleEditLevel(ctx context.Context, dg bot.Session, i *interaction.M
 
 func HandleXpRoleDel(ctx context.Context, dg bot.Session, i *interaction.MessageComponent, parameters *XpRoleId) {
 	id := parameters.ID
-	cfg := GetGuildConfig(i.GuildID)
+	cfg := GetGuildConfig(ctx, i.GuildID)
 	_, role := cfg.FindXpRoleID(id)
 	if role == nil {
 		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
@@ -309,13 +309,13 @@ func HandleXpRoleDel(ctx context.Context, dg bot.Session, i *interaction.Message
 				Content: "Rôle introuvable. Peut-être a-t-il déjà été supprimé ?",
 				Flags:   channel.MessageFlagsEphemeral,
 			},
-		})
+		}).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("sending role not found message", "error", err)
 		}
 		return
 	}
-	err := gokord.DB.Delete(role).Error
+	err := common.GetDB(ctx).Delete(role).Error
 	if err != nil {
 		bot.Logger(ctx).Error("deleting entry", "error", err, "guild", i.GuildID, "id", id, "type", "del")
 	}
@@ -342,12 +342,12 @@ func HandleXpRoleAdd(ctx context.Context, dg bot.Session, i *interaction.ModalSu
 
 	roleId := i.Data.Components[1].(*component.Label).Component.(*component.SelectMenu).Values[0]
 
-	cfg := GetGuildConfig(i.GuildID)
+	cfg := GetGuildConfig(ctx, i.GuildID)
 	cfg.XpRoles = append(cfg.XpRoles, XpRole{
 		XP:     xp,
 		RoleID: roleId,
 	})
-	err = cfg.Save()
+	err = cfg.Save(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("saving config", "error", err, "role", roleId, "guild", i.GuildID)
 		return

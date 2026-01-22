@@ -16,7 +16,7 @@ const (
 )
 
 func HandleModifyPeriodicReduceCommand(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) {
-	cfg := GetGuildConfig(i.GuildID)
+	cfg := GetGuildConfig(ctx, i.GuildID)
 	resp := interaction.NewModalResponse().
 		CustomID(TimeReduceSet).
 		Title("Modifier la durée de l'expérience").
@@ -66,9 +66,9 @@ func HandleTimeReduceSet(ctx context.Context, dg bot.Session, i *interaction.Mod
 		}
 		return false
 	}
-	cfg := GetGuildConfig(i.GuildID)
+	cfg := GetGuildConfig(ctx, i.GuildID)
 	cfg.DaysXPRemains = uint(days)
-	err = cfg.Save()
+	err = cfg.Save(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("saving DaysXPRemains configuration", "error", err)
 		return false

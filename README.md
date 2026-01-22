@@ -86,7 +86,7 @@ in `.env`)
 ## Technologies
 
 - Go 1.24
-- anhgelus/gokord
+- nyttikord/gokord
 
 ## License
 

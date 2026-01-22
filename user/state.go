@@ -7,8 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/anhgelus/gokord"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/common"
 	"github.com/nyttikord/gokord/state"
+	"gorm.io/gorm"
 )
 
 var ErrSyncingUnsavedData = errors.New("trying to sync unsaved data")
@@ -33,9 +34,9 @@ type CopaingCached struct {
 // - save the copaing in the database, use CopaingCached.SaveInDB for that;
 // - sync the copaing cached, use CopaingCached.Sync for that.
 // TL;DR: don't use this method, unless you know what are you doing.
-func (cc *CopaingCached) copaing() *Copaing {
+func (cc *CopaingCached) copaing(ctx context.Context) *Copaing {
 	c := &Copaing{DiscordID: cc.DiscordID, GuildID: cc.GuildID}
-	if err := c.load(); err != nil {
+	if err := c.load(ctx); err != nil {
 		panic(err)
 	}
 	return c
@@ -45,7 +46,7 @@ func (cc *CopaingCached) Sync(ctx context.Context) error {
 	if cc.mustSave() {
 		return ErrSyncingUnsavedData
 	}
-	synced := FromCopaing(cc.copaing())
+	synced := FromCopaing(cc.copaing(ctx))
 	synced.XP += cc.XPToAdd
 	synced.XPToAdd = cc.XPToAdd
 	err := synced.Save(ctx)
@@ -66,9 +67,9 @@ func (cc *CopaingCached) Save(ctx context.Context) error {
 }
 
 func (cc *CopaingCached) SaveInDB(ctx context.Context) error {
-	c := cc.copaing()
+	c := cc.copaing(ctx)
 	c.CopaingXPs = append(c.CopaingXPs, CopaingXP{CopaingID: c.ID, XP: cc.XPToAdd, GuildID: c.GuildID})
-	err := c.Save()
+	err := c.Save(ctx)
 	if err != nil {
 		return err
 	}
@@ -77,8 +78,8 @@ func (cc *CopaingCached) SaveInDB(ctx context.Context) error {
 }
 
 func (cc *CopaingCached) Delete(ctx context.Context) error {
-	c := cc.copaing()
-	err := c.Delete()
+	c := cc.copaing(ctx)
+	err := c.Delete(ctx)
 	if err != nil {
 		return err
 	}
@@ -138,12 +139,12 @@ type State struct {
 	storage  state.MapStorage[CopaingCached]
 }
 
-func NewState() *State {
+func NewState(db *gorm.DB) *State {
 	state := &State{
 		storage: state.MapStorage[CopaingCached]{},
 	}
 	var cs []*Copaing
-	err := gokord.DB.Find(&cs).Error
+	err := db.Find(&cs).Error
 	if err != nil {
 		panic(err)
 	}
@@ -153,14 +154,12 @@ func NewState() *State {
 	return state
 }
 
-const ContextKeyState = "state"
-
 func GetState(ctx context.Context) *State {
-	return ctx.Value(ContextKeyState).(*State)
+	return ctx.Value(common.KeyCopaingState).(*State)
 }
 
 func SetState(ctx context.Context, state *State) context.Context {
-	return context.WithValue(ctx, ContextKeyState, state)
+	return context.WithValue(ctx, common.KeyCopaingState, state)
 }
 
 func deepCopy(src CopaingCached) CopaingCached {

@@ -3,8 +3,8 @@ package commands
 import (
 	"context"
 
+	"git.anhgelus.world/anhgelus/les-copaings-bot/common"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
-	"github.com/anhgelus/gokord"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/interaction"
 )
@@ -12,7 +12,7 @@ import (
 func Reset(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand) {
 	var copaings []*user.Copaing
 	//TODO: delete everything from cache
-	gokord.DB.Where("guild_id = ?", i.GuildID).Delete(&copaings)
+	common.GetDB(ctx).Where("guild_id = ?", i.GuildID).Delete(&copaings)
 	resp := interaction.NewMessageResponse().IsEphemeral().Message("L'XP a été reset.").Response()
 	err := dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
 	if err != nil {
@@ -31,7 +31,7 @@ func ResetUser(ctx context.Context, dg bot.Session, i *interaction.ApplicationCo
 	opts := i.OptionMap()
 	v, ok := opts["user"]
 	if !ok {
-		resp.Message("Le user n'a pas été renseigné.")
+		resp.Message("Le copaing n'a pas été renseigné.")
 		return
 	}
 	m := v.UserValue(ctx)
@@ -42,8 +42,8 @@ func ResetUser(ctx context.Context, dg bot.Session, i *interaction.ApplicationCo
 	err := user.GetCopaing(ctx, m.ID, i.GuildID).Delete(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("deleting copaing", "error", err, "user", m.Username, "guild", i.GuildID)
-		resp.Message("Erreur : impossible de reset l'utilisateur")
+		resp.Message("Erreur : impossible de reset le copaing")
 		return
 	}
-	resp.Message("Le user bien été reset.")
+	resp.Message("Le copaing bien été reset.")
 }

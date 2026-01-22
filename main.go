@@ -22,7 +22,6 @@ import (
 	"github.com/nyttikord/gokord"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/discord"
-	"github.com/nyttikord/gokord/discord/types"
 	"github.com/nyttikord/gokord/event"
 	"github.com/nyttikord/gokord/interaction"
 	"golang.org/x/image/font/opentype"
@@ -80,14 +79,14 @@ func main() {
 		panic(err)
 	}
 
-	err = db.AutoMigrate(&user.Copaing{}, &config.GuildConfig{}, &config.XpRole{}, &user.CopaingXP{}, &config.RoleReactMessage{}, &config.RoleReact{})
+	err = db.AutoMigrate(&user.Copaing{}, &config.Guild{}, &config.XpRole{}, &user.CopaingXP{}, &config.RoleReactMessage{}, &config.RoleReact{})
 	if err != nil {
 		panic(err)
 	}
 
-	adm := int64(discord.PermissionManageGuild)
+	//adm := int64(discord.PermissionManageGuild)
 
-	ctx := user.SetState(context.Background(), user.NewState())
+	ctx := user.SetState(context.Background(), user.NewState(db))
 	ctx = common.SetDB(ctx, db)
 	ctx = common.SetDebug(ctx, cfg.Debug)
 	ctx = common.SetAuthor(ctx, cfg.Author)
@@ -161,11 +160,11 @@ func main() {
 
 	// related to rolereact
 	// TEMP BECAUSE (OLD) GOKORD DOES NOT SUPPORT COMMAND MESSAGE
-	events.AddHandler(func(ctx context.Context, s bot.Session, e *event.Ready) {
+	/*events.AddHandler(func(ctx context.Context, dg bot.Session, e *event.Ready) {
 		guildID := ""
 		logger := bot.Logger(ctx)
 		if common.IsDebug(ctx) {
-			gs, err := s.GuildAPI().UserGuilds(1, "", "", false).Do(ctx)
+			gs, err := dg.GuildAPI().UserGuilds(1, "", "", false).Do(ctx)
 			if err != nil {
 				logger.Error("fetching guilds for debug", "error", err)
 				return
@@ -179,26 +178,17 @@ func main() {
 			Name:                     "Modifier",
 			DefaultMemberPermissions: &adm,
 		}
-		c, err := s.InteractionAPI().
-			CommandCreate(s.SessionState().User().ID, guildID, &handleRolereactionMessageCmd).
+		c, err := dg.InteractionAPI().
+			CommandCreate(dg.SessionState().User().ID, guildID, &handleRolereactionMessageCmd).
 			Do(ctx)
 		if err != nil {
 			logger.Error("unable to push rolereaction message command", "error", err)
 			return
 		}
 		logger.Debug("pushed rolereaction message command", "CommandID", c.ID)
-	})
-	events.AddHandler(func(ct context.Context, s bot.Session, _ *event.Disconnect) {
-		user.PeriodicSaver(ctx, s)
-	})
-	events.AddHandler(func(ctx context.Context, s bot.Session, i *event.InteractionCreate) {
-		if i.Type != types.InteractionApplicationCommand {
-			return
-		}
-		cmd := i.Command()
-		if cmd.Data.Name == "Modifier" && cmd.Data.CommandType == types.CommandMessage {
-			rolereact.HandleModifyCommand(ctx, s, cmd)
-		}
+	})*/
+	events.AddHandler(func(ct context.Context, dg bot.Session, _ *event.Disconnect) {
+		user.PeriodicSaver(ctx, dg)
 	})
 	events.AddHandler(rolereact.HandleReactionAdd)
 	events.AddHandler(rolereact.HandleReactionRemove)
@@ -221,6 +211,7 @@ func main() {
 	intrs.HandleCommand("reset-user", commands.ResetUser)
 	intrs.HandleCommand("credits", commands.Credits)
 	intrs.HandleCommand("rolereact", rolereact.HandleCommand)
+	intrs.HandleCommand("Modifier", rolereact.HandleModifyCommand)
 
 	// interaction: /config
 	intrs.HandleMessageComponent(commands.OpenConfig, commands.ConfigMessageComponent)

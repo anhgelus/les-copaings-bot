@@ -4,11 +4,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/anhgelus/gokord"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/common"
 	"github.com/nyttikord/gokord/bot"
 )
 
-type GuildConfig struct {
+type Guild struct {
 	ID               uint   `gorm:"primarykey"`
 	GuildID          string `gorm:"not null;unique"`
 	XpRoles          []XpRole
@@ -36,36 +36,31 @@ type RoleReact struct {
 	CounterID          uint `gorm:"-"`
 }
 
-func GetGuildConfig(guildID string) *GuildConfig {
-	cfg := GuildConfig{GuildID: guildID}
-	if err := cfg.Load(); err != nil {
+func GetGuildConfig(ctx context.Context, guildID string) *Guild {
+	cfg := Guild{GuildID: guildID}
+	if err := cfg.Load(ctx); err != nil {
 		panic(err)
 	}
 	return &cfg
 }
 
-func (cfg *GuildConfig) Load() error {
-	return gokord.DB.Where("guild_id = ?", cfg.GuildID).Preload("XpRoles").FirstOrCreate(cfg).Error
+func (cfg *Guild) Load(ctx context.Context) error {
+	return common.GetDB(ctx).Where("guild_id = ?", cfg.GuildID).Preload("XpRoles").FirstOrCreate(cfg).Error
 }
 
-func (cfg *GuildConfig) Save() error {
-	return gokord.DB.Save(cfg).Error
+func (cfg *Guild) Save(ctx context.Context) error {
+	return common.GetDB(ctx).Save(cfg).Error
 }
 
-func (cfg *GuildConfig) IsDisabled(ctx context.Context, s bot.Session, channelID string) bool {
+func (cfg *Guild) IsDisabled(ctx context.Context, dg bot.Session, channelID string) bool {
 	ok := true
 	for channelID != "" && ok {
 		ok = !strings.Contains(cfg.DisabledChannels, channelID)
-		c, err := s.ChannelAPI().State.Channel(channelID)
+		c, err := dg.ChannelAPI().State.Channel(channelID)
 		if err != nil {
 			bot.Logger(ctx).Error("unable to find channel %s in state", "error", err, "channel", c)
-			c, err = s.ChannelAPI().Channel(channelID).Do(ctx)
-			if err == nil {
-				err = s.ChannelAPI().State.ChannelAdd(c)
-				if err != nil {
-					bot.Logger(ctx).Error("unable to add channel to state", "error", err, "channel", c)
-				}
-			} else {
+			c, err = dg.ChannelAPI().Channel(channelID).Do(ctx)
+			if err != nil {
 				bot.Logger(ctx).Error("unable to fetch channel", "error", err, "channel", c)
 				return false
 			}
@@ -78,7 +73,7 @@ func (cfg *GuildConfig) IsDisabled(ctx context.Context, s bot.Session, channelID
 	return !ok
 }
 
-func (cfg *GuildConfig) FindXpRole(roleID string) (int, *XpRole) {
+func (cfg *Guild) FindXpRole(roleID string) (int, *XpRole) {
 	for i, r := range cfg.XpRoles {
 		if r.RoleID == roleID {
 			return i, &r
@@ -87,7 +82,7 @@ func (cfg *GuildConfig) FindXpRole(roleID string) (int, *XpRole) {
 	return 0, nil
 }
 
-func (cfg *GuildConfig) FindXpRoleID(ID uint) (int, *XpRole) {
+func (cfg *Guild) FindXpRoleID(ID uint) (int, *XpRole) {
 	for i, r := range cfg.XpRoles {
 		if r.ID == ID {
 			return i, &r

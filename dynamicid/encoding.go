@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	stringReflectType = reflect.TypeOf(string(""))
-	intReflectType    = reflect.TypeOf(int(0))
-	uintReflectType   = reflect.TypeOf(uint(0))
-	boolReflectType   = reflect.TypeOf(bool(false))
+	stringReflectType = reflect.TypeFor[string]()
+	intReflectType    = reflect.TypeFor[int]()
+	uintReflectType   = reflect.TypeFor[uint]()
+	boolReflectType   = reflect.TypeFor[bool]()
 )
 
 // UnmarshallCSV record into a struct in-place

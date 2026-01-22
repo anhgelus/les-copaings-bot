@@ -23,7 +23,7 @@ func (c *cXP) GetXP() uint {
 	return c.Cxp
 }
 
-func (cc *CopaingCached) AddXP(ctx context.Context, s bot.Session, m *user.Member, xp uint, fn func(uint, uint)) {
+func (cc *CopaingCached) AddXP(ctx context.Context, dg bot.Session, m *user.Member, xp uint, fn func(uint, uint)) {
 	old := cc.XP
 	pastLevel := exp.Level(old)
 	bot.Logger(ctx).Debug("adding xp", "user", m.DisplayName(), "old", old, "to add", xp)
@@ -39,7 +39,7 @@ func (cc *CopaingCached) AddXP(ctx context.Context, s bot.Session, m *user.Membe
 	newLevel := exp.Level(old + xp)
 	if newLevel > pastLevel {
 		fn(old+xp, newLevel)
-		onNewLevel(ctx, s, m, newLevel)
+		onNewLevel(ctx, dg, m, newLevel)
 	}
 }
 

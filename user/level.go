@@ -6,20 +6,20 @@ import (
 	"sync"
 	"time"
 
+	"git.anhgelus.world/anhgelus/les-copaings-bot/common"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
-	"github.com/anhgelus/gokord"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/user"
 )
 
-func onNewLevel(ctx context.Context, s bot.Session, m *user.Member, level uint) {
-	cfg := config.GetGuildConfig(m.GuildID)
+func onNewLevel(ctx context.Context, dg bot.Session, m *user.Member, level uint) {
+	cfg := config.GetGuildConfig(ctx, m.GuildID)
 	xpForLevel := exp.LevelXP(level)
 	for _, role := range cfg.XpRoles {
 		if role.XP <= xpForLevel && !slices.Contains(m.Roles, role.RoleID) {
 			bot.Logger(ctx).Debug("add role", "role", role.RoleID, "user", m.DisplayName(), "guild", m.GuildID)
-			err := s.GuildAPI().MemberRoleAdd(m.GuildID, m.User.ID, role.RoleID)
+			err := dg.GuildAPI().MemberRoleAdd(m.GuildID, m.User.ID, role.RoleID).Do(ctx)
 			if err != nil {
 				bot.Logger(ctx).Error(
 					"adding role",
@@ -28,7 +28,7 @@ func onNewLevel(ctx context.Context, s bot.Session, m *user.Member, level uint) 
 			}
 		} else if role.XP > xpForLevel && slices.Contains(m.Roles, role.RoleID) {
 			bot.Logger(ctx).Debug("remove role", "role", role.RoleID, "user", m.DisplayName(), "guild", m.GuildID)
-			err := s.GuildAPI().MemberRoleRemove(m.GuildID, m.User.ID, role.RoleID)
+			err := dg.GuildAPI().MemberRoleRemove(m.GuildID, m.User.ID, role.RoleID).Do(ctx)
 			if err != nil {
 				bot.Logger(ctx).Error(
 					"removing role",
@@ -39,17 +39,17 @@ func onNewLevel(ctx context.Context, s bot.Session, m *user.Member, level uint) 
 	}
 }
 
-func (c *CopaingCached) onNewLevel(ctx context.Context, s bot.Session, level uint) {
-	m, err := s.GuildAPI().Member(c.GuildID, c.DiscordID).Do(ctx)
+func (c *CopaingCached) onNewLevel(ctx context.Context, dg bot.Session, level uint) {
+	m, err := dg.GuildAPI().Member(c.GuildID, c.DiscordID).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("getting member for new level", "error", err, "user", c.DiscordID, "guild", c.GuildID)
 		return
 	}
-	onNewLevel(ctx, s, m, level)
+	onNewLevel(ctx, dg, m, level)
 }
 
-func PeriodicReducer(ctx context.Context, s bot.Session) {
-	PeriodicSaver(ctx, s)
+func PeriodicReducer(ctx context.Context, dg bot.Session) {
+	PeriodicSaver(ctx, dg)
 
 	logger := bot.Logger(ctx)
 	logger.Debug("periodic reducer")
@@ -58,12 +58,12 @@ func PeriodicReducer(ctx context.Context, s bot.Session) {
 
 	n := 0
 	var wg sync.WaitGroup
-	for _, g := range s.GuildAPI().State.Guilds() {
+	for _, g := range dg.GuildAPI().State.Guilds() {
 		n++
-		cfg := config.GetGuildConfig(g)
-		res := gokord.DB.
+		cfg := config.GetGuildConfig(ctx, g)
+		res := common.GetDB(ctx).
 			Model(&CopaingXP{}).
-			Where("guild_id = ? and created_at < ?", g, exp.TimeStampNDaysBefore(cfg.DaysXPRemains)).
+			Where("guild_id = ? and created_at < ?", g, exp.TimeStampNDaysBefore(ctx, cfg.DaysXPRemains)).
 			Delete(&CopaingXP{})
 		if res.Error != nil {
 			logger.Error("removing old xp", "error", res.Error, "guild", g)
@@ -72,7 +72,7 @@ func PeriodicReducer(ctx context.Context, s bot.Session) {
 		logger.Debug("guild cleaned", "guild", g, "rows affected", res.RowsAffected)
 
 		wg.Go(func() {
-			syncCopaings(ctx, s, state.Copaings(g))
+			syncCopaings(ctx, dg, state.Copaings(g))
 		})
 	}
 
@@ -81,7 +81,7 @@ func PeriodicReducer(ctx context.Context, s bot.Session) {
 	logger.Debug("periodic reduce finished", "guilds affected", n)
 }
 
-func syncCopaings(ctx context.Context, s bot.Session, ccs []CopaingCached) {
+func syncCopaings(ctx context.Context, dg bot.Session, ccs []CopaingCached) {
 	logger := bot.Logger(ctx)
 	for i, cc := range ccs {
 		if i%50 == 49 {
@@ -96,12 +96,12 @@ func syncCopaings(ctx context.Context, s bot.Session, ccs []CopaingCached) {
 		}
 		xp := cc.XP
 		if exp.Level(oldXp) != exp.Level(xp) {
-			cc.onNewLevel(ctx, s, exp.Level(xp))
+			cc.onNewLevel(ctx, dg, exp.Level(xp))
 		}
 	}
 }
 
-func PeriodicSaver(ctx context.Context, s bot.Session) {
+func PeriodicSaver(ctx context.Context, dg bot.Session) {
 	logger := bot.Logger(ctx)
 	logger.Debug("saving state in DB")
 	err := saveStateInDB(ctx)

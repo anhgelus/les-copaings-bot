@@ -15,9 +15,9 @@ func Rank(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand
 	msg := "Votre niveau"
 	m := i.Member
 	opts := i.OptionMap()
-	var resp *interaction.Response
+	resp := interaction.NewMessageResponse()
 	defer func() {
-		err := dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
+		err := dg.InteractionAPI().Respond(i.Interaction, resp.Response()).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("replying to interaction", "error", err)
 		}
@@ -26,19 +26,13 @@ func Rank(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand
 	if v, ok := opts["copaing"]; ok {
 		u := v.UserValue(ctx)
 		if u.Bot {
-			resp = interaction.NewMessageResponse().
-				IsEphemeral().
-				Message("Imagine si les bots avaient un niveau :rolling_eyes:").
-				Response()
+			resp.IsEphemeral().Message("Imagine si les bots avaient un niveau :rolling_eyes:")
 			return
 		}
 		m, err = dg.GuildAPI().Member(i.GuildID, u.ID).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("fetching guild member", "error", err, "user", u.Username, "guild", i.GuildID)
-			resp = interaction.NewMessageResponse().
-				IsEphemeral().
-				Message("Erreur : impossible de récupérer le membre").
-				Response()
+			resp.IsEphemeral().Message("Erreur : impossible de récupérer le membre")
 			return
 		}
 		c = user.GetCopaing(ctx, u.ID, i.GuildID) // current user = member targeted by member who wrote /rank
@@ -47,8 +41,8 @@ func Rank(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand
 	xp := c.XP
 	lvl := exp.Level(xp)
 	nxtLvlXP := exp.LevelXP(lvl + 1)
-	resp = interaction.NewMessageResponse().Message(fmt.Sprintf(
+	resp.Message(fmt.Sprintf(
 		"%s : **%d**\n> XP : %d\n> Prochain niveau dans %d XP",
 		msg, lvl, xp, nxtLvlXP-xp,
-	)).Response()
+	))
 }
