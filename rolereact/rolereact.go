@@ -1,6 +1,7 @@
 package rolereact
 
 import (
+	"context"
 	"fmt"
 	"slices"
 
@@ -124,13 +125,13 @@ func HandleCommand(
 }
 
 func HandleModifyCommand(
+	ctx context.Context,
 	s bot.Session,
-	i *event.InteractionCreate,
-	data *interaction.CommandInteractionData,
-	resp *cmd.ResponseBuilder,
+	cmd *interaction.ApplicationCommand,
 ) {
-	messageId := data.TargetID
-	cfg := GetGuildConfigPreloaded(i.GuildID)
+	logger := bot.Logger(ctx)
+	messageId := cmd.Data.TargetID
+	cfg := GetGuildConfigPreloaded(cmd.GuildID)
 	var target *config.RoleReactMessage
 	var targetEditID uint
 	for editID, message := range messageEdits {
@@ -146,15 +147,15 @@ func HandleModifyCommand(
 			}
 		}
 		if target == nil {
-			err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+			err := s.InteractionAPI().Respond(cmd.Interaction, &interaction.Response{
 				Type: types.InteractionResponseChannelMessageWithSource,
 				Data: &interaction.ResponseData{
 					Flags:   channel.MessageFlagsEphemeral,
 					Content: "Le message sélectionné n'est pas un message de rôles de réaction.",
 				},
-			})
+			}).Do(ctx)
 			if err != nil {
-				s.Logger().Error("Unable to send rolereact message not found", "error", err)
+				logger.Error("Unable to send rolereact message not found", "error", err)
 			}
 			return
 		}
@@ -162,12 +163,12 @@ func HandleModifyCommand(
 		targetEditID = messageCounter
 		messageCounter++
 	}
-	err := s.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	err := s.InteractionAPI().Respond(cmd.Interaction, &interaction.Response{
 		Type: types.InteractionResponseChannelMessageWithSource,
-		Data: MessageModifyData(i, &EditID{MessageEditID: targetEditID}),
-	})
+		Data: MessageModifyData(cmd, &EditID{MessageEditID: targetEditID}),
+	}).Do(ctx)
 	if err != nil {
-		s.Logger().Error("Unable to send modify rolereact message", "error", err)
+		logger.Error("Unable to send modify rolereact message", "error", err)
 	}
 }
 

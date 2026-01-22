@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	_ "embed"
-	"errors"
 	"flag"
-	"log/slog"
 	"os"
 	"time"
 
@@ -17,7 +15,7 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/anhgelus/gokord"
 	"github.com/anhgelus/gokord/cmd"
-	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv/autoload"
 	discordgo "github.com/nyttikord/gokord"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/discord"
@@ -30,7 +28,8 @@ import (
 )
 
 var (
-	token string
+	token   string
+	cfgPath string = "config.toml"
 	//go:embed updates.json
 	updatesData []byte
 	Version     = gokord.Version{
@@ -48,16 +47,13 @@ var (
 var interTTF []byte
 
 func init() {
-	err := godotenv.Load()
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		slog.Error("error while loading .env file", "error", err)
-	}
 	flag.StringVar(&token, "token", os.Getenv("TOKEN"), "token of the bot")
+	flag.StringVar(&cfgPath, "config", cfgPath, "config's path")
 	flag.BoolVar(&verbose, "v", verbose, "verbose")
 
 	// Use a nicer font
-	fontTTF, parseErr := opentype.Parse(interTTF)
-	if parseErr != nil {
+	fontTTF, err := opentype.Parse(interTTF)
+	if err != nil {
 		panic(err)
 	}
 	inter := font.Font{Typeface: "Inter"}
@@ -66,23 +62,27 @@ func init() {
 		Face: fontTTF,
 	}})
 	plot.DefaultFont = inter
-
 }
 
 func main() {
 	flag.Parse()
-	gokord.UseRedis = false
-	err := gokord.SetupConfigs(&Config{}, []*gokord.ConfigInfo{})
+
+	cfg, err := getConfig(cfgPath)
 	if err != nil {
 		panic(err)
 	}
 
-	err = gokord.DB.AutoMigrate(&user.Copaing{}, &config.GuildConfig{}, &config.XpRole{}, &user.CopaingXP{}, &config.RoleReactMessage{}, &config.RoleReact{})
+	db, err := cfg.Database.Connect()
 	if err != nil {
 		panic(err)
 	}
 
-	adm := gokord.AdminPermission
+	err = db.AutoMigrate(&user.Copaing{}, &config.GuildConfig{}, &config.XpRole{}, &user.CopaingXP{}, &config.RoleReactMessage{}, &config.RoleReact{})
+	if err != nil {
+		panic(err)
+	}
+
+	adm := int64(discord.PermissionManageGuild)
 
 	ctx := user.SetState(context.Background(), user.NewState())
 
@@ -203,12 +203,13 @@ func main() {
 
 	// related to rolereact
 	// TEMP BECAUSE (OLD) GOKORD DOES NOT SUPPORT COMMAND MESSAGE
-	b.AddHandler(func(_ context.Context, s bot.Session, e *event.Ready) {
+	b.AddHandler(func(ctx context.Context, s bot.Session, e *event.Ready) {
 		guildID := ""
+		logger := bot.Logger(ctx)
 		if gokord.Debug {
-			gs, err := s.GuildAPI().UserGuilds(1, "", "", false)
+			gs, err := s.GuildAPI().UserGuilds(1, "", "", false).Do(ctx)
 			if err != nil {
-				s.Logger().Error("fetching guilds for debug", "error", err)
+				logger.Error("fetching guilds for debug", "error", err)
 				return
 			} else {
 				guildID = gs[0].ID
@@ -220,24 +221,25 @@ func main() {
 			Name:                     "Modifier",
 			DefaultMemberPermissions: &adm,
 		}
-		c, err := s.InteractionAPI().CommandCreate(s.SessionState().User().ID, guildID, &handleRolereactionMessageCmd)
+		c, err := s.InteractionAPI().
+			CommandCreate(s.SessionState().User().ID, guildID, &handleRolereactionMessageCmd).
+			Do(ctx)
 		if err != nil {
-			s.Logger().Error("unable to push rolereaction message command", "error", err)
+			logger.Error("unable to push rolereaction message command", "error", err)
 			return
 		}
-		s.Logger().Debug("pushed rolereaction message command", "CommandID", c.ID)
+		logger.Debug("pushed rolereaction message command", "CommandID", c.ID)
 	})
 	b.AddHandler(func(ct context.Context, s bot.Session, _ *event.Disconnect) {
 		user.PeriodicSaver(ctx, s)
 	})
-	b.AddHandler(func(_ context.Context, s bot.Session, i *event.InteractionCreate) {
+	b.AddHandler(func(ctx context.Context, s bot.Session, i *event.InteractionCreate) {
 		if i.Type != types.InteractionApplicationCommand {
 			return
 		}
-		data := i.CommandData()
-		if data.Name == "Modifier" && data.CommandType == types.CommandMessage {
-			resp := cmd.NewResponseBuilder(s, i)
-			rolereact.HandleModifyCommand(s, i, data, resp)
+		cmd := i.Command()
+		if cmd.Data.Name == "Modifier" && cmd.Data.CommandType == types.CommandMessage {
+			rolereact.HandleModifyCommand(ctx, s, cmd)
 		}
 	})
 	b.AddHandler(rolereact.HandleReactionAdd)

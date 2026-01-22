@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/anhgelus/gokord"
 	"github.com/pelletier/go-toml/v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -41,21 +41,10 @@ func (p *PostgresConfig) Connect() (*gorm.DB, error) {
 
 // generateDsn for the connection to postgres using the given config.SQLCredentials
 func (p *PostgresConfig) generateDsn() string {
-	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Europe/Paris",
+	return fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Europe/Paris",
 		p.Host, p.User, p.Password, p.DBName, p.Port,
 	)
-}
-
-func (c *Config) IsDebug() bool {
-	return c.Debug
-}
-
-func (c *Config) GetAuthor() string {
-	return c.Author
-}
-
-func (c *Config) GetRedisCredentials() *gokord.RedisCredentials {
-	return nil
 }
 
 func (c *Config) SetDefaultValues() {
@@ -65,14 +54,11 @@ func (c *Config) SetDefaultValues() {
 	c.Database.SetDefaultValues()
 }
 
-func (c *Config) GetSQLCredentials() gokord.SQLCredentials {
-	return c.Database
-}
-
-func (c *Config) Marshal() ([]byte, error) {
-	return toml.Marshal(c)
-}
-
-func (c *Config) Unmarshal(bytes []byte) error {
-	return toml.Unmarshal(bytes, c)
+func getConfig(path string) (*Config, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var cfg Config
+	return &cfg, toml.Unmarshal(b, &cfg)
 }
