@@ -9,7 +9,6 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/anhgelus/gokord"
-	discordgo "github.com/nyttikord/gokord"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/user"
 )
@@ -46,19 +45,20 @@ func onNewLevel(s bot.Session, m *user.Member, level uint) {
 	}
 }
 
-func (c *CopaingCached) onNewLevel(s *discordgo.Session, level uint) {
-	m, err := s.GuildAPI().Member(c.GuildID, c.DiscordID)
+func (c *CopaingCached) onNewLevel(ctx context.Context, s bot.Session, level uint) {
+	m, err := s.GuildAPI().Member(c.GuildID, c.DiscordID).Do(ctx)
 	if err != nil {
-		s.Logger().Error("getting member for new level", "error", err, "user", c.DiscordID, "guild", c.GuildID)
+		bot.Logger(ctx).Error("getting member for new level", "error", err, "user", c.DiscordID, "guild", c.GuildID)
 		return
 	}
 	onNewLevel(s, m, level)
 }
 
-func PeriodicReducer(ctx context.Context, s *discordgo.Session) {
+func PeriodicReducer(ctx context.Context, s bot.Session) {
 	PeriodicSaver(ctx, s)
 
-	s.Logger().Debug("periodic reducer")
+	logger := bot.Logger(ctx)
+	logger.Debug("periodic reducer")
 
 	state := GetState(ctx)
 
@@ -72,10 +72,10 @@ func PeriodicReducer(ctx context.Context, s *discordgo.Session) {
 			Where("guild_id = ? and created_at < ?", g, exp.TimeStampNDaysBefore(cfg.DaysXPRemains)).
 			Delete(&CopaingXP{})
 		if res.Error != nil {
-			s.Logger().Error("removing old xp", "error", res.Error, "guild", g)
+			logger.Error("removing old xp", "error", res.Error, "guild", g)
 			continue
 		}
-		s.Logger().Debug("guild cleaned", "guild", g, "rows affected", res.RowsAffected)
+		logger.Debug("guild cleaned", "guild", g, "rows affected", res.RowsAffected)
 
 		wg.Go(func() {
 			syncCopaings(ctx, s, state.Copaings(g))
@@ -84,30 +84,32 @@ func PeriodicReducer(ctx context.Context, s *discordgo.Session) {
 
 	wg.Wait()
 
-	s.Logger().Debug("periodic reduce finished", "guilds affected", n)
+	logger.Debug("periodic reduce finished", "guilds affected", n)
 }
 
-func syncCopaings(ctx context.Context, s *discordgo.Session, ccs []CopaingCached) {
+func syncCopaings(ctx context.Context, s bot.Session, ccs []CopaingCached) {
+	logger := bot.Logger(ctx)
 	for i, cc := range ccs {
 		if i%50 == 49 {
-			s.Logger().Debug("sleeping...")
+			logger.Debug("sleeping...")
 			time.Sleep(15 * time.Second) // prevents spamming the API
 		}
 		oldXp := cc.XP
 		err := cc.Sync(ctx)
 		if err != nil {
-			s.Logger().Error("syncing copaing", "error", err, "copaing", cc.ID, "guild", cc.GuildID)
+			logger.Error("syncing copaing", "error", err, "copaing", cc.ID, "guild", cc.GuildID)
 			continue
 		}
 		xp := cc.XP
 		if exp.Level(oldXp) != exp.Level(xp) {
-			cc.onNewLevel(s, exp.Level(xp))
+			cc.onNewLevel(ctx, s, exp.Level(xp))
 		}
 	}
 }
 
 func PeriodicSaver(ctx context.Context, s bot.Session) {
-	s.Logger().Debug("saving state in DB")
+	logger := bot.Logger(ctx)
+	logger.Debug("saving state in DB")
 	err := saveStateInDB(ctx)
 	if err != nil {
 		panic(err)

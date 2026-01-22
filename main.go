@@ -4,10 +4,15 @@ import (
 	"context"
 	_ "embed"
 	"flag"
+	"log/slog"
+	"math/rand/v2"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/commands"
+	"git.anhgelus.world/anhgelus/les-copaings-bot/common"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/dynamicid"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
@@ -27,20 +32,20 @@ import (
 	"gonum.org/v1/plot/font"
 )
 
+const Version = "3.4.0"
+
+// Args
 var (
 	token   string
 	cfgPath string = "config.toml"
-	//go:embed updates.json
-	updatesData []byte
-	Version     = gokord.Version{
-		Major: 3,
-		Minor: 3,
-		Patch: 0,
-	}
 	verbose bool
+)
 
-	stopPeriodicReducer chan<- any
-	stopPeriodicSaver   chan<- any
+// Cancel timers
+var (
+	stopPeriodicReducer context.CancelFunc
+	stopPeriodicSaver   context.CancelFunc
+	stopStatus          context.CancelFunc
 )
 
 //go:embed assets/inter-variable.ttf
@@ -86,7 +91,7 @@ func main() {
 
 	ctx := user.SetState(context.Background(), user.NewState())
 
-	rankCmd := cmd.New("rank", "Affiche le niveau d'un copaing").
+	/*rankCmd := cmd.New("rank", "Affiche le niveau d'un copaing").
 		AddOption(cmd.NewOption(
 			types.CommandOptionUser,
 			"copaing",
@@ -137,73 +142,24 @@ func main() {
 			"salon",
 			"Destination du message",
 		)).
-		SetHandler(rolereact.HandleCommand)
+		SetHandler(rolereact.HandleCommand)*/
 
-	innovations, err := gokord.LoadInnovationFromJson(updatesData)
-	if err != nil {
-		panic(err)
+	logLevel := slog.LevelInfo
+	if verbose {
+		logLevel = slog.LevelDebug
 	}
+	dg := discordgo.NewWithLogLevel("Bot "+token, logLevel)
 
-	b := gokord.Bot{
-		Token: token,
-		Status: []*gokord.Status{
-			{
-				Type:    gokord.WatchStatus,
-				Content: "Les Copaings",
-			},
-			{
-				Type:    gokord.GameStatus,
-				Content: "être dev par @anhgelus",
-			},
-			{
-				Type:    gokord.ListeningStatus,
-				Content: "http 418, I'm a tea pot",
-			},
-			{
-				Type:    gokord.GameStatus,
-				Content: "Les Copaings Bot " + Version.String(),
-			},
-		},
-		Commands: []cmd.CommandBuilder{
-			rankCmd,
-			configCmd,
-			topCmd,
-			resetCmd,
-			resetUserCmd,
-			creditsCmd,
-			statsCmd,
-			rolereactCmd,
-		},
-		AfterInit: func(dg *discordgo.Session) {
-			d := 24 * time.Hour
-			if gokord.Debug {
-				d = 3 * exp.DebugFactor * time.Second
-			}
-			d2 := 30 * time.Minute
-			if gokord.Debug {
-				d2 = 1 * exp.DebugFactor * time.Second
-			}
+	dg.Identify.Intents = discord.IntentsAllWithoutPrivileged |
+		discord.IntentsMessageContent |
+		discord.IntentGuildMembers
 
-			user.PeriodicReducer(ctx, dg)
-
-			stopPeriodicReducer = gokord.NewTimer(d, func(stop chan<- any) {
-				user.PeriodicReducer(ctx, dg)
-			})
-			stopPeriodicSaver = gokord.NewTimer(d2, func(c chan<- any) {
-				user.PeriodicSaver(ctx, dg)
-			})
-		},
-		Innovations: innovations,
-		Version:     &Version,
-		Intents: discord.IntentsAllWithoutPrivileged |
-			discord.IntentsMessageContent |
-			discord.IntentGuildMembers,
-		Verbose: verbose,
-	}
+	events := dg.EventManager()
+	events.AddHandler(ready)
 
 	// related to rolereact
 	// TEMP BECAUSE (OLD) GOKORD DOES NOT SUPPORT COMMAND MESSAGE
-	b.AddHandler(func(ctx context.Context, s bot.Session, e *event.Ready) {
+	events.AddHandler(func(ctx context.Context, s bot.Session, e *event.Ready) {
 		guildID := ""
 		logger := bot.Logger(ctx)
 		if gokord.Debug {
@@ -230,10 +186,10 @@ func main() {
 		}
 		logger.Debug("pushed rolereaction message command", "CommandID", c.ID)
 	})
-	b.AddHandler(func(ct context.Context, s bot.Session, _ *event.Disconnect) {
+	events.AddHandler(func(ct context.Context, s bot.Session, _ *event.Disconnect) {
 		user.PeriodicSaver(ctx, s)
 	})
-	b.AddHandler(func(ctx context.Context, s bot.Session, i *event.InteractionCreate) {
+	events.AddHandler(func(ctx context.Context, s bot.Session, i *event.InteractionCreate) {
 		if i.Type != types.InteractionApplicationCommand {
 			return
 		}
@@ -242,8 +198,8 @@ func main() {
 			rolereact.HandleModifyCommand(ctx, s, cmd)
 		}
 	})
-	b.AddHandler(rolereact.HandleReactionAdd)
-	b.AddHandler(rolereact.HandleReactionRemove)
+	events.AddHandler(rolereact.HandleReactionAdd)
+	events.AddHandler(rolereact.HandleReactionRemove)
 	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleModifyComponent, rolereact.OpenMessage)
 	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleApplyMessage, rolereact.ApplyMessage)
 	dynamicid.HandleDynamicMessageComponent(&b, rolereact.HandleResetMessage, rolereact.ResetMessage)
@@ -286,17 +242,82 @@ func main() {
 	}, config.TimeReduceSet)
 
 	// xp handlers
-	b.AddHandler(OnMessage)
-	b.AddHandler(OnVoiceUpdate)
-	b.AddHandler(OnLeave)
+	events.AddHandler(OnMessage)
+	events.AddHandler(OnVoiceUpdate)
+	events.AddHandler(OnLeave)
 
-	b.Start(ctx)
+	err = dg.Open(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	setupTimers(ctx, dg)
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	<-sc
+
+	dg.Logger().Info("stopping")
+
+	err = dg.Close(ctx)
+	if err != nil {
+		panic(err)
+	}
 
 	if stopPeriodicReducer != nil {
-		stopPeriodicReducer <- true
+		stopPeriodicReducer()
 	}
 
 	if stopPeriodicSaver != nil {
-		stopPeriodicSaver <- true
+		stopPeriodicSaver()
 	}
+}
+
+func setupTimers(ctx context.Context, dg bot.Session) {
+	d := 24 * time.Hour
+	if gokord.Debug {
+		d = 3 * exp.DebugFactor * time.Second
+	}
+	d2 := 30 * time.Minute
+	if gokord.Debug {
+		d2 = 1 * exp.DebugFactor * time.Second
+	}
+
+	user.PeriodicReducer(ctx, dg)
+
+	stopPeriodicReducer = common.NewTimer(ctx, d, func(ctx context.Context, _ context.CancelFunc) {
+		user.PeriodicReducer(ctx, dg)
+	})
+	stopPeriodicSaver = common.NewTimer(ctx, d2, func(ctx context.Context, _ context.CancelFunc) {
+		user.PeriodicSaver(ctx, dg)
+	})
+}
+
+var statuses = []func(context.Context, bot.Session) error{
+	func(ctx context.Context, dg bot.Session) error {
+		return dg.BotAPI().UpdateGameStatus(ctx, 0, "être dev par @anhgelus")
+	},
+	func(ctx context.Context, dg bot.Session) error {
+		return dg.BotAPI().UpdateWatchStatus(ctx, 0, "Les Copaings")
+	},
+	func(ctx context.Context, dg bot.Session) error {
+		return dg.BotAPI().UpdateListeningStatus(ctx, "http 418, I'm a tea pot")
+	},
+	func(ctx context.Context, dg bot.Session) error {
+		return dg.BotAPI().UpdateGameStatus(ctx, 0, "Les Copaings Bot v"+Version)
+	},
+}
+
+func ready(ctx context.Context, dg bot.Session, _ *event.Ready) {
+	logger := bot.Logger(ctx)
+	logger.Info("bot started", "as", dg.SessionState().User().Username)
+	now := time.Now().Unix()
+	rd := rand.New(rand.NewPCG(uint64(now), uint64(len(statuses))))
+	stopStatus = common.NewTimer(ctx, 30*time.Second, func(ctx context.Context, _ context.CancelFunc) {
+		rnd := rd.UintN(uint(len(statuses)))
+		err := statuses[rnd](ctx, dg)
+		if err != nil {
+			bot.Logger(ctx).Error("updating status", "error", err)
+		}
+	})
 }
