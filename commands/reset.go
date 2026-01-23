@@ -29,7 +29,7 @@ func ResetUser(ctx context.Context, dg bot.Session, i *interaction.ApplicationCo
 		}
 	}()
 	opts := i.OptionMap()
-	v, ok := opts["user"]
+	v, ok := opts["copaing"]
 	if !ok {
 		resp.Message("Le copaing n'a pas été renseigné.")
 		return

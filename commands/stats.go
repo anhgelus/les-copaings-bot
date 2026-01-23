@@ -62,7 +62,7 @@ func Stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationComman
 	}()
 
 	opts := i.OptionMap()
-	if v, ok := opts["days"]; ok {
+	if v, ok := opts["jours"]; ok {
 		in := v.IntValue()
 		if in < 1 || uint(in) > cfg.DaysXPRemains {
 			msg := fmt.Sprintf("Nombre de jours invalide. Il doit être strictement positif et inférieur à %d", cfg.DaysXPRemains)
@@ -76,7 +76,7 @@ func Stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationComman
 		bot.Logger(ctx).Error("sending deferred", "error", err)
 	}
 	var w io.WriterTo
-	if v, ok := opts["user"]; ok {
+	if v, ok := opts["copaing"]; ok {
 		w, err = statsMember(ctx, dg, i, days, v.UserValue(ctx).ID)
 	} else {
 		w, err = statsAll(ctx, dg, i, days)

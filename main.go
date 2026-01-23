@@ -35,7 +35,8 @@ const Version = "3.4.0"
 var (
 	token   string
 	cfgPath string = "config.toml"
-	verbose bool
+	deploy  bool   = false
+	verbose bool   = false
 )
 
 // Cancel timers
@@ -52,6 +53,7 @@ func init() {
 	flag.StringVar(&token, "token", os.Getenv("TOKEN"), "token of the bot")
 	flag.StringVar(&cfgPath, "config", cfgPath, "config's path")
 	flag.BoolVar(&verbose, "v", verbose, "verbose")
+	flag.BoolVar(&deploy, "deploy", deploy, "deploy commands")
 
 	// Use a nicer font
 	fontTTF, err := opentype.Parse(interTTF)
@@ -84,65 +86,10 @@ func main() {
 		panic(err)
 	}
 
-	//adm := int64(discord.PermissionManageGuild)
-
 	ctx := user.SetState(context.Background(), user.NewState(db))
 	ctx = common.SetDB(ctx, db)
 	ctx = common.SetDebug(ctx, cfg.Debug)
 	ctx = common.SetAuthor(ctx, cfg.Author)
-
-	/*rankCmd := cmd.New("rank", "Affiche le niveau d'un copaing").
-		AddOption(cmd.NewOption(
-			types.CommandOptionUser,
-			"copaing",
-			"Le niveau du Copaing que vous souhaitez obtenir",
-		)).
-		SetHandler(commands.Rank(ctx))
-
-	configCmd := cmd.New("config", "Modifie la config").
-		SetPermission(&adm).
-		SetHandler(commands.ConfigCommand)
-
-	topCmd := cmd.New("top", "Copaings les plus actifs").
-		SetHandler(commands.Top(ctx))
-
-	resetCmd := cmd.New("reset", "Reset l'xp").
-		SetHandler(commands.Reset).
-		SetPermission(&adm)
-
-	resetUserCmd := cmd.New("reset-user", "Reset l'xp d'un utilisation").
-		AddOption(cmd.NewOption(
-			types.CommandOptionUser,
-			"user",
-			"Copaing a reset",
-		).IsRequired()).
-		SetHandler(commands.ResetUser(ctx)).
-		SetPermission(&adm)
-
-	creditsCmd := cmd.New("credits", "Crédits").
-		SetHandler(commands.Credits)
-
-	statsCmd := cmd.New("stats", "Affiche des stats :D").
-		AddOption(cmd.NewOption(
-			types.CommandOptionInteger,
-			"days",
-			"Nombre de jours à afficher dans le graphique",
-		)).
-		AddOption(cmd.NewOption(
-			types.CommandOptionUser,
-			"user",
-			"Utilisateur à inspecter",
-		)).
-		SetHandler(commands.Stats(ctx))
-
-	rolereactCmd := cmd.New("rolereact", "Envoie un message permettant de récupérer des rôles grâce à des réactions").
-		SetPermission(&adm).
-		AddOption(cmd.NewOption(
-			types.CommandOptionChannel,
-			"salon",
-			"Destination du message",
-		)).
-		SetHandler(rolereact.HandleCommand)*/
 
 	logLevel := slog.LevelInfo
 	if verbose {
@@ -158,35 +105,6 @@ func main() {
 	intrs := dg.InteractionManager()
 	events.AddHandler(ready)
 
-	// related to rolereact
-	// TEMP BECAUSE (OLD) GOKORD DOES NOT SUPPORT COMMAND MESSAGE
-	/*events.AddHandler(func(ctx context.Context, dg bot.Session, e *event.Ready) {
-		guildID := ""
-		logger := bot.Logger(ctx)
-		if common.IsDebug(ctx) {
-			gs, err := dg.GuildAPI().UserGuilds(1, "", "", false).Do(ctx)
-			if err != nil {
-				logger.Error("fetching guilds for debug", "error", err)
-				return
-			} else {
-				guildID = gs[0].ID
-			}
-		}
-
-		handleRolereactionMessageCmd := interaction.Command{
-			Type:                     types.CommandMessage,
-			Name:                     "Modifier",
-			DefaultMemberPermissions: &adm,
-		}
-		c, err := dg.InteractionAPI().
-			CommandCreate(dg.SessionState().User().ID, guildID, &handleRolereactionMessageCmd).
-			Do(ctx)
-		if err != nil {
-			logger.Error("unable to push rolereaction message command", "error", err)
-			return
-		}
-		logger.Debug("pushed rolereaction message command", "CommandID", c.ID)
-	})*/
 	events.AddHandler(func(ct context.Context, dg bot.Session, _ *event.Disconnect) {
 		user.PeriodicSaver(ctx, dg)
 	})
@@ -320,6 +238,12 @@ var statuses = []func(context.Context, bot.Session) error{
 func ready(ctx context.Context, dg bot.Session, _ *event.Ready) {
 	logger := bot.Logger(ctx)
 	logger.Info("bot started", "as", dg.SessionState().User().Username)
+	if deploy || common.IsDebug(ctx) {
+		err := commands.Deploy(ctx, dg)
+		if err != nil {
+			logger.Error("deploying commands", "error", err)
+		}
+	}
 	now := time.Now().Unix()
 	rd := rand.New(rand.NewPCG(uint64(now), uint64(len(statuses))))
 	stopStatus = common.NewTimer(ctx, 30*time.Second, func(ctx context.Context, _ context.CancelFunc) {

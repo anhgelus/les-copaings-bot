@@ -70,7 +70,7 @@ func genMapKey(guildID string, userID string) string {
 	return fmt.Sprintf("%s:%s", guildID, userID)
 }
 
-func onConnection(ctx context.Context, dg bot.Session, e *event.VoiceStateUpdate) {
+func onConnection(ctx context.Context, _ bot.Session, e *event.VoiceStateUpdate) {
 	bot.Logger(ctx).Debug("user connected", "user", e.Member.DisplayName())
 	connectedSince[genMapKey(e.GuildID, e.UserID)] = time.Now().Unix()
 }
