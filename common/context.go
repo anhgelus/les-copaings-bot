@@ -24,7 +24,7 @@ func GetDB(ctx context.Context) *gorm.DB {
 	if raw == nil {
 		return nil
 	}
-	return raw.(*gorm.DB)
+	return raw.(*gorm.DB).WithContext(ctx)
 }
 
 func SetDebug(ctx context.Context, b bool) context.Context {
