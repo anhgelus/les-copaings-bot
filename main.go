@@ -46,6 +46,8 @@ var (
 	stopStatus          context.CancelFunc
 )
 
+var finishDeploy context.CancelFunc
+
 //go:embed assets/inter-variable.ttf
 var interTTF []byte
 
@@ -103,8 +105,29 @@ func main() {
 
 	events := dg.EventManager()
 	intrs := dg.InteractionManager()
-	events.AddHandler(ready)
+	// handle deploy
+	if deploy {
+		var ctx2 context.Context
+		ctx2, finishDeploy = context.WithCancel(ctx)
+		events.AddHandler(deploying)
 
+		err = dg.Open(ctx)
+		if err != nil {
+			panic(err)
+		}
+
+		dg.Logger().Info("waiting deployment")
+		<-ctx2.Done()
+
+		dg.Logger().Info("commands deployed, closing")
+		err = dg.Close(ctx)
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
+
+	events.AddHandler(ready)
 	events.AddHandler(func(ct context.Context, dg bot.Session, _ *event.Disconnect) {
 		user.PeriodicSaver(ctx, dg)
 	})
@@ -237,13 +260,7 @@ var statuses = []func(context.Context, bot.Session) error{
 
 func ready(ctx context.Context, dg bot.Session, _ *event.Ready) {
 	logger := bot.Logger(ctx)
-	logger.Info("bot started", "as", dg.SessionState().User().Username)
-	if deploy || common.IsDebug(ctx) {
-		err := commands.Deploy(ctx, dg)
-		if err != nil {
-			logger.Error("deploying commands", "error", err)
-		}
-	}
+	logger.Info("bot started", "as", dg.SessionState().User().Username, "usage", "main")
 	now := time.Now().Unix()
 	rd := rand.New(rand.NewPCG(uint64(now), uint64(len(statuses))))
 	stopStatus = common.NewTimer(ctx, 30*time.Second, func(ctx context.Context, _ context.CancelFunc) {
@@ -253,4 +270,14 @@ func ready(ctx context.Context, dg bot.Session, _ *event.Ready) {
 			bot.Logger(ctx).Error("updating status", "error", err)
 		}
 	})
+}
+
+func deploying(ctx context.Context, dg bot.Session, _ *event.Connect) {
+	logger := bot.Logger(ctx)
+	logger.Info("bot started", "as", dg.SessionState().User().Username, "usage", "deploy")
+	err := commands.Deploy(ctx, dg)
+	if err != nil {
+		panic(err)
+	}
+	finishDeploy()
 }
