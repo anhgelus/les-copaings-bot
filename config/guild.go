@@ -9,9 +9,9 @@ import (
 )
 
 type Guild struct {
-	ID               uint   `gorm:"primarykey"`
-	GuildID          string `gorm:"not null;unique"`
-	XpRoles          []XpRole
+	ID               uint     `gorm:"primarykey"`
+	GuildID          string   `gorm:"not null;unique"`
+	XpRoles          []XpRole `gorm:"foreignKey:GuildConfigID"`
 	DisabledChannels string
 	FallbackChannel  string
 	DaysXPRemains    uint `gorm:"default:90"` // 30 * 3 = 90 (three months)

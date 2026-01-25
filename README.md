@@ -58,7 +58,11 @@ Every time you edit this file, you must restart the bot.
 
 ## Config
 
-The main config file is `config/config.toml`.
+Use the flag `-deploy` to deploy commands.
+
+Use the flag `-v` to increase verbosity of the logging (already enabled in debug mode).
+
+The main config file is `config.toml`.
 
 The default configuration is
 ```toml

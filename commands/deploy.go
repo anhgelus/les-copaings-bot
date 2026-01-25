@@ -71,11 +71,7 @@ func Deploy(ctx context.Context, dg bot.Session) error {
 	guildID := ""
 	if common.IsDebug(ctx) {
 		guildID = dg.GuildAPI().State.Guilds()[0]
-		gld, err := dg.GuildAPI().State.Guild(guildID)
-		if err != nil {
-			return err
-		}
-		bot.Logger(ctx).Debug("using guild as debug", "guild", gld.Name)
+		bot.Logger(ctx).Debug("using guild as debug", "guild", guildID)
 	}
 	_, err := dg.InteractionAPI().CommandBulkOverwrite(dg.SessionState().Application().ID, guildID, commands).Do(ctx)
 	return err

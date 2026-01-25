@@ -53,9 +53,14 @@ func Stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationComman
 		days = 90
 	}
 
+	err := dg.InteractionAPI().Respond(i.Interaction, interaction.NewDeferredResponse()).Do(ctx)
+	if err != nil {
+		bot.Logger(ctx).Error("sending deferred", "error", err)
+	}
+
 	resp := interaction.NewMessageResponse()
 	defer func() {
-		err := dg.InteractionAPI().Respond(i.Interaction, resp.Response()).Do(ctx)
+		_, err := dg.InteractionAPI().ResponseEdit(i.Interaction, resp.WebhookEdit()).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("replying to interaction", "error", err)
 		}
@@ -70,10 +75,6 @@ func Stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationComman
 			return
 		}
 		days = int(in)
-	}
-	err := dg.InteractionAPI().Respond(i.Interaction, interaction.NewDeferredResponse()).Do(ctx)
-	if err != nil {
-		bot.Logger(ctx).Error("sending deferred", "error", err)
 	}
 	var w io.WriterTo
 	if v, ok := opts["copaing"]; ok {

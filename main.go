@@ -98,7 +98,7 @@ func main() {
 	ctx = common.SetAuthor(ctx, cfg.Author)
 
 	logLevel := slog.LevelInfo
-	if verbose {
+	if verbose || cfg.Debug {
 		logLevel = slog.LevelDebug
 	}
 	dg := gokord.NewWithLogLevel("Bot "+token, logLevel)
@@ -155,6 +155,7 @@ func main() {
 	intrs.HandleCommand("reset", commands.Reset)
 	intrs.HandleCommand("reset-user", commands.ResetUser)
 	intrs.HandleCommand("credits", commands.Credits)
+	intrs.HandleCommand("stats", commands.Stats)
 	intrs.HandleCommand("rolereact", rolereact.HandleCommand)
 	intrs.HandleCommand("Modifier", rolereact.HandleModifyCommand)
 
