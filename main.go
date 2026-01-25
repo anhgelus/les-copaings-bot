@@ -77,6 +77,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	if cfg == nil {
+		println("config initialized")
+		return
+	}
 
 	db, err := cfg.Database.Connect()
 	if err != nil {

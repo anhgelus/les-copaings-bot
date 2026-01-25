@@ -56,9 +56,17 @@ func (c *Config) SetDefaultValues() {
 
 func LoadConfig(path string) (*Config, error) {
 	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
 	var cfg Config
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+		cfg.SetDefaultValues()
+		b, err := toml.Marshal(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return nil, os.WriteFile(path, b, 0600)
+	}
 	return &cfg, toml.Unmarshal(b, &cfg)
 }

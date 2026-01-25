@@ -24,7 +24,7 @@ go.work*
 .idea
 .env
 tmp
-config/**.toml
+*.toml
 data
 docker-compose.yml
 
