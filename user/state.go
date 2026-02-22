@@ -179,11 +179,10 @@ func (s *State) Copaing(guildID, copaingID string) (*CopaingCached, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	raw, err := s.storage.Get(KeyCopaingCachedRaw(guildID, copaingID))
+	c, err := s.storage.Get(KeyCopaingCachedRaw(guildID, copaingID))
 	if err != nil {
 		return nil, err
 	}
-	c := raw.(CopaingCached)
 	return &c, nil
 }
 
