@@ -40,7 +40,7 @@ type LevelScale struct{}
 
 func (LevelScale) Normalize(min, max, x float64) float64 {
 	if min < 0 || max < 0 || x < 0 {
-		panic("Values must be positive or null for a level scale.")
+		panic("values must be positive or null for a level scale")
 	}
 	levelMin := LevelExact(min)
 	return (LevelExact(x) - levelMin) / (LevelExact(max) - levelMin)

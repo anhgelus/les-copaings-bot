@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -25,6 +26,8 @@ import (
 	"gonum.org/v1/plot/vg/draw"
 	"gorm.io/gorm"
 )
+
+var ErrNoItem = errors.New("no item in stats")
 
 type data struct {
 	CreatedAt time.Time
@@ -60,7 +63,7 @@ func Stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationComman
 
 	resp := interaction.NewMessageResponse()
 	defer func() {
-		_, err := dg.InteractionAPI().ResponseEdit(i.Interaction, resp.WebhookEdit()).Do(ctx)
+		_, err = dg.InteractionAPI().ResponseEdit(i.Interaction, resp.WebhookEdit()).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("replying to interaction", "error", err)
 		}
@@ -83,6 +86,10 @@ func Stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationComman
 		w, err = statsAll(ctx, dg, i, days)
 	}
 	if err != nil {
+		if errors.Is(err, ErrNoItem) {
+			resp.Message("Il n'y a pas de données à afficher...")
+			return
+		}
 		bot.Logger(ctx).Error("generating stats", "error", err, "guild", i.GuildID)
 		resp.Message("Il y a eu une erreur...")
 		return
@@ -197,6 +204,9 @@ func stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationComman
 			Y: float64(raw.XP),
 		}
 	}
+	if len(copaings) == 0 {
+		return nil, ErrNoItem
+	}
 	return generatePlot(ctx, dg, i, copaings, stats)
 }
 
@@ -232,13 +242,7 @@ func generatePlot(ctx context.Context, dg bot.Session, i *interaction.Applicatio
 			return nil, err
 		}
 		slices.SortFunc(stats[in], func(a, b plotter.XY) int {
-			if a.X < b.X {
-				return -1
-			}
-			if a.X > b.X {
-				return 1
-			}
-			return 0
+			return cmp.Compare(a.X, b.X)
 		})
 		l, _, err := plotter.NewLinePoints(plotter.XYs(stats[in]))
 		if err != nil {
