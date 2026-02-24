@@ -137,16 +137,17 @@ func main() {
 	})
 	events.AddHandler(rolereact.HandleReactionAdd)
 	events.AddHandler(rolereact.HandleReactionRemove)
-	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleModifyComponent, rolereact.OpenMessage)
-	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleApplyMessage, rolereact.ApplyMessage)
-	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleResetMessage, rolereact.ResetMessage)
-	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleStartSetNote, rolereact.SetNote)
-	dynamicid.HandleDynamicModalComponent(events, rolereact.HandleSetNote, rolereact.SetNote)
-	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleNewRole, rolereact.NewRole)
-	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleOpenRole, rolereact.OpenRole)
-	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleSetRole, rolereact.SetRoleRoleID)
-	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleSetReaction, rolereact.SetRoleReaction)
-	dynamicid.HandleDynamicMessageComponent(events, rolereact.HandleDelRole, rolereact.DelRole)
+
+	dynamicid.HandleDynamicMessageComponent(intrs, rolereact.HandleModifyComponent, rolereact.OpenMessage)
+	dynamicid.HandleDynamicMessageComponent(intrs, rolereact.HandleApplyMessage, rolereact.ApplyMessage)
+	dynamicid.HandleDynamicMessageComponent(intrs, rolereact.HandleResetMessage, rolereact.ResetMessage)
+	dynamicid.HandleDynamicMessageComponent(intrs, rolereact.HandleStartSetNote, rolereact.SetNote)
+	dynamicid.HandleDynamicModalComponent(intrs, rolereact.HandleSetNote, rolereact.SetNote)
+	dynamicid.HandleDynamicMessageComponent(intrs, rolereact.HandleNewRole, rolereact.NewRole)
+	dynamicid.HandleDynamicMessageComponent(intrs, rolereact.HandleOpenRole, rolereact.OpenRole)
+	dynamicid.HandleDynamicMessageComponent(intrs, rolereact.HandleSetRole, rolereact.SetRoleRoleID)
+	dynamicid.HandleDynamicMessageComponent(intrs, rolereact.HandleSetReaction, rolereact.SetRoleReaction)
+	dynamicid.HandleDynamicMessageComponent(intrs, rolereact.HandleDelRole, rolereact.DelRole)
 
 	// commands
 	intrs.HandleCommand("rank", commands.Rank)
@@ -167,13 +168,13 @@ func main() {
 	})
 	intrs.HandleMessageComponent(config.XpRoleNew, config.HandleXpRoleNew)
 	intrs.HandleModalSubmit(config.XpRoleAdd, config.HandleXpRoleAdd)
-	dynamicid.HandleDynamicMessageComponent(events, func(ctx context.Context, dg bot.Session, i *interaction.MessageComponent, params *config.XpRoleId) {
+	dynamicid.HandleDynamicMessageComponent(intrs, func(ctx context.Context, dg bot.Session, i *interaction.MessageComponent, params *config.XpRoleId) {
 		config.HandleXpRoleEdit(ctx, dg, i.Interaction, params)
 	}, config.XpRoleEdit)
-	dynamicid.HandleDynamicMessageComponent(events, config.HandleXpRoleEditRole, config.XpRoleEditRole)
-	dynamicid.HandleDynamicMessageComponent(events, config.HandleXpRoleEditLevelStart, config.XpRoleEditLevelStart)
-	dynamicid.HandleDynamicModalComponent(events, config.HandleXpRoleEditLevel, config.XpRoleEditLevel)
-	dynamicid.HandleDynamicMessageComponent(events, config.HandleXpRoleDel, config.XpRoleDel)
+	dynamicid.HandleDynamicMessageComponent(intrs, config.HandleXpRoleEditRole, config.XpRoleEditRole)
+	dynamicid.HandleDynamicMessageComponent(intrs, config.HandleXpRoleEditLevelStart, config.XpRoleEditLevelStart)
+	dynamicid.HandleDynamicModalComponent(intrs, config.HandleXpRoleEditLevel, config.XpRoleEditLevel)
+	dynamicid.HandleDynamicMessageComponent(intrs, config.HandleXpRoleDel, config.XpRoleDel)
 	// channel related
 	intrs.HandleMessageComponent(config.ModifyFallbackChannel, func(ctx context.Context, dg bot.Session, i *interaction.MessageComponent) {
 		if config.HandleModifyFallbackChannel(ctx, dg, i) {

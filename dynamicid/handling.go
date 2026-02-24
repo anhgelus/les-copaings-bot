@@ -6,16 +6,16 @@ import (
 
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/discord/types"
-	"github.com/nyttikord/gokord/event"
 	"github.com/nyttikord/gokord/interaction"
+	"github.com/nyttikord/gokord/interaction/interactionhandler"
 )
 
 func HandleDynamicMessageComponent[T any](
-	events bot.EventManager,
+	m *interactionhandler.Manager,
 	handler func(context.Context, bot.Session, *interaction.MessageComponent, T),
 	base string,
 ) {
-	events.AddHandler(func(ctx context.Context, dg bot.Session, i *event.InteractionCreate) {
+	m.HandleRaw(func(ctx context.Context, dg bot.Session, i *interaction.Interaction) {
 		if i.Type != types.InteractionMessageComponent {
 			return
 		}
@@ -36,12 +36,12 @@ func HandleDynamicMessageComponent[T any](
 }
 
 func HandleDynamicModalComponent[T any](
-	events bot.EventManager,
+	m *interactionhandler.Manager,
 	handler func(context.Context, bot.Session, *interaction.ModalSubmit, T),
 	base string,
 
 ) {
-	events.AddHandler(func(ctx context.Context, dg bot.Session, i *event.InteractionCreate) {
+	m.HandleRaw(func(ctx context.Context, dg bot.Session, i *interaction.Interaction) {
 		if i.Type != types.InteractionModalSubmit {
 			return
 		}
