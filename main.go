@@ -239,7 +239,6 @@ func setupTimers(ctx context.Context, dg *gokord.Session) {
 
 	// because logger was never set in this context
 	ctx = bot.SetLogger(ctx, dg.Logger())
-	user.PeriodicReducer(ctx, dg)
 
 	stopPeriodicReducer = common.NewTimer(ctx, d, func(ctx context.Context, _ context.CancelFunc) {
 		user.PeriodicReducer(ctx, dg)

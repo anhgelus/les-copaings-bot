@@ -51,25 +51,25 @@ func (c *CopaingCached) onNewLevel(ctx context.Context, dg bot.Session, level ui
 func PeriodicReducer(ctx context.Context, dg bot.Session) {
 	PeriodicSaver(ctx, dg)
 
-	logger := bot.Logger(ctx)
-	logger.Debug("periodic reducer")
+	log := bot.Logger(ctx)
+	log.Debug("periodic reducer")
 
 	state := GetState(ctx)
 
 	n := 0
 	var wg sync.WaitGroup
 	for _, g := range dg.GuildAPI().State.Guilds() {
-		n++
 		cfg := config.GetGuildConfig(ctx, g)
 		res := common.GetDB(ctx).
 			Model(&CopaingXP{}).
 			Where("guild_id = ? and created_at < ?", g, exp.TimeStampNDaysBefore(ctx, cfg.DaysXPRemains)).
 			Delete(&CopaingXP{})
 		if res.Error != nil {
-			logger.Error("removing old xp", "error", res.Error, "guild", g)
+			log.Error("removing old xp", "error", res.Error, "guild", g)
 			continue
 		}
-		logger.Debug("guild cleaned", "guild", g, "rows affected", res.RowsAffected)
+		n++
+		log.Debug("guild cleaned", "guild", g, "rows affected", res.RowsAffected)
 
 		wg.Go(func() {
 			syncCopaings(ctx, dg, state.Copaings(g))
@@ -78,7 +78,7 @@ func PeriodicReducer(ctx context.Context, dg bot.Session) {
 
 	wg.Wait()
 
-	logger.Debug("periodic reduce finished", "guilds affected", n)
+	log.Debug("periodic reduce finished", "guilds affected", n)
 }
 
 func syncCopaings(ctx context.Context, dg bot.Session, ccs []CopaingCached) {
