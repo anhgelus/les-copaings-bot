@@ -35,7 +35,7 @@ func HandleModifyPeriodicReduceCommand(ctx context.Context, dg bot.Session, i *i
 			},
 		}).
 		Response()
-	err := dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
+	err := interaction.Respond(i.Interaction, resp).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending xp reduce modal", "error", err)
 	}
@@ -49,7 +49,7 @@ func HandleTimeReduceSet(ctx context.Context, dg bot.Session, i *interaction.Mod
 			IsEphemeral().
 			Message(fmt.Sprintf("La valeur indiquée, `%s`, c'est pas un entier.", v)).
 			Response()
-		err = dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
+		err = interaction.Respond(i.Interaction, resp).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("sending bad input message", "error", err)
 		}
@@ -60,7 +60,7 @@ func HandleTimeReduceSet(ctx context.Context, dg bot.Session, i *interaction.Mod
 			IsEphemeral().
 			Message("Le nombre de jours doit être suppérieur à 30.").
 			Response()
-		err = dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
+		err = interaction.Respond(i.Interaction, resp).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("sending less than 30 days message", "error", err)
 		}

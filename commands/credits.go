@@ -15,7 +15,7 @@ func Credits(ctx context.Context, dg bot.Session, i *interaction.ApplicationComm
 	msg += "Utilise :\n- [nyttikord/gokord](<https://github.com/nyttikord/gokord>)\n"
 	msg += "- [Inter](<https://github.com/rsms/inter>)"
 	resp := interaction.NewMessageResponse().Message(msg).Response()
-	err := dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
+	err := interaction.Respond(i.Interaction, resp).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending credits", "error", err)
 	}

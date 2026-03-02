@@ -14,7 +14,7 @@ func Reset(ctx context.Context, dg bot.Session, i *interaction.ApplicationComman
 	//TODO: delete everything from cache
 	common.GetDB(ctx).Where("guild_id = ?", i.GuildID).Delete(&copaings)
 	resp := interaction.NewMessageResponse().IsEphemeral().Message("L'XP a été reset.").Response()
-	err := dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
+	err := interaction.Respond(i.Interaction, resp).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending reset success", "error", err)
 	}
@@ -23,7 +23,7 @@ func Reset(ctx context.Context, dg bot.Session, i *interaction.ApplicationComman
 func ResetUser(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand) {
 	resp := interaction.NewMessageResponse().IsEphemeral()
 	defer func() {
-		err := dg.InteractionAPI().Respond(i.Interaction, resp.Response()).Do(ctx)
+		err := interaction.Respond(i.Interaction, resp.Response()).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("replying to interaction", "error", err)
 		}

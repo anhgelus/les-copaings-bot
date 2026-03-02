@@ -42,7 +42,7 @@ var (
 )
 
 func HandleCommand(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand) {
-	err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	err := interaction.Respond(i.Interaction, &interaction.Response{
 		Type: types.InteractionResponseDeferredChannelMessageWithSource,
 		Data: &interaction.ResponseData{
 			Flags: channel.MessageFlagsEphemeral,
@@ -66,13 +66,13 @@ func HandleCommand(ctx context.Context, dg bot.Session, i *interaction.Applicati
 		GuildID:   i.GuildID,
 	}
 	messageContent := MessageContent(&message)
-	m, err := dg.ChannelAPI().MessageSendComplex(channelID, &channel.MessageSend{
+	m, err := channel.SendMessageComplex(channelID, &channel.MessageSend{
 		Content:         messageContent,
 		AllowedMentions: &channel.MessageAllowedMentions{},
 	}).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending message", "error", err)
-		_, err := dg.InteractionAPI().FollowupMessageCreate(i.Interaction, false, &channel.WebhookParams{
+		_, err := interaction.CreateFollowupMessage(i.Interaction, false, &channel.WebhookParams{
 			Flags:      channel.MessageFlagsIsComponentsV2,
 			Components: []component.Message{&component.TextDisplay{Content: "Impossible d'envoyer le message"}},
 		}).Do(ctx)
@@ -87,7 +87,7 @@ func HandleCommand(ctx context.Context, dg bot.Session, i *interaction.Applicati
 	err = cfg.Save(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("unable to save rolereact message in database", "error", err)
-		_, err := dg.InteractionAPI().FollowupMessageCreate(i.Interaction, false, &channel.WebhookParams{
+		_, err := interaction.CreateFollowupMessage(i.Interaction, false, &channel.WebhookParams{
 			Flags: channel.MessageFlagsIsComponentsV2,
 			Components: []component.Message{
 				&component.TextDisplay{Content: "Impossible d'enregistrer le message dans la base de données. Merci de contacter l'administrateur du bot."},
@@ -107,7 +107,7 @@ func HandleCommand(ctx context.Context, dg bot.Session, i *interaction.Applicati
 	// Using this function here is deprecated as per discord documentation.
 	// That said, using the recommended EditResponse endpoint does not allow the use of
 	// version 2 components...
-	_, err = dg.InteractionAPI().FollowupMessageCreate(i.Interaction, false, &channel.WebhookParams{
+	_, err = interaction.CreateFollowupMessage(i.Interaction, false, &channel.WebhookParams{
 		Flags:      channel.MessageFlagsIsComponentsV2,
 		Components: components,
 	}).Do(ctx)
@@ -135,7 +135,7 @@ func HandleModifyCommand(ctx context.Context, dg bot.Session, i *interaction.App
 			}
 		}
 		if target == nil {
-			err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+			err := interaction.Respond(i.Interaction, &interaction.Response{
 				Type: types.InteractionResponseChannelMessageWithSource,
 				Data: &interaction.ResponseData{
 					Flags:   channel.MessageFlagsEphemeral,
@@ -151,7 +151,7 @@ func HandleModifyCommand(ctx context.Context, dg bot.Session, i *interaction.App
 		targetEditID = messageCounter
 		messageCounter++
 	}
-	err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	err := interaction.Respond(i.Interaction, &interaction.Response{
 		Type: types.InteractionResponseChannelMessageWithSource,
 		Data: MessageModifyData(ctx, i.Interaction, &EditID{MessageEditID: targetEditID}),
 	}).Do(ctx)
@@ -161,7 +161,7 @@ func HandleModifyCommand(ctx context.Context, dg bot.Session, i *interaction.App
 }
 
 func HandleModifyComponent(ctx context.Context, dg bot.Session, i *interaction.MessageComponent, params *EditID) {
-	err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	err := interaction.Respond(i.Interaction, &interaction.Response{
 		Type: types.InteractionResponseUpdateMessage,
 		Data: MessageModifyData(ctx, i.Interaction, params),
 	}).Do(ctx)
@@ -189,7 +189,7 @@ func HandleResetMessage(ctx context.Context, dg bot.Session, i *interaction.Mess
 		}
 		responseData = *MessageModifyData(ctx, i.Interaction, params)
 	}
-	err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	err := interaction.Respond(i.Interaction, &interaction.Response{
 		Type: types.InteractionResponseUpdateMessage,
 		Data: &responseData,
 	}).Do(ctx)
@@ -201,7 +201,7 @@ func HandleResetMessage(ctx context.Context, dg bot.Session, i *interaction.Mess
 func HandleStartSetNote(ctx context.Context, dg bot.Session, i *interaction.MessageComponent, params *EditID) {
 	message, ok := GetMessageFromEditID(ctx, i.Interaction, params.MessageEditID)
 	if !ok {
-		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := interaction.Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseUpdateMessage,
 			Data: &interaction.ResponseData{
 				Flags: channel.MessageFlagsEphemeral | channel.MessageFlagsIsComponentsV2,
@@ -229,7 +229,7 @@ func HandleStartSetNote(ctx context.Context, dg bot.Session, i *interaction.Mess
 			},
 		}).
 		Response()
-	err := dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
+	err := interaction.Respond(i.Interaction, resp).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("unable to send edit note modal", "error", err)
 	}
@@ -238,7 +238,7 @@ func HandleStartSetNote(ctx context.Context, dg bot.Session, i *interaction.Mess
 func HandleSetNote(ctx context.Context, dg bot.Session, i *interaction.ModalSubmit, params *EditID) {
 	message, ok := GetMessageFromEditID(ctx, i.Interaction, params.MessageEditID)
 	if !ok {
-		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := interaction.Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseUpdateMessage,
 			Data: &interaction.ResponseData{
 				Flags: channel.MessageFlagsEphemeral | channel.MessageFlagsIsComponentsV2,
@@ -253,7 +253,7 @@ func HandleSetNote(ctx context.Context, dg bot.Session, i *interaction.ModalSubm
 		return
 	}
 	message.Note = i.Data.Components[0].(*component.Label).Component.(*component.TextInput).Value
-	err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	err := interaction.Respond(i.Interaction, &interaction.Response{
 		Type: types.InteractionResponseUpdateMessage,
 		Data: MessageModifyData(ctx, i.Interaction, params),
 	}).Do(ctx)
@@ -272,7 +272,7 @@ func HandleApplyMessage(ctx context.Context, dg bot.Session, i *interaction.Mess
 				&component.TextDisplay{Content: "Impossible de trouver la modification de message. Veuillez réessayer."},
 			},
 		}
-		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := interaction.Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseUpdateMessage,
 			Data: &responseData,
 		}).Do(ctx)
@@ -281,7 +281,7 @@ func HandleApplyMessage(ctx context.Context, dg bot.Session, i *interaction.Mess
 		}
 		return
 	}
-	err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	err := interaction.Respond(i.Interaction, &interaction.Response{
 		Type: types.InteractionResponseDeferredChannelMessageWithSource,
 		Data: &interaction.ResponseData{Flags: channel.MessageFlagsEphemeral},
 	}).Do(ctx)
@@ -290,7 +290,7 @@ func HandleApplyMessage(ctx context.Context, dg bot.Session, i *interaction.Mess
 		return
 	}
 	m := ApplyMessageChange(ctx, dg, i.Interaction, message)
-	_, err = dg.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
+	_, err = interaction.EditResponse(i.Interaction, &channel.WebhookEdit{
 		Content: &m,
 	}).Do(ctx)
 	if err != nil {
@@ -313,7 +313,7 @@ func HandleNewRole(ctx context.Context, dg bot.Session, i *interaction.MessageCo
 		responseData = MessageModifyRoleData(ctx, i.Interaction, &EditIDWithRole{MessageEditID: params.MessageEditID, RoleCounterID: roleCounter}, "")
 		roleCounter++
 	}
-	err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	err := interaction.Respond(i.Interaction, &interaction.Response{
 		Type: types.InteractionResponseUpdateMessage,
 		Data: &responseData,
 	}).Do(ctx)
@@ -335,7 +335,7 @@ func HandleOpenRole(ctx context.Context, dg bot.Session, i *interaction.MessageC
 	} else {
 		responseData = MessageModifyRoleData(ctx, i.Interaction, params, "")
 	}
-	err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	err := interaction.Respond(i.Interaction, &interaction.Response{
 		Type: types.InteractionResponseUpdateMessage,
 		Data: &responseData,
 	}).Do(ctx)
@@ -365,7 +365,7 @@ func HandleSetRole(ctx context.Context, dg bot.Session, i *interaction.MessageCo
 		role.RoleID = i.Data.Values[0]
 		responseData = MessageModifyRoleData(ctx, i.Interaction, params, "")
 	}
-	err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	err := interaction.Respond(i.Interaction, &interaction.Response{
 		Type: types.InteractionResponseUpdateMessage,
 		Data: &responseData,
 	}).Do(ctx)
@@ -384,7 +384,7 @@ func HandleSetReaction(ctx context.Context, dg bot.Session, i *interaction.Messa
 		}
 	}
 	if !ok || role == nil {
-		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := interaction.Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseUpdateMessage,
 			Data: &interaction.ResponseData{
 				Flags: channel.MessageFlagsEphemeral | channel.MessageFlagsIsComponentsV2,
@@ -400,14 +400,14 @@ func HandleSetReaction(ctx context.Context, dg bot.Session, i *interaction.Messa
 	}
 	responseData := MessageModifyRoleData(ctx, i.Interaction, params, "Ajoute la réaction que tu veux choisir au message de rôle de réaction (tu peux y accéder avec le bouton ci-dessous)")
 	//TODO: handle errors here
-	dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+	interaction.Respond(i.Interaction, &interaction.Response{
 		Type: types.InteractionResponseUpdateMessage,
 		Data: &responseData,
 	}).Do(ctx)
 	emojiName, ok := WaitForEmoji(ctx, dg, i.Member.User.ID, message.MessageID)
 	if !ok {
 		editResponseComponents := MessageModifyRoleComponents(ctx, i.Interaction, params, "Le temps d'attente a été dépassé")
-		_, err := dg.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
+		_, err := interaction.EditResponse(i.Interaction, &channel.WebhookEdit{
 			Components: &editResponseComponents,
 		}).Do(ctx)
 		if err != nil {
@@ -416,10 +416,10 @@ func HandleSetReaction(ctx context.Context, dg bot.Session, i *interaction.Messa
 		return
 	}
 
-	err := dg.ChannelAPI().MessageReactionAdd(message.ChannelID, message.MessageID, emojiName).Do(ctx)
+	err := channel.AddReaction(message.ChannelID, message.MessageID, emojiName).Do(ctx)
 	if err != nil {
 		editResponseComponents := MessageModifyRoleComponents(ctx, i.Interaction, params, "La réaction n'est pas utilisable. Cela peut être résolu en l'ajoutant à ce serveur")
-		_, err := dg.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
+		_, err := interaction.EditResponse(i.Interaction, &channel.WebhookEdit{
 			Components: &editResponseComponents,
 		}).Do(ctx)
 		if err != nil {
@@ -427,13 +427,13 @@ func HandleSetReaction(ctx context.Context, dg bot.Session, i *interaction.Messa
 		}
 		return
 	}
-	err = dg.ChannelAPI().MessageReactionRemove(message.ChannelID, message.MessageID, emojiName, i.Member.User.ID).Do(ctx)
+	err = channel.DeleteReaction(message.ChannelID, message.MessageID, emojiName, i.Member.User.ID).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Warn("unable to remove author reaction from message", "error", err)
 	}
 	role.Reaction = emojiName
 	components := MessageModifyRoleComponents(ctx, i.Interaction, params, "")
-	_, err = dg.InteractionAPI().ResponseEdit(i.Interaction, &channel.WebhookEdit{
+	_, err = interaction.EditResponse(i.Interaction, &channel.WebhookEdit{
 		Flags:      channel.MessageFlagsIsComponentsV2 | channel.MessageFlagsEphemeral,
 		Components: &components,
 	}).Do(ctx)
@@ -449,7 +449,7 @@ func HandleDelRole(ctx context.Context, dg bot.Session, i *interaction.MessageCo
 		roleIndex = slices.IndexFunc(message.Roles, func(role *config.RoleReact) bool { return role.CounterID == params.RoleCounterID })
 	}
 	if !ok || roleIndex == -1 {
-		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := interaction.Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseUpdateMessage,
 			Data: &interaction.ResponseData{
 				Flags: channel.MessageFlagsEphemeral | channel.MessageFlagsIsComponentsV2,
@@ -466,7 +466,7 @@ func HandleDelRole(ctx context.Context, dg bot.Session, i *interaction.MessageCo
 	message.Roles = append(message.Roles[:roleIndex],
 		message.Roles[roleIndex+1:]...,
 	)
-	err := dg.InteractionAPI().Respond(i.Interaction,
+	err := interaction.Respond(i.Interaction,
 		&interaction.Response{
 			Type: types.InteractionResponseUpdateMessage,
 			Data: MessageModifyData(ctx, i.Interaction, &EditID{MessageEditID: params.MessageEditID}),

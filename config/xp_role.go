@@ -89,7 +89,7 @@ func HandleXpRole(ctx context.Context, dg bot.Session, i *interaction.Interactio
 			Flags:      channel.MessageFlagsIsComponentsV2,
 		},
 	}
-	err := dg.InteractionAPI().Respond(i, response).Do(ctx)
+	err := interaction.Respond(i, response).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending config", "error", err)
 	}
@@ -121,7 +121,7 @@ func HandleXpRoleNew(ctx context.Context, dg bot.Session, i *interaction.Message
 			},
 		}).
 		Response()
-	err := dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
+	err := interaction.Respond(i.Interaction, resp).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending modal to add", "error", err)
 	}
@@ -181,7 +181,7 @@ func HandleXpRoleEdit(ctx context.Context, dg bot.Session, i *interaction.Intera
 		},
 	}
 
-	err := dg.InteractionAPI().Respond(i, response).Do(ctx)
+	err := interaction.Respond(i, response).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending xp_role config", "error", err)
 	}
@@ -193,7 +193,7 @@ func HandleXpRoleEditRole(ctx context.Context, dg bot.Session, i *interaction.Me
 	cfg := GetGuildConfig(ctx, i.GuildID)
 	_, xpRole := cfg.FindXpRoleID(id)
 	if xpRole == nil {
-		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := interaction.Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Flags:   channel.MessageFlagsEphemeral,
@@ -218,7 +218,7 @@ func HandleXpRoleEditLevelStart(ctx context.Context, dg bot.Session, i *interact
 	cfg := GetGuildConfig(ctx, i.GuildID)
 	_, xpRole := cfg.FindXpRoleID(id)
 	if xpRole == nil {
-		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := interaction.Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Flags:   channel.MessageFlagsEphemeral,
@@ -251,7 +251,7 @@ func HandleXpRoleEditLevelStart(ctx context.Context, dg bot.Session, i *interact
 			},
 		},
 	}
-	err := dg.InteractionAPI().Respond(i.Interaction, response).Do(ctx)
+	err := interaction.Respond(i.Interaction, response).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending edit level modal", "error", err)
 	}
@@ -267,7 +267,7 @@ func HandleXpRoleEditLevel(ctx context.Context, dg bot.Session, i *interaction.M
 			IsEphemeral().
 			Message(fmt.Sprintf("Le niveau doit être un nombre entier positif.\n-# Trouvé : %s", levelInput.Value)).
 			Response()
-		err = dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
+		err = interaction.Respond(i.Interaction, resp).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("sending bad number warning message", "error", err)
 		}
@@ -278,7 +278,7 @@ func HandleXpRoleEditLevel(ctx context.Context, dg bot.Session, i *interaction.M
 	cfg := GetGuildConfig(ctx, i.GuildID)
 	_, xpRole := cfg.FindXpRoleID(id)
 	if xpRole == nil {
-		err = dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err = interaction.Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Flags:   channel.MessageFlagsEphemeral,
@@ -303,7 +303,7 @@ func HandleXpRoleDel(ctx context.Context, dg bot.Session, i *interaction.Message
 	cfg := GetGuildConfig(ctx, i.GuildID)
 	_, role := cfg.FindXpRoleID(id)
 	if role == nil {
-		err := dg.InteractionAPI().Respond(i.Interaction, &interaction.Response{
+		err := interaction.Respond(i.Interaction, &interaction.Response{
 			Type: types.InteractionResponseChannelMessageWithSource,
 			Data: &interaction.ResponseData{
 				Content: "Rôle introuvable. Peut-être a-t-il déjà été supprimé ?",
@@ -332,7 +332,7 @@ func HandleXpRoleAdd(ctx context.Context, dg bot.Session, i *interaction.ModalSu
 			IsEphemeral().
 			Message(fmt.Sprintf("Le niveau doit être un nombre entier positif.\n-# Trouvé : %s", levelInput.Value)).
 			Response()
-		err = dg.InteractionAPI().Respond(i.Interaction, resp).Do(ctx)
+		err = interaction.Respond(i.Interaction, resp).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("sending bad number warning message", "error", err)
 		}

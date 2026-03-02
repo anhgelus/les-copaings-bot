@@ -7,6 +7,7 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/nyttikord/gokord/bot"
+	"github.com/nyttikord/gokord/guild"
 	"github.com/nyttikord/gokord/interaction"
 )
 
@@ -17,7 +18,7 @@ func Rank(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand
 	opts := i.OptionMap()
 	resp := interaction.NewMessageResponse()
 	defer func() {
-		err := dg.InteractionAPI().Respond(i.Interaction, resp.Response()).Do(ctx)
+		err := interaction.Respond(i.Interaction, resp.Response()).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("replying to interaction", "error", err)
 		}
@@ -29,7 +30,7 @@ func Rank(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand
 			resp.IsEphemeral().Message("Imagine si les bots avaient un niveau :rolling_eyes:")
 			return
 		}
-		m, err = dg.GuildAPI().Member(i.GuildID, u.ID).Do(ctx)
+		m, err = guild.GetMember(i.GuildID, u.ID).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("fetching guild member", "error", err, "user", u.Username, "guild", i.GuildID)
 			resp.IsEphemeral().Message("Erreur : impossible de récupérer le membre")

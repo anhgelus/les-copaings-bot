@@ -250,16 +250,16 @@ func setupTimers(ctx context.Context, dg *gokord.Session) {
 
 var statuses = []func(context.Context, bot.Session) error{
 	func(ctx context.Context, dg bot.Session) error {
-		return dg.BotAPI().UpdateGameStatus(ctx, 0, "être dev par @anhgelus")
+		return dg.GatewayAPI().UpdateGameStatus(ctx, false, "être dev par @anhgelus")
 	},
 	func(ctx context.Context, dg bot.Session) error {
-		return dg.BotAPI().UpdateWatchStatus(ctx, 0, "Les Copaings")
+		return dg.GatewayAPI().UpdateWatchStatus(ctx, false, "Les Copaings")
 	},
 	func(ctx context.Context, dg bot.Session) error {
-		return dg.BotAPI().UpdateListeningStatus(ctx, "http 418, I'm a tea pot")
+		return dg.GatewayAPI().UpdateListeningStatus(ctx, "http 418, I'm a tea pot")
 	},
 	func(ctx context.Context, dg bot.Session) error {
-		return dg.BotAPI().UpdateGameStatus(ctx, 0, "Les Copaings Bot v"+Version)
+		return dg.GatewayAPI().UpdateGameStatus(ctx, false, "Les Copaings Bot v"+Version)
 	},
 }
 

@@ -10,6 +10,7 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/user"
 	"github.com/nyttikord/gokord/bot"
+	"github.com/nyttikord/gokord/channel"
 	"github.com/nyttikord/gokord/event"
 )
 
@@ -38,7 +39,7 @@ func OnMessage(ctx context.Context, dg bot.Session, m *event.MessageCreate) {
 	m.Member.GuildID = m.GuildID
 	xp := min(exp.MessageXP(uint(len(trimmed)), exp.CalcDiversity(trimmed)), MaxXpPerMessage)
 	cc.AddXP(ctx, dg, m.Member, xp, func(_ uint, _ uint) {
-		if err := dg.ChannelAPI().MessageReactionAdd(m.ChannelID, m.Message.ID, "⬆").Do(ctx); err != nil {
+		if err := channel.AddReaction(m.ChannelID, m.Message.ID, "⬆").Do(ctx); err != nil {
 			bot.Logger(ctx).Error(
 				"add reaction for new level",
 				"error", err, "channel", m.ChannelID, "message", m.Message.ID,
@@ -102,7 +103,7 @@ func onDisconnect(ctx context.Context, dg bot.Session, e *event.VoiceStateUpdate
 		if len(cfg.FallbackChannel) == 0 {
 			return
 		}
-		_, err := dg.ChannelAPI().MessageSend(cfg.FallbackChannel, fmt.Sprintf(
+		_, err := channel.SendMessage(cfg.FallbackChannel, fmt.Sprintf(
 			"%s est maintenant niveau %d", e.Member.Mention(), newLevel,
 		)).Do(ctx)
 		if err != nil {

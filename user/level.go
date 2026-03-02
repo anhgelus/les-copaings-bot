@@ -10,6 +10,7 @@ import (
 	"git.anhgelus.world/anhgelus/les-copaings-bot/config"
 	"git.anhgelus.world/anhgelus/les-copaings-bot/exp"
 	"github.com/nyttikord/gokord/bot"
+	"github.com/nyttikord/gokord/guild"
 	"github.com/nyttikord/gokord/user"
 )
 
@@ -19,7 +20,7 @@ func onNewLevel(ctx context.Context, dg bot.Session, m *user.Member, level uint)
 	for _, role := range cfg.XpRoles {
 		if role.XP <= xpForLevel && !slices.Contains(m.Roles, role.RoleID) {
 			bot.Logger(ctx).Debug("add role", "role", role.RoleID, "user", m.DisplayName(), "guild", m.GuildID)
-			err := dg.GuildAPI().MemberRoleAdd(m.GuildID, m.User.ID, role.RoleID).Do(ctx)
+			err := guild.AddMemberRole(m.GuildID, m.User.ID, role.RoleID).Do(ctx)
 			if err != nil {
 				bot.Logger(ctx).Error(
 					"adding role",
@@ -28,7 +29,7 @@ func onNewLevel(ctx context.Context, dg bot.Session, m *user.Member, level uint)
 			}
 		} else if role.XP > xpForLevel && slices.Contains(m.Roles, role.RoleID) {
 			bot.Logger(ctx).Debug("remove role", "role", role.RoleID, "user", m.DisplayName(), "guild", m.GuildID)
-			err := dg.GuildAPI().MemberRoleRemove(m.GuildID, m.User.ID, role.RoleID).Do(ctx)
+			err := guild.RemoveMemberRole(m.GuildID, m.User.ID, role.RoleID).Do(ctx)
 			if err != nil {
 				bot.Logger(ctx).Error(
 					"removing role",
@@ -40,7 +41,7 @@ func onNewLevel(ctx context.Context, dg bot.Session, m *user.Member, level uint)
 }
 
 func (c *CopaingCached) onNewLevel(ctx context.Context, dg bot.Session, level uint) {
-	m, err := dg.GuildAPI().Member(c.GuildID, c.DiscordID).Do(ctx)
+	m, err := guild.GetMember(c.GuildID, c.DiscordID).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("getting member for new level", "error", err, "user", c.DiscordID, "guild", c.GuildID)
 		return

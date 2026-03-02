@@ -34,7 +34,7 @@ func MessageContent(message *config.RoleReactMessage) string {
 
 func ApplyMessageChange(ctx context.Context, dg bot.Session, i *interaction.Interaction, message *config.RoleReactMessage) string {
 	messageContent := MessageContent(message)
-	_, err := dg.ChannelAPI().MessageEditComplex(&channel.MessageEdit{
+	_, err := channel.EditMessageComplex(&channel.MessageEdit{
 		Content:         &messageContent,
 		AllowedMentions: &channel.MessageAllowedMentions{},
 		Channel:         message.ChannelID,
@@ -46,7 +46,7 @@ func ApplyMessageChange(ctx context.Context, dg bot.Session, i *interaction.Inte
 	}
 	for _, role := range message.Roles {
 		if role.Reaction != "" && role.RoleID != "" && err == nil {
-			err = dg.ChannelAPI().MessageReactionAdd(message.ChannelID, message.MessageID, role.Reaction).Do(ctx)
+			err = channel.AddReaction(message.ChannelID, message.MessageID, role.Reaction).Do(ctx)
 		}
 	}
 	if err != nil {

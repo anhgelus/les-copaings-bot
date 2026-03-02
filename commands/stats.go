@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/nyttikord/gokord/bot"
 	"github.com/nyttikord/gokord/discord/request"
+	"github.com/nyttikord/gokord/guild"
 	"github.com/nyttikord/gokord/interaction"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
@@ -56,14 +57,14 @@ func Stats(ctx context.Context, dg bot.Session, i *interaction.ApplicationComman
 		days = 90
 	}
 
-	err := dg.InteractionAPI().Respond(i.Interaction, interaction.NewDeferredResponse()).Do(ctx)
+	err := interaction.Respond(i.Interaction, interaction.NewDeferredResponse()).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending deferred", "error", err)
 	}
 
 	resp := interaction.NewMessageResponse()
 	defer func() {
-		_, err = dg.InteractionAPI().ResponseEdit(i.Interaction, resp.WebhookEdit()).Do(ctx)
+		_, err = interaction.EditResponse(i.Interaction, resp.WebhookEdit()).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("replying to interaction", "error", err)
 		}
@@ -118,7 +119,7 @@ func statsAll(ctx context.Context, dg bot.Session, i *interaction.ApplicationCom
 }
 
 func statsMember(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand, days int, discordID string) (io.WriterTo, error) {
-	_, err := dg.GuildAPI().Member(i.GuildID, discordID).Do(ctx)
+	_, err := guild.GetMember(i.GuildID, discordID).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +237,7 @@ func generatePlot(ctx context.Context, dg bot.Session, i *interaction.Applicatio
 
 	cnt := 0
 	for in, c := range copaings {
-		m, err := dg.GuildAPI().Member(i.GuildID, c.DiscordID).Do(ctx)
+		m, err := guild.GetMember(i.GuildID, c.DiscordID).Do(ctx)
 		if err != nil {
 			bot.Logger(ctx).Error("fetching guild member", "error", err)
 			return nil, err

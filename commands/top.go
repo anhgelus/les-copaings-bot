@@ -50,7 +50,7 @@ func Top(ctx context.Context, dg bot.Session, i *interaction.ApplicationCommand)
 		resp.AddEmbed(embeds[1]).
 			AddEmbed(embeds[2])
 	}
-	err := dg.InteractionAPI().Respond(i.Interaction, resp.Response()).Do(ctx)
+	err := interaction.Respond(i.Interaction, resp.Response()).Do(ctx)
 	if err != nil {
 		bot.Logger(ctx).Error("sending response top", "error", err)
 	}

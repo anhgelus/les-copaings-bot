@@ -6,6 +6,7 @@ import (
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/common"
 	"github.com/nyttikord/gokord/bot"
+	"github.com/nyttikord/gokord/channel"
 )
 
 type Guild struct {
@@ -59,7 +60,7 @@ func (cfg *Guild) IsDisabled(ctx context.Context, dg bot.Session, channelID stri
 		c, err := dg.ChannelAPI().State.Channel(channelID)
 		if err != nil {
 			bot.Logger(ctx).Error("unable to find channel %s in state", "error", err, "channel", c)
-			c, err = dg.ChannelAPI().Channel(channelID).Do(ctx)
+			c, err = channel.Get(channelID).Do(ctx)
 			if err != nil {
 				bot.Logger(ctx).Error("unable to fetch channel", "error", err, "channel", c)
 				return false
