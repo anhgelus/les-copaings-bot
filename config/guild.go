@@ -57,7 +57,7 @@ func (cfg *Guild) IsDisabled(ctx context.Context, dg bot.Session, channelID stri
 	ok := true
 	for channelID != "" && ok {
 		ok = !strings.Contains(cfg.DisabledChannels, channelID)
-		c, err := dg.ChannelAPI().State.Channel(channelID)
+		c, err := dg.ChannelState().GetChannel(channelID)
 		if err != nil {
 			bot.Logger(ctx).Error("unable to find channel %s in state", "error", err, "channel", c)
 			c, err = channel.Get(channelID).Do(ctx)

@@ -59,7 +59,7 @@ func PeriodicReducer(ctx context.Context, dg bot.Session) {
 
 	n := 0
 	var wg sync.WaitGroup
-	for _, g := range dg.GuildAPI().State.Guilds() {
+	for _, g := range dg.GuildState().ListGuilds() {
 		cfg := config.GetGuildConfig(ctx, g)
 		res := common.GetDB(ctx).
 			Model(&CopaingXP{}).

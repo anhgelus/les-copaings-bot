@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"git.anhgelus.world/anhgelus/les-copaings-bot/common"
+	"github.com/nyttikord/avl"
 	"github.com/nyttikord/gokord/state"
 	"gorm.io/gorm"
 )
@@ -101,7 +102,7 @@ func saveStateInDB(ctx context.Context) error {
 	state.saveInDB.Lock()
 	defer state.saveInDB.Unlock()
 
-	for _, v := range state.storage {
+	for _, v := range state.storage.All() {
 		if v.mustSave() {
 			err := v.SaveInDB(ctx)
 			if err != nil {
@@ -125,23 +126,23 @@ func FromCopaing(c *Copaing) *CopaingCached {
 
 const KeyCopaingCachedPrefix = "cc:"
 
-func KeyCopaingCached(c *Copaing) state.Key {
+func KeyCopaingCached(c *Copaing) string {
 	return KeyCopaingCachedRaw(c.GuildID, c.DiscordID)
 }
 
-func KeyCopaingCachedRaw(guildID, copaingID string) state.Key {
-	return KeyCopaingCachedPrefix + state.Key(guildID+":"+copaingID)
+func KeyCopaingCachedRaw(guildID, copaingID string) string {
+	return guildID + ":" + copaingID
 }
 
 type State struct {
 	mu       sync.RWMutex
 	saveInDB sync.Mutex
-	storage  state.MapStorage[CopaingCached]
+	storage  *state.AVLStorage[string, CopaingCached]
 }
 
 func NewState(db *gorm.DB) *State {
 	state := &State{
-		storage: state.MapStorage[CopaingCached]{},
+		storage: state.WrapAVLAsStorage(avl.NewKeyString[CopaingCached]()),
 	}
 	var cs []*Copaing
 	err := db.Find(&cs).Error
@@ -191,7 +192,7 @@ func (s *State) Copaings(guild string) []CopaingCached {
 	defer s.mu.RUnlock()
 
 	var ccs []CopaingCached
-	for _, cc := range s.storage {
+	for _, cc := range s.storage.All() {
 		if cc.GuildID == guild {
 			ccs = append(ccs, deepCopy(cc))
 		}
